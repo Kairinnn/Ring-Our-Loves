@@ -1,1 +1,12 @@
-
+{
+  "display_name": "Ring Our Luv",
+  "loading_order": 10,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "Kairin",
+  "version": "0.1.0",
+  "homePage": "",
+  "auto_update": false
+}
