@@ -839,6 +839,21 @@ async function loadPanel() {
 }
 
 jQuery(async () => {
+    // 动态加载 slash-commands（兼容不同ST版本路径）
+    for (const p of ['../../../slash-commands.js', '../../../../slash-commands.js']) {
+        try {
+            const mod = await import(p);
+            if (mod.executeSlashCommandsWithOptions) {
+                executeSlashCommandsWithOptions = mod.executeSlashCommandsWithOptions;
+                console.log('[RingOurLuv] slash-commands loaded from:', p);
+                break;
+            }
+        } catch(e) { /* try next path */ }
+    }
+    if (!executeSlashCommandsWithOptions) {
+        console.warn('[RingOurLuv] ⚠ slash-commands未找到，AI生成功能暂不可用');
+    }
+
     Storage.initSettings();
     const panelHtml = await loadPanel();
     if (panelHtml) $('#extensions_settings2').append(panelHtml);
