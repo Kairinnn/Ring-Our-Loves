@@ -14,3 +14,5 @@ import { extension_settings, getContext, saveSettingsDebounced } from '../../../
 import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 import { getPresetManager } from '../../../../script.js';
 import { eventSource, event_types } from '../../../../script.js';
+
+eventSource.on(event_types.MESSAGE_RECEIVED, handler);
