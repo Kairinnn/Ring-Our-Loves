@@ -1,5 +1,4 @@
-
-/* ========== Ring Our Luv 样式 ========== */
+/* ========== Ring Our Luv ========== */
 
 .rol-container {
     font-family: inherit;
@@ -7,7 +6,7 @@
     max-width: 100%;
 }
 
-/* Tab 导航 */
+/* Tab */
 .rol-tabs {
     display: flex;
     gap: 4px;
@@ -15,7 +14,6 @@
     border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
     padding-bottom: 8px;
 }
-
 .rol-tab {
     flex: 1;
     padding: 8px 12px;
@@ -27,23 +25,16 @@
     border-radius: 6px 6px 0 0;
     transition: background 0.2s;
 }
-
 .rol-tab-active {
     background: var(--SmartThemeBlurTintColor, #333);
     color: var(--SmartThemeQuoteColor, #fff);
     font-weight: 600;
 }
 
-/* 面板区域切换 */
-.rol-panel-section {
-    display: none;
-}
+.rol-panel-section { display: none; }
+.rol-section-active { display: block; }
 
-.rol-section-active {
-    display: block;
-}
-
-/* 工具栏 */
+/* Toolbar */
 .rol-toolbar {
     display: flex;
     gap: 8px;
@@ -51,7 +42,7 @@
     flex-wrap: wrap;
 }
 
-/* 通用输入 */
+/* Input */
 .rol-input {
     width: 100%;
     padding: 8px 10px;
@@ -62,23 +53,19 @@
     font-size: 13px;
     box-sizing: border-box;
 }
-
 .rol-input:focus {
     outline: none;
     border-color: var(--SmartThemeQuoteColor, #7b8cde);
 }
-
-.rol-input-sm {
-    width: 70px;
-}
-
+.rol-input-sm { width: 70px; }
 .rol-textarea {
     resize: vertical;
     min-height: 80px;
     font-family: inherit;
 }
+.rol-textarea-lg { min-height: 150px; }
 
-/* 按钮 */
+/* Button */
 .rol-btn {
     padding: 8px 14px;
     border: 1px solid var(--SmartThemeBorderColor, #555);
@@ -90,18 +77,22 @@
     white-space: nowrap;
     transition: opacity 0.2s;
 }
-
-.rol-btn:active {
-    opacity: 0.7;
-}
-
+.rol-btn:active { opacity: 0.7; }
 .rol-btn-primary {
     background: var(--SmartThemeQuoteColor, #7b8cde);
     border-color: var(--SmartThemeQuoteColor, #7b8cde);
     color: #fff;
 }
+.rol-btn-icon {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    color: #8a7b6a;
+    cursor: pointer;
+    padding: 2px 6px;
+}
 
-/* 记忆卡片 */
+/* Memory Card */
 .rol-memory-list {
     display: flex;
     flex-direction: column;
@@ -110,7 +101,6 @@
     overflow-y: auto;
     padding-right: 4px;
 }
-
 .rol-memory-card {
     padding: 12px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
@@ -118,38 +108,30 @@
     background: var(--SmartThemeBlurTintColor, #2a2a2a);
     position: relative;
     transition: opacity 0.2s;
+    cursor: pointer;
 }
-
-.rol-memory-card.rol-disabled {
-    opacity: 0.5;
-}
-
+.rol-memory-card:active { opacity: 0.85; }
+.rol-memory-card.rol-disabled { opacity: 0.5; }
 .rol-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
 }
-
 .rol-card-title {
     font-weight: 600;
     font-size: 14px;
     color: var(--SmartThemeQuoteColor, #ddd);
 }
 
-/* Toggle开关 */
+/* Toggle */
 .rol-toggle-wrap {
     position: relative;
     width: 36px;
     height: 20px;
+    flex-shrink: 0;
 }
-
-.rol-toggle-wrap input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
+.rol-toggle-wrap input { opacity: 0; width: 0; height: 0; }
 .rol-toggle-slider {
     position: absolute;
     inset: 0;
@@ -158,35 +140,25 @@
     cursor: pointer;
     transition: background 0.2s;
 }
-
 .rol-toggle-slider::before {
     content: '';
     position: absolute;
-    width: 16px;
-    height: 16px;
-    left: 2px;
-    top: 2px;
+    width: 16px; height: 16px;
+    left: 2px; top: 2px;
     background: #fff;
     border-radius: 50%;
     transition: transform 0.2s;
 }
+.rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #7b8cde); }
+.rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
 
-.rol-toggle-wrap input:checked + .rol-toggle-slider {
-    background: var(--SmartThemeQuoteColor, #7b8cde);
-}
-
-.rol-toggle-wrap input:checked + .rol-toggle-slider::before {
-    transform: translateX(16px);
-}
-
-/* 触发词标签 */
+/* Tags */
 .rol-card-triggers {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
     margin-bottom: 6px;
 }
-
 .rol-tag {
     padding: 2px 8px;
     background: rgba(123, 140, 222, 0.2);
@@ -194,19 +166,16 @@
     font-size: 11px;
     color: var(--SmartThemeQuoteColor, #aab);
 }
-
 .rol-card-preview {
     font-size: 12px;
     color: var(--SmartThemeBodyColor, #999);
     margin-bottom: 8px;
     line-height: 1.4;
 }
-
 .rol-card-actions {
     display: flex;
     gap: 8px;
 }
-
 .rol-card-actions button {
     padding: 4px 8px;
     border: none;
@@ -216,15 +185,11 @@
     opacity: 0.7;
     transition: opacity 0.2s;
 }
-
-.rol-card-actions button:hover {
-    opacity: 1;
-}
-
+.rol-card-actions button:hover,
+.rol-card-actions button:active { opacity: 1; }
 .rol-mood-badge {
     position: absolute;
-    top: 8px;
-    right: 50px;
+    top: 8px; right: 50px;
     font-size: 11px;
     padding: 2px 6px;
     background: rgba(255, 200, 100, 0.2);
@@ -232,7 +197,7 @@
     color: #f0c060;
 }
 
-/* 编辑器面板 */
+/* Editor Panel */
 .rol-editor-panel {
     display: none;
     position: fixed;
@@ -243,11 +208,7 @@
     align-items: center;
     padding: 16px;
 }
-
-.rol-editor-panel.rol-active {
-    display: flex;
-}
-
+.rol-editor-panel.rol-active { display: flex; }
 .rol-editor-inner {
     background: var(--SmartThemeChatTintColor, #1a1a2e);
     border-radius: 12px;
@@ -257,35 +218,99 @@
     max-height: 85vh;
     overflow-y: auto;
 }
-
 .rol-editor-heading {
     margin: 0 0 16px;
     font-size: 16px;
     color: var(--SmartThemeQuoteColor, #eee);
 }
-
-.rol-form-group {
-    margin-bottom: 12px;
-}
-
+.rol-form-group { margin-bottom: 12px; }
 .rol-form-group label {
     display: block;
     font-size: 12px;
     margin-bottom: 4px;
     color: var(--SmartThemeBodyColor, #aaa);
 }
-
 .rol-editor-actions {
     display: flex;
     gap: 10px;
     margin-top: 16px;
 }
 
-/* 配置组 */
-.rol-config-group {
-    margin-bottom: 14px;
+/* Letter View Panel */
+.rol-letter-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 9998;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
 }
+.rol-letter-panel.rol-active { display: flex; }
+.rol-letter-inner {
+    background: #faf6f0;
+    border-radius: 4px;
+    padding: 28px 24px 20px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.rol-letter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+.rol-letter-title {
+    font-size: 17px;
+    color: #4a4035;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.rol-letter-mood {
+    font-size: 12px;
+    color: #9a8b7a;
+    margin-bottom: 16px;
+    font-style: italic;
+}
+.rol-letter-body {
+    font-size: 14px;
+    line-height: 1.9;
+    color: #3d3428;
+    white-space: pre-wrap;
+    font-family: 'Georgia', 'Noto Serif SC', serif;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e8e0d4;
+    margin-bottom: 12px;
+}
+.rol-letter-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.rol-letter-footer select {
+    background: #f0ebe3;
+    border-color: #d8d0c4;
+    color: #5a5045;
+    font-size: 12px;
+}
+.rol-letter-actions {
+    display: flex;
+    gap: 8px;
+}
+.rol-letter-actions .rol-btn {
+    background: #ede7de;
+    border-color: #d8d0c4;
+    color: #5a5045;
+    font-size: 12px;
+}
+.rol-letter-actions .rol-btn:active { opacity: 0.7; }
 
+/* Config */
+.rol-config-group { margin-bottom: 14px; }
 .rol-config-group .rol-label {
     display: flex;
     justify-content: space-between;
@@ -311,13 +336,11 @@
     transition: opacity 0.3s, transform 0.3s;
     z-index: 10000;
 }
-
 #rol-toast.rol-toast-show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
 
-/* 空状态 */
 .rol-empty {
     text-align: center;
     padding: 30px;
@@ -325,31 +348,13 @@
     font-size: 13px;
 }
 
-/* ========== 移动端适配 ========== */
+/* ========== Mobile ========== */
 @media (max-width: 768px) {
-    .rol-container {
-        padding: 4px;
-    }
-
-    .rol-toolbar {
-        flex-direction: column;
-    }
-
-    .rol-toolbar .rol-input {
-        width: 100%;
-    }
-
-    .rol-editor-inner {
-        max-width: 100%;
-        border-radius: 8px;
-        padding: 16px;
-    }
-
-    .rol-memory-list {
-        max-height: 50vh;
-    }
-
-    .rol-card-actions {
-        justify-content: flex-end;
-    }
+    .rol-container { padding: 4px; }
+    .rol-toolbar { flex-direction: column; }
+    .rol-toolbar .rol-input { width: 100%; }
+    .rol-editor-inner { max-width: 100%; border-radius: 8px; padding: 16px; }
+    .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
+    .rol-memory-list { max-height: 50vh; }
+    .rol-card-actions { justify-content: flex-end; }
 }
