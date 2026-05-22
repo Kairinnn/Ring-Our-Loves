@@ -1,7 +1,7 @@
 import { extension_settings, saveSettingsDebounced, getContext } from '../../../extensions.js';
-import { executeSlashCommandsWithOptions } from '../../../../slash-commands.js';
+// 修正：从 third-party/RingOurLuv/ 回到 scripts/ 只需3层，slash-commands.js 在 scripts/ 同级
+import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
-let executeSlashCommandsWithOptions = null;
 const extensionName = 'RingOurLuv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
