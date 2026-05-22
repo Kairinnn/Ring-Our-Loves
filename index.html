@@ -1,12 +1,11 @@
-
 <div id="rol-container" class="rol-container">
-    <!-- 移动端Tab导航 -->
+    <!-- Tab导航 -->
     <div class="rol-tabs">
         <button class="rol-tab rol-tab-active" data-target="rol-section-list">📋 记忆</button>
         <button class="rol-tab" data-target="rol-section-config">⚙️ 设置</button>
     </div>
 
-    <!-- 记忆列表区 -->
+    <!-- 记忆列表 -->
     <div id="rol-section-list" class="rol-panel-section rol-section-active">
         <div class="rol-toolbar">
             <input type="text" id="rol-search" class="rol-input" placeholder="搜索记忆...">
@@ -16,7 +15,7 @@
         <div id="rol-memory-list" class="rol-memory-list"></div>
     </div>
 
-    <!-- 设置区 -->
+    <!-- 设置 -->
     <div id="rol-section-config" class="rol-panel-section">
         <div class="rol-config-group">
             <label class="rol-label">
@@ -33,12 +32,12 @@
             <select id="rol-preset-select" class="rol-input"></select>
         </div>
         <div class="rol-config-group">
-            <label class="rol-label">总结提示词</label>
+            <label class="rol-label">自定义提示词（留空使用默认）</label>
             <textarea id="rol-summary-prompt" class="rol-input rol-textarea" rows="4" placeholder="用 {{context}} 代表对话内容"></textarea>
         </div>
     </div>
 
-    <!-- 编辑器面板（覆盖层） -->
+    <!-- 编辑器面板 -->
     <div id="rol-editor-panel" class="rol-editor-panel">
         <div class="rol-editor-inner">
             <h3 class="rol-editor-heading">编辑记忆</h3>
@@ -59,8 +58,12 @@
                 <input type="text" id="rol-editor-mood" class="rol-input" placeholder="开心/感动/平静...">
             </div>
             <div class="rol-form-group">
-                <label>内容</label>
-                <textarea id="rol-editor-content" class="rol-input rol-textarea" rows="6" placeholder="记忆的具体内容"></textarea>
+                <label>摘要（列表展示 & 上下文注入用）</label>
+                <textarea id="rol-editor-content" class="rol-input rol-textarea" rows="3" placeholder="1-2句话的精简版"></textarea>
+            </div>
+            <div class="rol-form-group">
+                <label>信件正文（详情视图展示）</label>
+                <textarea id="rol-editor-letter" class="rol-input rol-textarea rol-textarea-lg" rows="8" placeholder="第一人称的完整记忆...AI生成时会自动填入"></textarea>
             </div>
             <div class="rol-form-group" id="rol-version-group">
                 <label>历史版本</label>
@@ -69,6 +72,27 @@
             <div class="rol-editor-actions">
                 <button id="rol-editor-save" class="rol-btn rol-btn-primary">保存</button>
                 <button id="rol-editor-cancel" class="rol-btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 信件视图面板 -->
+    <div id="rol-letter-panel" class="rol-letter-panel" data-mem-id="">
+        <div class="rol-letter-inner">
+            <div class="rol-letter-header">
+                <span id="rol-letter-title" class="rol-letter-title"></span>
+                <button id="rol-letter-close" class="rol-btn rol-btn-icon">✕</button>
+            </div>
+            <div id="rol-letter-mood" class="rol-letter-mood"></div>
+            <div id="rol-letter-body" class="rol-letter-body"></div>
+            <div class="rol-letter-footer">
+                <div id="rol-letter-version-group">
+                    <select id="rol-letter-version" class="rol-input"></select>
+                </div>
+                <div class="rol-letter-actions">
+                    <button id="rol-letter-edit" class="rol-btn">✏️ 编辑</button>
+                    <button id="rol-letter-rewrite" class="rol-btn">🔄 重写</button>
+                </div>
             </div>
         </div>
     </div>
