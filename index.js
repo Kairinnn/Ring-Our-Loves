@@ -1,5 +1,6 @@
 import { extension_settings, getContext } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
+import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'RingOurLuv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
