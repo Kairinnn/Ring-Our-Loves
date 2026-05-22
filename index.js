@@ -1,8 +1,9 @@
+import { saveSettingsDebounced, eventSource, event_types } from '../../../../script.js';
 import { extension_settings, getContext } from '../../../extensions.js';
-import { saveSettingsDebounced } from '../../../../script.js';
+import { getPresetManager } from '../../../preset-manager.js';
 import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
-const extensionName = 'RingOurLuv';
+const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 // ============================================================
