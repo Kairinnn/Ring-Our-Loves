@@ -665,17 +665,41 @@ async function loadPanel() {
 jQuery(async () => {
     Storage.initSettings();
 
+    // 延迟挂载，等ST的UI容器渲染完
+    const waitForContainer = () => {
+        return new Promise((resolve) => {
+            const check = () => {
+                // ST的扩展设置区域
+                const container = document.getElementById('extensions_settings2')
+                    || document.getElementById('extensions_settings')
+                    || document.querySelector('.extensions_block');
+                if (container) {
+                    resolve(container);
+                } else {
+                    setTimeout(check, 300);
+                }
+            };
+            check();
+        });
+    };
+
     const panelHtml = await loadPanel();
+
     if (panelHtml) {
-        $('#extensions_settings2').append(panelHtml);
+        const container = await waitForContainer();
+        $(container).append(panelHtml);
+        console.log('[RingOurLuv] 面板已挂载 ✅');
+        UIController.initUI();
+    } else {
+        console.error('[RingOurLuv] ⚠️ HTML加载失败，检查文件夹名！');
+        // 就算没UI也把基础功能跑起来
     }
 
-    UIController.initUI();
     Trigger.setupTriggerListener(injectMemoryToContext);
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
         UIController.renderMemoryList();
     });
 
-    console.log(`[RingOurLuv] 插件加载完成 ✨`);
+    console.log('[RingOurLuv] 初始化完成 ✨');
 });
