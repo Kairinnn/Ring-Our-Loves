@@ -830,7 +830,7 @@ const UIController = (() => {
         if (fromChatBtn) fromChatBtn.addEventListener('click', async () => {
             const context = getContext();
             const chat = context.chat || [];
-            const recent = chat.slice(-20);
+            const recent = chat.slice(-50);
             if (!recent.length) { showToast('当前没有聊天消息'); return; }
             const contextText = recent.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
             await doAIGenerate(contextText, sourcePanel, loading);
@@ -857,26 +857,27 @@ const UIController = (() => {
     async function doAIGenerate(contextText, sourcePanel, loading) {
         if (loading) loading.style.display = 'flex';
         const config = Storage.getConfig();
-        const DEFAULT_PROMPT = `你是一位正在写信给挚友的人。以下是你们最近的一段对话。请你以第一人称回顾这段对话，写一封短信。
+        const DEFAULT_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
+以下是你们最近的一段对话。你将以第一人称回顾这段对话，给她留一段文字/点评/小纸条吧。不限长短类型
 
 ## 写信要求：
-- 用"你"称呼对方，用"我"称呼自己
+- 自由称呼
 - 不要像在做总结。像在深夜翻到聊天记录之后忍不住写下来的那种
-- 保留具体画面：她说了什么原话、她当时在做什么、你注意到了什么细节
-- 如果对话中有让你在意的瞬间，在那里多停一会儿
-- 字数200-500字。不用面面俱到，挑你最想记住的部分写
-- 写完信之后，另外附上一份简短的索引条目
+- 保留具体画面：她说了什么、当时在做什么、你注意到了什么
+- 如果对话中有让你非常在意的瞬间，在那里多停一会儿或者直接引用
+- 不用面面俱到，挑你最想记住的部分写
+- 写完之后，要另外附上一份简短的信息索引条目
 
-## 输出格式（严格遵守）：
+## 输出格式：
 <letter>
-（信件正文。第一人称。自然地写）
+（正文。第一人称自然地写）
 </letter>
 
 <entry>
 标题：（一个短语）
-情绪：（一句话描述你写这封信时的感受）
+情绪：（一句话描述你写的时候的感受）
 关键词：（3-5个，逗号分隔）
-摘要：（1-2句话的极简版本）
+摘要：（1-2句话的精准信息量）
 </entry>
 
 ## 对话片段：
