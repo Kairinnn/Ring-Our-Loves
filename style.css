@@ -83,6 +83,25 @@
     border-color: var(--SmartThemeQuoteColor, #7b8cde);
     color: #fff;
 }
+.rol-btn-save {
+    background: #e8a0b4;
+    border-color: #e8a0b4;
+    color: #fff;
+    font-weight: 600;
+}
+.rol-btn-save:hover { background: #d4899f; }
+.rol-btn-cancel {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-weight: normal;
+}
+.rol-btn-cancel:hover { color: #ccc; }
+.rol-btn-ai {
+    background: linear-gradient(135deg, #a78bfa, #7b8cde);
+    border-color: #a78bfa;
+    color: #fff;
+}
 .rol-btn-icon {
     background: transparent;
     border: none;
@@ -340,6 +359,81 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
+
+/* Form Row (side by side) */
+.rol-form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.rol-form-half { flex: 1; margin-bottom: 0; }
+
+/* AI Source Panel */
+.rol-ai-source-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+.rol-ai-source-panel.rol-active { display: flex; }
+.rol-ai-source-inner {
+    background: var(--SmartThemeChatTintColor, #1a1a2e);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+}
+.rol-ai-source-desc {
+    font-size: 13px;
+    color: var(--SmartThemeBodyColor, #aaa);
+    margin: 0 0 16px;
+}
+.rol-ai-source-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.rol-ai-source-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+    background: var(--SmartThemeBlurTintColor, #2a2a2a);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+.rol-ai-source-btn:hover {
+    border-color: #a78bfa;
+    background: rgba(167, 139, 250, 0.08);
+}
+.rol-ai-source-icon { font-size: 20px; margin-bottom: 4px; }
+.rol-ai-source-label { font-size: 14px; font-weight: 600; color: var(--SmartThemeBodyColor, #eee); }
+.rol-ai-source-hint { font-size: 11px; color: #888; margin-top: 2px; }
+.rol-ai-paste-area { margin-bottom: 12px; }
+.rol-ai-source-footer { display: flex; justify-content: flex-end; }
+.rol-ai-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0;
+    font-size: 13px;
+    color: var(--SmartThemeBodyColor, #ccc);
+}
+.rol-ai-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(167, 139, 250, 0.3);
+    border-top-color: #a78bfa;
+    border-radius: 50%;
+    animation: rol-spin 0.8s linear infinite;
+}
+@keyframes rol-spin { to { transform: rotate(360deg); } }
 
 .rol-empty {
     text-align: center;

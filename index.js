@@ -37,27 +37,29 @@ const Storage = (() => {
     function addMemory(memoryData) {
         const settings = extension_settings[extensionName];
         const now = new Date().toISOString();
+        const today = new Date().toISOString().slice(0, 10);
         const newMemory = {
             id: generateId(),
             title: memoryData.title || '未命名记忆',
+            author: memoryData.author || 'claude',
+            date: memoryData.date || today,
             triggers: memoryData.triggers || [],
             tags: memoryData.tags || [],
             mood: memoryData.mood || '',
-            content: memoryData.content || '',
+            summary: memoryData.summary || '',
             letter: memoryData.letter || '',
             versions: [
                 {
+                    summary: memoryData.summary || '',
                     letter: memoryData.letter || '',
-                    content: memoryData.content || '',
-                    title: memoryData.title || '未命名记忆',
-                    mood: memoryData.mood || '',
-                    triggers: memoryData.triggers || [],
                     timestamp: now,
                     type: 'original'
                 }
             ],
+            replies: [],
             enabled: true,
-            createdAt: now
+            created: now,
+            updated: now
         };
         settings.memories.push(newMemory);
         saveSettingsDebounced();
@@ -72,21 +74,19 @@ const Storage = (() => {
         const memory = settings.memories[index];
 
         if (!skipVersion && (
-            (updates.content && updates.content !== memory.content) ||
+            (updates.summary && updates.summary !== memory.summary) ||
             (updates.letter && updates.letter !== memory.letter)
         )) {
             memory.versions.push({
+                summary: updates.summary || memory.summary,
                 letter: updates.letter || memory.letter,
-                content: updates.content || memory.content,
-                title: updates.title || memory.title,
-                mood: updates.mood || memory.mood,
-                triggers: updates.triggers || memory.triggers,
                 timestamp: new Date().toISOString(),
                 type: 'manual_edit'
             });
         }
 
         Object.assign(memory, updates);
+        memory.updated = new Date().toISOString();
         settings.memories[index] = memory;
         saveSettingsDebounced();
         return memory;
@@ -439,6 +439,7 @@ const UIController = (() => {
         bindConfigPanel();
         bindMemoryList();
         bindEditorPanel();
+        bindAISourcePanel();
         bindLetterPanel();
         bindMobileNav();
         renderMemoryList();
@@ -711,7 +712,7 @@ const UIController = (() => {
                 if (isNaN(idx) || !currentEditId) return;
                 const mem = Storage.getMemories().find(m => m.id === currentEditId);
                 if (mem && mem.versions[idx]) {
-                    document.getElementById('rol-editor-content').value = mem.versions[idx].content || '';
+                    document.getElementById('rol-editor-summary').value = mem.versions[idx].summary || '';
                     document.getElementById('rol-editor-letter').value = mem.versions[idx].letter || '';
                 }
             });
@@ -724,23 +725,30 @@ const UIController = (() => {
         if (!panel) return;
         panel.classList.add('rol-active');
 
+        const rewriteBtn = document.getElementById('rol-editor-rewrite');
+
         if (memId) {
             const mem = Storage.getMemories().find(m => m.id === memId);
             if (!mem) return;
             document.getElementById('rol-editor-title').value = mem.title;
+            document.getElementById('rol-editor-author').value = mem.author || 'claude';
+            document.getElementById('rol-editor-date').value = mem.date || '';
             document.getElementById('rol-editor-triggers').value = mem.triggers.join(', ');
             document.getElementById('rol-editor-tags').value = mem.tags.join(', ');
             document.getElementById('rol-editor-mood').value = mem.mood || '';
-            document.getElementById('rol-editor-content').value = mem.content || '';
+            document.getElementById('rol-editor-summary').value = mem.summary || '';
             document.getElementById('rol-editor-letter').value = mem.letter || '';
+
+            if (rewriteBtn) rewriteBtn.style.display = '';
 
             const vs = document.getElementById('rol-version-select');
             if (vs) {
                 vs.innerHTML = '';
+                const typeLabels = { original: '原始', manual_edit: '手动编辑', ai_rewrite: 'AI重写' };
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
-                    opt.textContent = `${v.type} - ${new Date(v.timestamp).toLocaleString()}`;
+                    opt.textContent = `${typeLabels[v.type] || v.type} - ${new Date(v.timestamp).toLocaleString()}`;
                     vs.appendChild(opt);
                 });
                 vs.value = mem.versions.length - 1;
@@ -748,11 +756,14 @@ const UIController = (() => {
             }
         } else {
             document.getElementById('rol-editor-title').value = '';
+            document.getElementById('rol-editor-author').value = 'claude';
+            document.getElementById('rol-editor-date').value = new Date().toISOString().slice(0, 10);
             document.getElementById('rol-editor-triggers').value = '';
             document.getElementById('rol-editor-tags').value = '';
             document.getElementById('rol-editor-mood').value = '';
-            document.getElementById('rol-editor-content').value = '';
+            document.getElementById('rol-editor-summary').value = '';
             document.getElementById('rol-editor-letter').value = '';
+            if (rewriteBtn) rewriteBtn.style.display = 'none';
             const vs = document.getElementById('rol-version-select');
             if (vs) vs.parentElement.style.display = 'none';
         }
@@ -760,19 +771,21 @@ const UIController = (() => {
 
     function saveEditor() {
         const title = document.getElementById('rol-editor-title').value.trim();
+        const author = document.getElementById('rol-editor-author').value;
+        const date = document.getElementById('rol-editor-date').value;
         const triggers = document.getElementById('rol-editor-triggers').value.split(',').map(s => s.trim()).filter(Boolean);
         const tags = document.getElementById('rol-editor-tags').value.split(',').map(s => s.trim()).filter(Boolean);
         const mood = document.getElementById('rol-editor-mood').value.trim();
-        const content = document.getElementById('rol-editor-content').value.trim();
+        const summary = document.getElementById('rol-editor-summary').value.trim();
         const letter = document.getElementById('rol-editor-letter').value.trim();
 
         if (!title) { showToast('标题不能为空！'); return; }
 
         const isEdit = !!currentEditId;
         if (isEdit) {
-            Storage.updateMemory(currentEditId, { title, triggers, tags, mood, content, letter });
+            Storage.updateMemory(currentEditId, { title, author, date, triggers, tags, mood, summary, letter });
         } else {
-            Storage.addMemory({ title, triggers, tags, mood, content, letter });
+            Storage.addMemory({ title, author, date, triggers, tags, mood, summary, letter });
         }
         closeEditor();
         renderMemoryList();
@@ -783,6 +796,73 @@ const UIController = (() => {
         currentEditId = null;
         const panel = document.getElementById('rol-editor-panel');
         if (panel) panel.classList.remove('rol-active');
+    }
+
+    // ---- AI Source Panel ----
+    function bindAISourcePanel() {
+        const aiGenBtn = document.getElementById('rol-ai-generate');
+        const sourcePanel = document.getElementById('rol-ai-source-panel');
+        const fromChatBtn = document.getElementById('rol-ai-from-chat');
+        const fromPasteBtn = document.getElementById('rol-ai-from-paste');
+        const pasteArea = document.getElementById('rol-ai-paste-area');
+        const pasteConfirm = document.getElementById('rol-ai-paste-confirm');
+        const cancelBtn = document.getElementById('rol-ai-source-cancel');
+        const loading = document.getElementById('rol-ai-loading');
+        const rewriteBtn = document.getElementById('rol-editor-rewrite');
+
+        if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
+            if (sourcePanel) { sourcePanel.classList.add('rol-active'); if (pasteArea) pasteArea.style.display = 'none'; }
+        });
+        if (cancelBtn) cancelBtn.addEventListener('click', () => { if (sourcePanel) sourcePanel.classList.remove('rol-active'); });
+        if (sourcePanel) sourcePanel.addEventListener('click', (e) => { if (e.target === sourcePanel) sourcePanel.classList.remove('rol-active'); });
+
+        if (fromChatBtn) fromChatBtn.addEventListener('click', async () => {
+            const context = getContext();
+            const chat = context.chat || [];
+            const recent = chat.slice(-20);
+            if (!recent.length) { showToast('当前没有聊天消息'); return; }
+            const contextText = recent.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
+            await doAIGenerate(contextText, sourcePanel, loading);
+        });
+
+        if (fromPasteBtn) fromPasteBtn.addEventListener('click', () => { if (pasteArea) pasteArea.style.display = 'block'; });
+        if (pasteConfirm) pasteConfirm.addEventListener('click', async () => {
+            const text = document.getElementById('rol-ai-paste-input')?.value?.trim();
+            if (!text) { showToast('请粘贴对话内容'); return; }
+            await doAIGenerate(text, sourcePanel, loading);
+        });
+
+        if (rewriteBtn) rewriteBtn.addEventListener('click', async () => {
+            if (!currentEditId) return;
+            const mem = Storage.getMemories().find(m => m.id === currentEditId);
+            if (!mem) return;
+            showToast('正在重写...');
+            const result = await AIService.rewriteMemory(currentEditId, mem);
+            if (result) { showToast('重写完成！'); openEditor(currentEditId); renderMemoryList(); }
+            else { showToast('重写失败 :('); }
+        });
+    }
+
+    async function doAIGenerate(contextText, sourcePanel, loading) {
+        if (loading) loading.style.display = 'flex';
+        const config = Storage.getConfig();
+        const DEFAULT_PROMPT = `你是一位正在写信给挚友的人。以下是你们最近的一段对话。请你以第一人称回顾这段对话，写一封短信。\n\n## 输出格式：\n<letter>\n（信件正文）\n</letter>\n\n<entry>\n标题：（一个短语）\n情绪：（一句话）\n关键词：（3-5个，逗号分隔）\n摘要：（1-2句话）\n</entry>\n\n## 对话片段：\n{{context}}`;
+        const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
+        const raw = await AIService.generateWithPreset(prompt);
+        if (loading) loading.style.display = 'none';
+        if (sourcePanel) sourcePanel.classList.remove('rol-active');
+
+        if (!raw) { showToast('生成失败 :('); return; }
+        const parsed = AIService.parseAIOutput(raw);
+        // 填入编辑器
+        openEditor(null);
+        document.getElementById('rol-editor-title').value = parsed.entry.title || '';
+        document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
+        document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
+        document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
+        document.getElementById('rol-editor-letter').value = parsed.letter || '';
+        document.getElementById('rol-editor-author').value = 'claude';
+        showToast('生成完成！请预览后保存');
     }
 
     // ---- Mobile Nav ----

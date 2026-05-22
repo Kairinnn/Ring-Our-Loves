@@ -17,6 +17,7 @@
         <div class="rol-toolbar">
             <input type="text" id="rol-search" class="rol-input" placeholder="搜索记忆...">
             <button id="rol-add-memory" class="rol-btn rol-btn-primary">+ 添加</button>
+            <button id="rol-ai-generate" class="rol-btn rol-btn-ai">✨ AI生成</button>
             <button id="rol-scan-recent" class="rol-btn" title="扫描最近消息">🔍</button>
         </div>
         <div id="rol-memory-list" class="rol-memory-list"></div>
@@ -52,6 +53,19 @@
                 <label>标题</label>
                 <input type="text" id="rol-editor-title" class="rol-input" placeholder="给这段记忆起个名字">
             </div>
+            <div class="rol-form-row">
+                <div class="rol-form-group rol-form-half">
+                    <label>作者</label>
+                    <select id="rol-editor-author" class="rol-input">
+                        <option value="claude">Claude记录</option>
+                        <option value="kairin">我的记录</option>
+                    </select>
+                </div>
+                <div class="rol-form-group rol-form-half">
+                    <label>日期</label>
+                    <input type="date" id="rol-editor-date" class="rol-input">
+                </div>
+            </div>
             <div class="rol-form-group">
                 <label>触发词（逗号分隔）</label>
                 <input type="text" id="rol-editor-triggers" class="rol-input" placeholder="关键词1, 关键词2">
@@ -66,7 +80,7 @@
             </div>
             <div class="rol-form-group">
                 <label>摘要（列表展示 & 上下文注入用）</label>
-                <textarea id="rol-editor-content" class="rol-input rol-textarea" rows="3" placeholder="1-2句话的精简版"></textarea>
+                <textarea id="rol-editor-summary" class="rol-input rol-textarea" rows="3" placeholder="1-2句话的精简版"></textarea>
             </div>
             <div class="rol-form-group">
                 <label>信件正文（详情视图展示）</label>
@@ -77,8 +91,40 @@
                 <select id="rol-version-select" class="rol-input"></select>
             </div>
             <div class="rol-editor-actions">
-                <button id="rol-editor-save" class="rol-btn rol-btn-primary">保存</button>
-                <button id="rol-editor-cancel" class="rol-btn">取消</button>
+                <button id="rol-editor-save" class="rol-btn rol-btn-save">💾 保存</button>
+                <button id="rol-editor-rewrite" class="rol-btn rol-btn-ai" style="display:none;">🔄 重写</button>
+                <button id="rol-editor-cancel" class="rol-btn rol-btn-cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI来源选择面板 -->
+    <div id="rol-ai-source-panel" class="rol-ai-source-panel">
+        <div class="rol-ai-source-inner">
+            <h3 class="rol-editor-heading">✨ AI生成记忆</h3>
+            <p class="rol-ai-source-desc">选择对话来源，AI会帮你把对话变成一封信件</p>
+            <div class="rol-ai-source-options">
+                <button id="rol-ai-from-chat" class="rol-ai-source-btn">
+                    <span class="rol-ai-source-icon">💬</span>
+                    <span class="rol-ai-source-label">从当前聊天生成</span>
+                    <span class="rol-ai-source-hint">自动读取最近20条消息</span>
+                </button>
+                <button id="rol-ai-from-paste" class="rol-ai-source-btn">
+                    <span class="rol-ai-source-icon">📋</span>
+                    <span class="rol-ai-source-label">从粘贴文本生成</span>
+                    <span class="rol-ai-source-hint">手动粘贴对话内容</span>
+                </button>
+            </div>
+            <div id="rol-ai-paste-area" class="rol-ai-paste-area" style="display:none;">
+                <textarea id="rol-ai-paste-input" class="rol-input rol-textarea" rows="6" placeholder="粘贴对话内容到这里..."></textarea>
+                <button id="rol-ai-paste-confirm" class="rol-btn rol-btn-ai" style="margin-top:8px;">开始生成</button>
+            </div>
+            <div id="rol-ai-loading" style="display:none;">
+                <div class="rol-ai-spinner"></div>
+                <span>正在生成中，请稍等...</span>
+            </div>
+            <div class="rol-ai-source-footer">
+                <button id="rol-ai-source-cancel" class="rol-btn rol-btn-cancel">取消</button>
             </div>
         </div>
     </div>
