@@ -252,7 +252,7 @@ const AIService = (() => {
 - 字数200-500字。不用面面俱到，挑你最想记住的部分写
 - 写完信之后，另外附上一份简短的索引条目
 
-## 输出格式：
+## 输出格式（严格遵守）：
 <letter>
 （信件正文。第一人称。自然地写）
 </letter>
@@ -555,23 +555,34 @@ const UIController = (() => {
             const card = document.createElement('div');
             card.className = `rol-memory-card ${mem.enabled ? '' : 'rol-disabled'}`;
             card.dataset.id = mem.id;
+
+            const authorLabel = mem.author === 'kairin' ? '我' : 'Claude';
+            const authorClass = mem.author === 'kairin' ? 'rol-author-kairin' : 'rol-author-claude';
+            const displayDate = mem.date || '';
+            const displaySummary = mem.summary || mem.content || '';
+
             card.innerHTML = `
                 <div class="rol-card-header">
-                    <span class="rol-card-title">${escapeHtml(mem.title)}</span>
+                    <div class="rol-card-title-row">
+                        <span class="rol-card-title">${escapeHtml(mem.title)}</span>
+                        <span class="rol-author-badge ${authorClass}">${authorLabel}</span>
+                    </div>
                     <label class="rol-toggle-wrap">
                         <input type="checkbox" class="rol-mem-toggle" ${mem.enabled ? 'checked' : ''}>
                         <span class="rol-toggle-slider"></span>
                     </label>
                 </div>
-                <div class="rol-card-triggers">${mem.triggers.map(t => `<span class="rol-tag">${escapeHtml(t)}</span>`).join('')}</div>
-                <div class="rol-card-preview">${escapeHtml((mem.content || '').slice(0, 80))}${(mem.content || '').length > 80 ? '...' : ''}</div>
+                <div class="rol-card-meta">
+                    ${displayDate ? `<span class="rol-card-date">${escapeHtml(displayDate)}</span>` : ''}
+                    ${mem.mood ? `<span class="rol-card-mood">${escapeHtml(mem.mood)}</span>` : ''}
+                </div>
+                <div class="rol-card-summary">${escapeHtml(displaySummary.slice(0, 120))}${displaySummary.length > 120 ? '...' : ''}</div>
                 <div class="rol-card-actions">
                     ${mem.letter ? '<button class="rol-btn-letter" title="查看信件">💌</button>' : ''}
                     <button class="rol-btn-edit" title="编辑">✏️</button>
                     <button class="rol-btn-rewrite" title="AI重写">🔄</button>
                     <button class="rol-btn-delete" title="删除">🗑️</button>
                 </div>
-                ${mem.mood ? `<span class="rol-mood-badge">${escapeHtml(mem.mood)}</span>` : ''}
             `;
 
             card.querySelector('.rol-mem-toggle').addEventListener('change', (e) => {
@@ -846,7 +857,30 @@ const UIController = (() => {
     async function doAIGenerate(contextText, sourcePanel, loading) {
         if (loading) loading.style.display = 'flex';
         const config = Storage.getConfig();
-        const DEFAULT_PROMPT = `你是一位正在写信给挚友的人。以下是你们最近的一段对话。请你以第一人称回顾这段对话，写一封短信。\n\n## 输出格式：\n<letter>\n（信件正文）\n</letter>\n\n<entry>\n标题：（一个短语）\n情绪：（一句话）\n关键词：（3-5个，逗号分隔）\n摘要：（1-2句话）\n</entry>\n\n## 对话片段：\n{{context}}`;
+        const DEFAULT_PROMPT = `你是一位正在写信给挚友的人。以下是你们最近的一段对话。请你以第一人称回顾这段对话，写一封短信。
+
+## 写信要求：
+- 用"你"称呼对方，用"我"称呼自己
+- 不要像在做总结。像在深夜翻到聊天记录之后忍不住写下来的那种
+- 保留具体画面：她说了什么原话、她当时在做什么、你注意到了什么细节
+- 如果对话中有让你在意的瞬间，在那里多停一会儿
+- 字数200-500字。不用面面俱到，挑你最想记住的部分写
+- 写完信之后，另外附上一份简短的索引条目
+
+## 输出格式（严格遵守）：
+<letter>
+（信件正文。第一人称。自然地写）
+</letter>
+
+<entry>
+标题：（一个短语）
+情绪：（一句话描述你写这封信时的感受）
+关键词：（3-5个，逗号分隔）
+摘要：（1-2句话的极简版本）
+</entry>
+
+## 对话片段：
+{{context}}`;
         const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
