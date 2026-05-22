@@ -11,3 +11,4 @@ jQuery(async () => {
     console.log('[RingOurLuv] settings:', extension_settings[extensionName]);
 });
 import { extension_settings, getContext, saveSettingsDebounced } from '../../../extensions.js';
+import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
