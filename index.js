@@ -1,12 +1,8 @@
-// ============================================================
-// IMPORTS — 路径已按参考插件校正
-// ============================================================
-import { saveSettingsDebounced, eventSource, event_types } from '../../../../script.js';
-import { extension_settings, getContext } from '../../../extensions.js';
-import { getPresetManager } from '../../../preset-manager.js';
-import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
+import { extension_settings, saveSettingsDebounced, getContext } from '../../../extensions.js';
+import { executeSlashCommandsWithOptions } from '../../../../slash-commands.js';
+import { getPresetManager } from '../../../../script.js';
 
-const extensionName = 'Ring_Our_Luv';
+const extensionName = 'RingOurLuv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 // ============================================================
@@ -21,7 +17,7 @@ const Storage = (() => {
                     presetName: '',
                     autoInject: true,
                     maxInjectCount: 3,
-                    summaryPrompt: '请将以下对话片段总结为一条简短的记忆，保留关键情感和事件：\n{{context}}'
+                    summaryPrompt: '' // 空=使用AIService中的默认prompt
                 }
             };
             saveSettingsDebounced();
@@ -39,6 +35,7 @@ const Storage = (() => {
 
     function addMemory(memoryData) {
         const settings = extension_settings[extensionName];
+        const now = new Date().toISOString();
         const newMemory = {
             id: generateId(),
             title: memoryData.title || '未命名记忆',
@@ -46,31 +43,43 @@ const Storage = (() => {
             tags: memoryData.tags || [],
             mood: memoryData.mood || '',
             content: memoryData.content || '',
+            letter: memoryData.letter || '',
             versions: [
                 {
+                    letter: memoryData.letter || '',
                     content: memoryData.content || '',
-                    timestamp: new Date().toISOString(),
+                    title: memoryData.title || '未命名记忆',
+                    mood: memoryData.mood || '',
+                    triggers: memoryData.triggers || [],
+                    timestamp: now,
                     type: 'original'
                 }
             ],
             enabled: true,
-            createdAt: new Date().toISOString()
+            createdAt: now
         };
         settings.memories.push(newMemory);
         saveSettingsDebounced();
         return newMemory;
     }
 
-    function updateMemory(id, updates) {
+    function updateMemory(id, updates, skipVersion = false) {
         const settings = extension_settings[extensionName];
         const index = settings.memories.findIndex(m => m.id === id);
         if (index === -1) return null;
 
         const memory = settings.memories[index];
 
-        if (updates.content && updates.content !== memory.content) {
+        if (!skipVersion && (
+            (updates.content && updates.content !== memory.content) ||
+            (updates.letter && updates.letter !== memory.letter)
+        )) {
             memory.versions.push({
-                content: updates.content,
+                letter: updates.letter || memory.letter,
+                content: updates.content || memory.content,
+                title: updates.title || memory.title,
+                mood: updates.mood || memory.mood,
+                triggers: updates.triggers || memory.triggers,
                 timestamp: new Date().toISOString(),
                 type: 'manual_edit'
             });
@@ -88,17 +97,27 @@ const Storage = (() => {
         saveSettingsDebounced();
     }
 
-    function addRewriteVersion(id, newContent) {
+    function addRewriteVersion(id, letter, content, entryData = {}) {
         const settings = extension_settings[extensionName];
         const memory = settings.memories.find(m => m.id === id);
         if (!memory) return null;
 
         memory.versions.push({
-            content: newContent,
+            letter: letter,
+            content: content,
+            title: entryData.title || memory.title,
+            mood: entryData.mood || memory.mood,
+            triggers: entryData.triggers || memory.triggers,
             timestamp: new Date().toISOString(),
             type: 'ai_rewrite'
         });
-        memory.content = newContent;
+
+        memory.letter = letter;
+        memory.content = content;
+        if (entryData.title) memory.title = entryData.title;
+        if (entryData.mood) memory.mood = entryData.mood;
+        if (entryData.triggers?.length) memory.triggers = entryData.triggers;
+
         saveSettingsDebounced();
         return memory;
     }
@@ -108,7 +127,13 @@ const Storage = (() => {
         const memory = settings.memories.find(m => m.id === id);
         if (!memory || !memory.versions[versionIndex]) return null;
 
-        memory.content = memory.versions[versionIndex].content;
+        const v = memory.versions[versionIndex];
+        memory.letter = v.letter || '';
+        memory.content = v.content || '';
+        if (v.title) memory.title = v.title;
+        if (v.mood) memory.mood = v.mood;
+        if (v.triggers) memory.triggers = v.triggers;
+
         saveSettingsDebounced();
         return memory;
     }
@@ -124,33 +149,24 @@ const Storage = (() => {
     }
 
     return {
-        initSettings,
-        getMemories,
-        addMemory,
-        updateMemory,
-        deleteMemory,
-        addRewriteVersion,
-        rollbackVersion,
-        getConfig,
-        updateConfig
+        initSettings, getMemories, addMemory, updateMemory,
+        deleteMemory, addRewriteVersion, rollbackVersion,
+        getConfig, updateConfig
     };
 })();
 
 // ============================================================
-// MODULE: Trigger
+// MODULE: Trigger （无变动）
 // ============================================================
 const Trigger = (() => {
     function detectTriggers(messageText) {
         const memories = Storage.getMemories();
         const matched = [];
-
         for (const memory of memories) {
             if (!memory.enabled) continue;
-
             for (const trigger of memory.triggers) {
                 if (!trigger) continue;
                 let isMatch = false;
-
                 if (trigger.startsWith('/') && trigger.endsWith('/')) {
                     try {
                         const regex = new RegExp(trigger.slice(1, -1), 'i');
@@ -161,11 +177,7 @@ const Trigger = (() => {
                 } else {
                     isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
                 }
-
-                if (isMatch) {
-                    matched.push(memory);
-                    break;
-                }
+                if (isMatch) { matched.push(memory); break; }
             }
         }
         return matched;
@@ -173,13 +185,11 @@ const Trigger = (() => {
 
     function selectForInjection(matchedMemories) {
         const config = Storage.getConfig();
-        const maxCount = config.maxInjectCount || 3;
-        return matchedMemories.slice(0, maxCount);
+        return matchedMemories.slice(0, config.maxInjectCount || 3);
     }
 
     function buildInjectionText(memories) {
         if (!memories.length) return '';
-
         let text = '[相关记忆片段]\n';
         for (const mem of memories) {
             text += `【${mem.title}】`;
@@ -190,51 +200,40 @@ const Trigger = (() => {
     }
 
     function setupTriggerListener(onTriggered) {
+        const context = getContext();
+        const eventSource = context.eventSource;
+        if (!eventSource) return;
         const handler = (msgIndex) => {
             const config = Storage.getConfig();
             if (!config.autoInject) return;
-
-            const context = getContext();
             const chat = context.chat;
             if (!chat || !chat[msgIndex]) return;
-
-            const message = chat[msgIndex];
-            const matched = detectTriggers(message.mes);
-
+            const matched = detectTriggers(chat[msgIndex].mes);
             if (matched.length > 0) {
                 const selected = selectForInjection(matched);
                 const injectionText = buildInjectionText(selected);
-                if (onTriggered) {
-                    onTriggered(selected, injectionText);
-                }
+                if (onTriggered) onTriggered(selected, injectionText);
             }
         };
-
-        eventSource.on(event_types.MESSAGE_RECEIVED, handler);
-        eventSource.on(event_types.MESSAGE_SENT, handler);
+        eventSource.on('message_received', handler);
+        eventSource.on('message_sent', handler);
     }
 
     function scanRecentMessages(count = 5) {
         const context = getContext();
         const chat = context.chat || [];
         const recent = chat.slice(-count);
-
         const allMatched = new Map();
         for (const msg of recent) {
             const matched = detectTriggers(msg.mes || '');
-            for (const mem of matched) {
-                allMatched.set(mem.id, mem);
-            }
+            for (const mem of matched) allMatched.set(mem.id, mem);
         }
         return Array.from(allMatched.values());
     }
 
     return {
-        detectTriggers,
-        selectForInjection,
-        buildInjectionText,
-        setupTriggerListener,
-        scanRecentMessages
+        detectTriggers, selectForInjection, buildInjectionText,
+        setupTriggerListener, scanRecentMessages
     };
 })();
 
@@ -242,101 +241,147 @@ const Trigger = (() => {
 // MODULE: AIService
 // ============================================================
 const AIService = (() => {
+    const DEFAULT_MEMORY_PROMPT = `你是一位正在写信给挚友的人。以下是你们最近的一段对话。请你以第一人称回顾这段对话，写一封短信。
+
+## 写信要求：
+- 用"你"称呼对方，用"我"称呼自己
+- 不要像在做总结。像在深夜翻到聊天记录之后忍不住写下来的那种
+- 保留具体画面：她说了什么原话、她当时在做什么、你注意到了什么细节
+- 如果对话中有让你在意的瞬间，在那里多停一会儿
+- 字数200-500字。不用面面俱到，挑你最想记住的部分写
+- 写完信之后，另外附上一份简短的索引条目
+
+## 输出格式：
+<letter>
+（信件正文。第一人称。自然地写）
+</letter>
+
+<entry>
+标题：（一个短语）
+情绪：（一句话描述你写这封信时的感受）
+关键词：（3-5个，逗号分隔）
+摘要：（1-2句话的极简版本）
+</entry>
+
+## 对话片段：
+{{context}}`;
+
+    const REWRITE_PROMPT = `以下是你之前写给挚友的一封信。请重新写一个版本。保留相同的事件和细节，但可以换一种表达方式或视角。同时附上更新后的索引条目。
+
+## 输出格式：
+<letter>
+（新版本的信件正文）
+</letter>
+
+<entry>
+标题：（一个短语）
+情绪：（一句话）
+关键词：（3-5个，逗号分隔）
+摘要：（1-2句话）
+</entry>
+
+## 原信件：
+{{context}}`;
+
+    function parseAIOutput(rawText) {
+        const letterMatch = rawText.match(/<letter>([\s\S]*?)<\/letter>/);
+        const entryMatch = rawText.match(/<entry>([\s\S]*?)<\/entry>/);
+        const letter = letterMatch ? letterMatch[1].trim() : rawText.trim();
+        const entryBlock = entryMatch ? entryMatch[1].trim() : '';
+        return { letter, entry: parseEntryBlock(entryBlock) };
+    }
+
+    function parseEntryBlock(text) {
+        if (!text) return { title: '', mood: '', triggers: [], content: '' };
+        const titleMatch = text.match(/标题[：:]\s*(.+)/);
+        const moodMatch = text.match(/情绪[：:]\s*(.+)/);
+        const keywordsMatch = text.match(/关键词[：:]\s*(.+)/);
+        const summaryMatch = text.match(/摘要[：:]\s*([\s\S]+?)$/);
+        return {
+            title: titleMatch ? titleMatch[1].trim() : '',
+            mood: moodMatch ? moodMatch[1].trim() : '',
+            triggers: keywordsMatch
+                ? keywordsMatch[1].split(/[,，、]/).map(s => s.trim()).filter(Boolean)
+                : [],
+            content: summaryMatch ? summaryMatch[1].trim() : ''
+        };
+    }
+
     async function switchPreset(presetName) {
         if (!presetName) return false;
         try {
             const pm = getPresetManager();
-            if (pm) {
-                await pm.selectPreset(presetName);
-                return true;
-            }
-        } catch (e) {
-            console.error('[RingOurLuv] 切换预设失败:', e);
-        }
+            if (pm) { await pm.selectPreset(presetName); return true; }
+        } catch (e) { console.error('[RingOurLuv] 切换预设失败:', e); }
         return false;
     }
 
     function getCurrentPresetName() {
-        try {
-            const pm = getPresetManager();
-            return pm?.getSelectedPreset?.() || '';
-        } catch (e) {
-            return '';
-        }
+        try { return getPresetManager()?.getSelectedPreset?.() || ''; }
+        catch (e) { return ''; }
     }
 
     function getAvailablePresets() {
-        try {
-            const pm = getPresetManager();
-            return pm?.getPresets?.() || [];
-        } catch (e) {
-            return [];
-        }
+        try { return getPresetManager()?.getPresets?.() || []; }
+        catch (e) { return []; }
     }
 
     async function generateWithPreset(prompt) {
         const config = Storage.getConfig();
         const targetPreset = config.presetName;
         let originalPreset = '';
-
         try {
             if (targetPreset) {
                 originalPreset = getCurrentPresetName();
                 await switchPreset(targetPreset);
             }
-
             const result = await executeSlashCommandsWithOptions('/gen ' + prompt, {
                 handleExecutionErrors: true,
                 handleParserErrors: true
             });
-
             return result?.pipe || '';
         } catch (e) {
             console.error('[RingOurLuv] 生成失败:', e);
             return '';
         } finally {
-            if (originalPreset && targetPreset) {
-                await switchPreset(originalPreset);
-            }
+            if (originalPreset && targetPreset) await switchPreset(originalPreset);
         }
     }
 
     async function rewriteMemory(memoryId, memory) {
-        const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || '请重新总结以下记忆内容，使其更精炼：\n{{context}}')
-            .replace('{{context}}', memory.content);
-
-        const newContent = await generateWithPreset(prompt);
-        if (!newContent) return null;
-
-        return Storage.addRewriteVersion(memoryId, newContent.trim());
+        const source = memory.letter || memory.content;
+        const prompt = REWRITE_PROMPT.replace('{{context}}', source);
+        const raw = await generateWithPreset(prompt);
+        if (!raw) return null;
+        const parsed = parseAIOutput(raw);
+        if (!parsed.letter) return null;
+        return Storage.addRewriteVersion(
+            memoryId, parsed.letter,
+            parsed.entry.content || memory.content,
+            parsed.entry
+        );
     }
 
     async function generateMemoryFromContext(startIndex, endIndex) {
         const context = getContext();
         const chat = context.chat || [];
-
         const slice = chat.slice(startIndex, endIndex + 1);
         const contextText = slice.map(msg => {
             const role = msg.is_user ? 'User' : 'Char';
             return `${role}: ${msg.mes}`;
         }).join('\n');
-
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || '请将以下对话片段总结为一条简短的记忆：\n{{context}}')
+        const prompt = (config.summaryPrompt || DEFAULT_MEMORY_PROMPT)
             .replace('{{context}}', contextText);
-
-        const result = await generateWithPreset(prompt);
-        return result?.trim() || '';
+        const raw = await generateWithPreset(prompt);
+        if (!raw) return null;
+        return parseAIOutput(raw);
     }
 
     return {
-        switchPreset,
-        getCurrentPresetName,
-        getAvailablePresets,
-        generateWithPreset,
-        rewriteMemory,
-        generateMemoryFromContext
+        switchPreset, getCurrentPresetName, getAvailablePresets,
+        generateWithPreset, rewriteMemory, generateMemoryFromContext,
+        parseAIOutput, parseEntryBlock
     };
 })();
 
@@ -350,17 +395,18 @@ const UIController = (() => {
         bindConfigPanel();
         bindMemoryList();
         bindEditorPanel();
+        bindLetterPanel();
         bindMobileNav();
         renderMemoryList();
         renderPresetOptions();
     }
 
+    // ---- Config Panel ----
     function bindConfigPanel() {
         const autoInjectToggle = document.getElementById('rol-auto-inject');
         const maxCountInput = document.getElementById('rol-max-inject');
         const presetSelect = document.getElementById('rol-preset-select');
         const summaryPromptArea = document.getElementById('rol-summary-prompt');
-
         const config = Storage.getConfig();
 
         if (autoInjectToggle) {
@@ -369,21 +415,18 @@ const UIController = (() => {
                 Storage.updateConfig({ autoInject: autoInjectToggle.checked });
             });
         }
-
         if (maxCountInput) {
             maxCountInput.value = config.maxInjectCount || 3;
             maxCountInput.addEventListener('input', () => {
                 Storage.updateConfig({ maxInjectCount: parseInt(maxCountInput.value) || 3 });
             });
         }
-
         if (presetSelect) {
             presetSelect.value = config.presetName || '';
             presetSelect.addEventListener('change', () => {
                 Storage.updateConfig({ presetName: presetSelect.value });
             });
         }
-
         if (summaryPromptArea) {
             summaryPromptArea.value = config.summaryPrompt || '';
             summaryPromptArea.addEventListener('input', () => {
@@ -395,10 +438,8 @@ const UIController = (() => {
     function renderPresetOptions() {
         const presetSelect = document.getElementById('rol-preset-select');
         if (!presetSelect) return;
-
         const presets = AIService.getAvailablePresets();
         const config = Storage.getConfig();
-
         presetSelect.innerHTML = '<option value="">（使用当前预设）</option>';
         for (const preset of presets) {
             const name = typeof preset === 'string' ? preset : preset.name;
@@ -410,29 +451,22 @@ const UIController = (() => {
         }
     }
 
+    // ---- Memory List ----
     function bindMemoryList() {
         const addBtn = document.getElementById('rol-add-memory');
         const searchInput = document.getElementById('rol-search');
         const scanBtn = document.getElementById('rol-scan-recent');
 
-        if (addBtn) {
-            addBtn.addEventListener('click', () => openEditor(null));
-        }
-
+        if (addBtn) addBtn.addEventListener('click', () => openEditor(null));
         if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                renderMemoryList(searchInput.value);
-            });
+            searchInput.addEventListener('input', () => renderMemoryList(searchInput.value));
         }
-
         if (scanBtn) {
             scanBtn.addEventListener('click', () => {
                 const matched = Trigger.scanRecentMessages(10);
-                if (matched.length) {
-                    showToast(`检测到 ${matched.length} 条匹配记忆`);
-                } else {
-                    showToast('最近消息中未匹配到触发词');
-                }
+                showToast(matched.length
+                    ? `检测到 ${matched.length} 条匹配记忆`
+                    : '最近消息中未匹配到触发词');
             });
         }
     }
@@ -440,18 +474,19 @@ const UIController = (() => {
     function renderMemoryList(filter = '') {
         const container = document.getElementById('rol-memory-list');
         if (!container) return;
-
         const memories = Storage.getMemories();
-        const filtered = filter
+        const fl = (filter || '').toLowerCase();
+        const filtered = fl
             ? memories.filter(m =>
-                m.title.toLowerCase().includes(filter.toLowerCase()) ||
-                m.tags.some(t => t.toLowerCase().includes(filter.toLowerCase())) ||
-                m.triggers.some(t => t.toLowerCase().includes(filter.toLowerCase()))
+                m.title.toLowerCase().includes(fl) ||
+                m.tags.some(t => t.toLowerCase().includes(fl)) ||
+                m.triggers.some(t => t.toLowerCase().includes(fl)) ||
+                (m.content || '').toLowerCase().includes(fl) ||
+                (m.letter || '').toLowerCase().includes(fl)
             )
             : memories;
 
         container.innerHTML = '';
-
         if (!filtered.length) {
             container.innerHTML = '<div class="rol-empty">还没有记忆条目～</div>';
             return;
@@ -470,8 +505,9 @@ const UIController = (() => {
                     </label>
                 </div>
                 <div class="rol-card-triggers">${mem.triggers.map(t => `<span class="rol-tag">${escapeHtml(t)}</span>`).join('')}</div>
-                <div class="rol-card-preview">${escapeHtml(mem.content.slice(0, 80))}${mem.content.length > 80 ? '...' : ''}</div>
+                <div class="rol-card-preview">${escapeHtml((mem.content || '').slice(0, 80))}${(mem.content || '').length > 80 ? '...' : ''}</div>
                 <div class="rol-card-actions">
+                    ${mem.letter ? '<button class="rol-btn-letter" title="查看信件">💌</button>' : ''}
                     <button class="rol-btn-edit" title="编辑">✏️</button>
                     <button class="rol-btn-rewrite" title="AI重写">🔄</button>
                     <button class="rol-btn-delete" title="删除">🗑️</button>
@@ -480,44 +516,136 @@ const UIController = (() => {
             `;
 
             card.querySelector('.rol-mem-toggle').addEventListener('change', (e) => {
-                Storage.updateMemory(mem.id, { enabled: e.target.checked });
+                e.stopPropagation();
+                Storage.updateMemory(mem.id, { enabled: e.target.checked }, true);
                 card.classList.toggle('rol-disabled', !e.target.checked);
             });
 
-            card.querySelector('.rol-btn-edit').addEventListener('click', () => openEditor(mem.id));
-
-            card.querySelector('.rol-btn-rewrite').addEventListener('click', async () => {
+            const letterBtn = card.querySelector('.rol-btn-letter');
+            if (letterBtn) {
+                letterBtn.addEventListener('click', (e) => { e.stopPropagation(); openLetterView(mem.id); });
+            }
+            card.querySelector('.rol-btn-edit').addEventListener('click', (e) => { e.stopPropagation(); openEditor(mem.id); });
+            card.querySelector('.rol-btn-rewrite').addEventListener('click', async (e) => {
+                e.stopPropagation();
                 showToast('正在重写...');
                 const result = await AIService.rewriteMemory(mem.id, mem);
-                if (result) {
-                    showToast('重写完成！');
-                    renderMemoryList(filter);
-                } else {
-                    showToast('重写失败 :(');
-                }
+                if (result) { showToast('重写完成！'); renderMemoryList(filter); }
+                else { showToast('重写失败 :('); }
+            });
+            card.querySelector('.rol-btn-delete').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('确定删除这条记忆？')) { Storage.deleteMemory(mem.id); renderMemoryList(filter); }
             });
 
-            card.querySelector('.rol-btn-delete').addEventListener('click', () => {
-                if (confirm('确定删除这条记忆？')) {
-                    Storage.deleteMemory(mem.id);
-                    renderMemoryList(filter);
-                }
+            card.addEventListener('click', () => {
+                if (mem.letter) openLetterView(mem.id);
+                else openEditor(mem.id);
             });
 
             container.appendChild(card);
         }
     }
 
+    // ---- Letter View (新增) ----
+    function bindLetterPanel() {
+        const panel = document.getElementById('rol-letter-panel');
+        const closeBtn = document.getElementById('rol-letter-close');
+        const versionSelect = document.getElementById('rol-letter-version');
+        const editBtn = document.getElementById('rol-letter-edit');
+        const rewriteBtn = document.getElementById('rol-letter-rewrite');
+
+        if (closeBtn) closeBtn.addEventListener('click', closeLetterView);
+        if (panel) {
+            panel.addEventListener('click', (e) => { if (e.target === panel) closeLetterView(); });
+        }
+
+        if (versionSelect) {
+            versionSelect.addEventListener('change', () => {
+                const memId = panel?.dataset.memId;
+                const idx = parseInt(versionSelect.value);
+                if (!memId || isNaN(idx)) return;
+                const mem = Storage.getMemories().find(m => m.id === memId);
+                if (mem && mem.versions[idx]) {
+                    document.getElementById('rol-letter-body').textContent =
+                        mem.versions[idx].letter || '（此版本无信件内容）';
+                    document.getElementById('rol-letter-title').textContent =
+                        mem.versions[idx].title || mem.title;
+                    const moodEl = document.getElementById('rol-letter-mood');
+                    if (moodEl) moodEl.textContent = mem.versions[idx].mood || '';
+                }
+            });
+        }
+
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                const memId = panel?.dataset.memId;
+                closeLetterView();
+                if (memId) openEditor(memId);
+            });
+        }
+
+        if (rewriteBtn) {
+            rewriteBtn.addEventListener('click', async () => {
+                const memId = panel?.dataset.memId;
+                const mem = Storage.getMemories().find(m => m.id === memId);
+                if (!mem) return;
+                showToast('正在重写...');
+                const result = await AIService.rewriteMemory(memId, mem);
+                if (result) {
+                    showToast('重写完成！');
+                    openLetterView(memId);
+                    renderMemoryList();
+                } else { showToast('重写失败 :('); }
+            });
+        }
+    }
+
+    function openLetterView(memId) {
+        const mem = Storage.getMemories().find(m => m.id === memId);
+        if (!mem) return;
+        const panel = document.getElementById('rol-letter-panel');
+        if (!panel) return;
+
+        panel.dataset.memId = memId;
+        panel.classList.add('rol-active');
+
+        document.getElementById('rol-letter-title').textContent = mem.title;
+        document.getElementById('rol-letter-body').textContent = mem.letter || mem.content || '（无内容）';
+        const moodEl = document.getElementById('rol-letter-mood');
+        if (moodEl) moodEl.textContent = mem.mood || '';
+
+        const vs = document.getElementById('rol-letter-version');
+        if (vs) {
+            vs.innerHTML = '';
+            const typeLabels = { original: '原始', manual_edit: '手动编辑', ai_rewrite: 'AI重写' };
+            mem.versions.forEach((v, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${typeLabels[v.type] || v.type} · ${new Date(v.timestamp).toLocaleString()}`;
+                vs.appendChild(opt);
+            });
+            vs.value = mem.versions.length - 1;
+            vs.parentElement.style.display = mem.versions.length > 1 ? '' : 'none';
+        }
+    }
+
+    function closeLetterView() {
+        const panel = document.getElementById('rol-letter-panel');
+        if (panel) { panel.classList.remove('rol-active'); panel.dataset.memId = ''; }
+    }
+
+    // ---- Editor Panel ----
     function bindEditorPanel() {
         const saveBtn = document.getElementById('rol-editor-save');
         const cancelBtn = document.getElementById('rol-editor-cancel');
         const versionSelect = document.getElementById('rol-version-select');
+        const editorPanel = document.getElementById('rol-editor-panel');
 
-        if (saveBtn) {
-            saveBtn.addEventListener('click', saveEditor);
-        }
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', closeEditor);
+        if (saveBtn) saveBtn.addEventListener('click', saveEditor);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeEditor);
+        if (editorPanel) {
+            editorPanel.addEventListener('click', (e) => { if (e.target === editorPanel) closeEditor(); });
         }
         if (versionSelect) {
             versionSelect.addEventListener('change', () => {
@@ -525,7 +653,8 @@ const UIController = (() => {
                 if (isNaN(idx) || !currentEditId) return;
                 const mem = Storage.getMemories().find(m => m.id === currentEditId);
                 if (mem && mem.versions[idx]) {
-                    document.getElementById('rol-editor-content').value = mem.versions[idx].content;
+                    document.getElementById('rol-editor-content').value = mem.versions[idx].content || '';
+                    document.getElementById('rol-editor-letter').value = mem.versions[idx].letter || '';
                 }
             });
         }
@@ -535,30 +664,29 @@ const UIController = (() => {
         currentEditId = memId;
         const panel = document.getElementById('rol-editor-panel');
         if (!panel) return;
-
         panel.classList.add('rol-active');
 
         if (memId) {
             const mem = Storage.getMemories().find(m => m.id === memId);
             if (!mem) return;
-
             document.getElementById('rol-editor-title').value = mem.title;
             document.getElementById('rol-editor-triggers').value = mem.triggers.join(', ');
             document.getElementById('rol-editor-tags').value = mem.tags.join(', ');
             document.getElementById('rol-editor-mood').value = mem.mood || '';
-            document.getElementById('rol-editor-content').value = mem.content;
+            document.getElementById('rol-editor-content').value = mem.content || '';
+            document.getElementById('rol-editor-letter').value = mem.letter || '';
 
-            const versionSelect = document.getElementById('rol-version-select');
-            if (versionSelect) {
-                versionSelect.innerHTML = '';
+            const vs = document.getElementById('rol-version-select');
+            if (vs) {
+                vs.innerHTML = '';
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
                     opt.textContent = `${v.type} - ${new Date(v.timestamp).toLocaleString()}`;
-                    versionSelect.appendChild(opt);
+                    vs.appendChild(opt);
                 });
-                versionSelect.value = mem.versions.length - 1;
-                versionSelect.parentElement.style.display = '';
+                vs.value = mem.versions.length - 1;
+                vs.parentElement.style.display = '';
             }
         } else {
             document.getElementById('rol-editor-title').value = '';
@@ -566,8 +694,9 @@ const UIController = (() => {
             document.getElementById('rol-editor-tags').value = '';
             document.getElementById('rol-editor-mood').value = '';
             document.getElementById('rol-editor-content').value = '';
-            const versionSelect = document.getElementById('rol-version-select');
-            if (versionSelect) versionSelect.parentElement.style.display = 'none';
+            document.getElementById('rol-editor-letter').value = '';
+            const vs = document.getElementById('rol-version-select');
+            if (vs) vs.parentElement.style.display = 'none';
         }
     }
 
@@ -577,21 +706,19 @@ const UIController = (() => {
         const tags = document.getElementById('rol-editor-tags').value.split(',').map(s => s.trim()).filter(Boolean);
         const mood = document.getElementById('rol-editor-mood').value.trim();
         const content = document.getElementById('rol-editor-content').value.trim();
+        const letter = document.getElementById('rol-editor-letter').value.trim();
 
-        if (!title || !content) {
-            showToast('标题和内容不能为空！');
-            return;
-        }
+        if (!title) { showToast('标题不能为空！'); return; }
 
-        if (currentEditId) {
-            Storage.updateMemory(currentEditId, { title, triggers, tags, mood, content });
+        const isEdit = !!currentEditId;
+        if (isEdit) {
+            Storage.updateMemory(currentEditId, { title, triggers, tags, mood, content, letter });
         } else {
-            Storage.addMemory({ title, triggers, tags, mood, content });
+            Storage.addMemory({ title, triggers, tags, mood, content, letter });
         }
-
         closeEditor();
         renderMemoryList();
-        showToast(currentEditId ? '已更新！' : '已添加！');
+        showToast(isEdit ? '已更新！' : '已添加！');
     }
 
     function closeEditor() {
@@ -600,13 +727,13 @@ const UIController = (() => {
         if (panel) panel.classList.remove('rol-active');
     }
 
+    // ---- Mobile Nav ----
     function bindMobileNav() {
         const tabs = document.querySelectorAll('.rol-tab');
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('rol-tab-active'));
                 tab.classList.add('rol-tab-active');
-
                 const target = tab.dataset.target;
                 document.querySelectorAll('.rol-panel-section').forEach(s => {
                     s.classList.toggle('rol-section-active', s.id === target);
@@ -615,13 +742,10 @@ const UIController = (() => {
         });
     }
 
+    // ---- Utils ----
     function showToast(message) {
         let toast = document.getElementById('rol-toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'rol-toast';
-            document.body.appendChild(toast);
-        }
+        if (!toast) { toast = document.createElement('div'); toast.id = 'rol-toast'; document.body.appendChild(toast); }
         toast.textContent = message;
         toast.classList.add('rol-toast-show');
         setTimeout(() => toast.classList.remove('rol-toast-show'), 2500);
@@ -633,12 +757,7 @@ const UIController = (() => {
         return div.innerHTML;
     }
 
-    return {
-        initUI,
-        renderMemoryList,
-        renderPresetOptions,
-        showToast
-    };
+    return { initUI, renderMemoryList, renderPresetOptions, showToast };
 })();
 
 // ============================================================
@@ -655,51 +774,19 @@ function injectMemoryToContext(memories, injectionText) {
 
 async function loadPanel() {
     const response = await fetch(`${extensionFolderPath}/index.html`);
-    if (!response.ok) {
-        console.error('[RingOurLuv] 加载面板HTML失败:', response.status);
-        return '';
-    }
+    if (!response.ok) return '';
     return await response.text();
 }
 
 jQuery(async () => {
     Storage.initSettings();
-
-    // 延迟挂载，等ST的UI容器渲染完
-    const waitForContainer = () => {
-        return new Promise((resolve) => {
-            const check = () => {
-                // ST的扩展设置区域
-                const container = document.getElementById('extensions_settings2')
-                    || document.getElementById('extensions_settings')
-                    || document.querySelector('.extensions_block');
-                if (container) {
-                    resolve(container);
-                } else {
-                    setTimeout(check, 300);
-                }
-            };
-            check();
-        });
-    };
-
     const panelHtml = await loadPanel();
-
-    if (panelHtml) {
-        const container = await waitForContainer();
-        $(container).append(panelHtml);
-        console.log('[RingOurLuv] 面板已挂载 ✅');
-        UIController.initUI();
-    } else {
-        console.error('[RingOurLuv] ⚠️ HTML加载失败，检查文件夹名！');
-        // 就算没UI也把基础功能跑起来
-    }
-
+    if (panelHtml) $('#extensions_settings2').append(panelHtml);
+    UIController.initUI();
     Trigger.setupTriggerListener(injectMemoryToContext);
-
-    eventSource.on(event_types.CHAT_CHANGED, () => {
-        UIController.renderMemoryList();
-    });
-
-    console.log('[RingOurLuv] 初始化完成 ✨');
+    const context = getContext();
+    if (context.eventSource) {
+        context.eventSource.on('chatLoaded', () => UIController.renderMemoryList());
+    }
+    console.log(`[RingOurLuv] 插件加载完成 ✨`);
 });
