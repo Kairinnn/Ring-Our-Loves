@@ -1,6 +1,7 @@
 import { extension_settings, saveSettingsDebounced, getContext } from '../../../extensions.js';
 import { executeSlashCommandsWithOptions } from '../../../../slash-commands.js';
-import { getPresetManager } from '../../../../script.js';
+import { extension_settings, saveSettingsDebounced, getContext } from '../../../extensions.js';
+import { executeSlashCommandsWithOptions } from '../../../../slash-commands.js';
 
 const extensionName = 'RingOurLuv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -283,6 +284,7 @@ const AIService = (() => {
 ## 原信件：
 {{context}}`;
 
+    // ---- 解析 ----
     function parseAIOutput(rawText) {
         const letterMatch = rawText.match(/<letter>([\s\S]*?)<\/letter>/);
         const entryMatch = rawText.match(/<entry>([\s\S]*?)<\/entry>/);
@@ -307,44 +309,86 @@ const AIService = (() => {
         };
     }
 
-    async function switchPreset(presetName) {
-        if (!presetName) return false;
-        try {
-            const pm = getPresetManager();
-            if (pm) { await pm.selectPreset(presetName); return true; }
-        } catch (e) { console.error('[RingOurLuv] 切换预设失败:', e); }
-        return false;
-    }
+    // ---- 预设：从DOM读 ----
+    const PRESET_SELECTORS = [
+        '#settings_preset_openai',   // Chat Completion (OpenAI/Claude)
+        '#settings_preset',          // Text Completion
+        '#settings_preset_novel'     // NovelAI
+    ];
 
-    function getCurrentPresetName() {
-        try { return getPresetManager()?.getSelectedPreset?.() || ''; }
-        catch (e) { return ''; }
+    function findPresetDropdown() {
+        for (const sel of PRESET_SELECTORS) {
+            const el = document.querySelector(sel);
+            // 找到一个有实际选项的下拉框就用它
+            if (el && el.options && el.options.length > 1) return el;
+        }
+        return null;
     }
 
     function getAvailablePresets() {
-        try { return getPresetManager()?.getPresets?.() || []; }
-        catch (e) { return []; }
+        const dropdown = findPresetDropdown();
+        if (!dropdown) return [];
+
+        return Array.from(dropdown.options)
+            .filter(o => o.value && o.value !== 'default' && o.value !== '')
+            .map(o => ({
+                name: o.text || o.value,
+                value: o.value
+            }));
     }
 
+    function getCurrentPresetName() {
+        const dropdown = findPresetDropdown();
+        if (dropdown && dropdown.selectedOptions && dropdown.selectedOptions.length) {
+            return dropdown.selectedOptions[0].text || dropdown.value || '';
+        }
+        return '';
+    }
+
+    // ---- 预设切换：用 /preset 命令 ----
+    async function switchPreset(presetName) {
+        if (!presetName) return false;
+        try {
+            await executeSlashCommandsWithOptions('/preset ' + presetName, {
+                handleExecutionErrors: true,
+                handleParserErrors: true
+            });
+            // 给ST一点时间完成切换
+            await new Promise(r => setTimeout(r, 300));
+            return true;
+        } catch (e) {
+            console.error('[RingOurLuv] /preset 切换失败:', e);
+            return false;
+        }
+    }
+
+    // ---- 生成 ----
     async function generateWithPreset(prompt) {
         const config = Storage.getConfig();
         const targetPreset = config.presetName;
         let originalPreset = '';
+
         try {
             if (targetPreset) {
                 originalPreset = getCurrentPresetName();
+                console.log(`[RingOurLuv] 切换预设: ${originalPreset} → ${targetPreset}`);
                 await switchPreset(targetPreset);
             }
+
             const result = await executeSlashCommandsWithOptions('/gen ' + prompt, {
                 handleExecutionErrors: true,
                 handleParserErrors: true
             });
+
             return result?.pipe || '';
         } catch (e) {
             console.error('[RingOurLuv] 生成失败:', e);
             return '';
         } finally {
-            if (originalPreset && targetPreset) await switchPreset(originalPreset);
+            if (originalPreset && targetPreset) {
+                console.log(`[RingOurLuv] 还原预设: → ${originalPreset}`);
+                await switchPreset(originalPreset);
+            }
         }
     }
 
@@ -379,7 +423,7 @@ const AIService = (() => {
     }
 
     return {
-        switchPreset, getCurrentPresetName, getAvailablePresets,
+        getAvailablePresets, getCurrentPresetName,
         generateWithPreset, rewriteMemory, generateMemoryFromContext,
         parseAIOutput, parseEntryBlock
     };
@@ -438,11 +482,25 @@ const UIController = (() => {
     function renderPresetOptions() {
         const presetSelect = document.getElementById('rol-preset-select');
         if (!presetSelect) return;
+
         const presets = AIService.getAvailablePresets();
         const config = Storage.getConfig();
+
         presetSelect.innerHTML = '<option value="">（使用当前预设）</option>';
+
+        if (!presets.length) {
+            // DOM可能还没渲染完预设下拉框，加个提示
+            const hint = document.createElement('option');
+            hint.value = '';
+            hint.textContent = '⚠ 未检测到预设，请先打开API设置';
+            hint.disabled = true;
+            presetSelect.appendChild(hint);
+            return;
+        }
+
         for (const preset of presets) {
-            const name = typeof preset === 'string' ? preset : preset.name;
+            const name = typeof preset === 'string' ? preset : (preset.name || '');
+            if (!name) continue;
             const opt = document.createElement('option');
             opt.value = name;
             opt.textContent = name;
@@ -738,6 +796,10 @@ const UIController = (() => {
                 document.querySelectorAll('.rol-panel-section').forEach(s => {
                     s.classList.toggle('rol-section-active', s.id === target);
                 });
+                // 切到设置页时重新拉预设列表（此时DOM大概率已经有了）
+                if (target === 'rol-section-config') {
+                    renderPresetOptions();
+                }
             });
         });
     }
