@@ -1,4 +1,4 @@
-/* ========== Ring Our Luv ========== */
+/* ========== 🩷 Ring Our Luv 🩷 ========== */
 
 .rol-container {
     font-family: inherit;
@@ -6,12 +6,12 @@
     max-width: 100%;
 }
 
-/* [FIX-1] Drawer Open Button in sidebar */
+/* 🩷 侧边栏中的打开按钮 */
 .rol-btn-drawer-open {
     width: 100%;
     padding: 12px;
     font-size: 16px;
-    background: linear-gradient(135deg, #e8a0b4, #a78bfa);
+    background: linear-gradient(135deg, #ffb3df, #D87757);
     border: none;
     border-radius: 8px;
     color: #fff;
@@ -21,7 +21,7 @@
 }
 .rol-btn-drawer-open:hover { opacity: 0.85; }
 
-/* [FIX-1] Drawer Overlay */
+/* 🩷 侧边栏遮罩层 */
 .rol-drawer-overlay {
     display: none;
     position: fixed;
@@ -33,7 +33,7 @@
     display: block;
 }
 
-/* [FIX-1] Drawer Panel - slide from right */
+/* 🩷 侧边栏面板 - 从右侧滑出 */
 .rol-drawer-panel {
     position: fixed;
     top: 0;
@@ -53,7 +53,7 @@
     transform: translateX(0);
 }
 
-/* [FIX-1] Drawer Header */
+/* 🩷 侧边栏标题 */
 .rol-drawer-header {
     display: flex;
     justify-content: space-between;
@@ -76,7 +76,7 @@
     background: var(--SmartThemeBlurTintColor, #333) !important;
 }
 
-/* Tab */
+/* 🩷 侧边栏Tab */
 .rol-tabs {
     display: flex;
     gap: 4px;
@@ -104,7 +104,7 @@
 .rol-panel-section { display: none; }
 .rol-section-active { display: block; }
 
-/* Toolbar */
+/* 🩷 侧边栏 - 工具栏 */
 .rol-toolbar {
     display: flex;
     gap: 8px;
@@ -112,7 +112,7 @@
     flex-wrap: wrap;
 }
 
-/* Input */
+/* 🩷输入 */
 .rol-input {
     width: 100%;
     padding: 8px 10px;
@@ -125,7 +125,7 @@
 }
 .rol-input:focus {
     outline: none;
-    border-color: var(--SmartThemeQuoteColor, #7b8cde);
+    border-color: var(--SmartThemeQuoteColor, #D87757);
 }
 .rol-input-sm { width: 70px; }
 .rol-textarea {
@@ -135,7 +135,7 @@
 }
 .rol-textarea-lg { min-height: 150px; }
 
-/* Button */
+/* 🩷 侧边栏按钮 */
 .rol-btn {
     padding: 8px 14px;
     border: 1px solid var(--SmartThemeBorderColor, #555);
@@ -149,8 +149,8 @@
 }
 .rol-btn:active { opacity: 0.7; }
 .rol-btn-primary {
-    background: var(--SmartThemeQuoteColor, #7b8cde);
-    border-color: var(--SmartThemeQuoteColor, #7b8cde);
+    background: var(--SmartThemeQuoteColor, #D87757);
+    border-color: var(--SmartThemeQuoteColor, #D87757);
     color: #fff;
 }
 .rol-btn-save {
@@ -160,7 +160,7 @@
     font-weight: 600;
 }
 .rol-btn-save:hover { background: #d4899f; }
-/* [FIX-6] 重写按钮（橙色次按钮） */
+/* 🩷 重写按钮（橙色次按钮） */
 .rol-btn-rewrite {
     background: #e8a060;
     border-color: #e8a060;
@@ -176,20 +176,20 @@
 }
 .rol-btn-cancel:hover { color: #ccc; }
 .rol-btn-ai {
-    background: linear-gradient(135deg, #a78bfa, #7b8cde);
-    border-color: #a78bfa;
+    background: linear-gradient(135deg, #ffb3df, #D87757);
+    border-color: #ffb3df;
     color: #fff;
 }
 .rol-btn-icon {
     background: transparent;
     border: none;
     font-size: 18px;
-    color: #8a7b6a;
+    color: #ffcbef;
     cursor: pointer;
     padding: 2px 6px;
 }
 
-/* Memory Card */
+/* 🩷 果实库 */
 .rol-memory-list {
     display: flex;
     flex-direction: column;
@@ -239,7 +239,7 @@
 }
 .rol-author-claude {
     background: rgba(255, 160, 60, 0.2);
-    color: #f0a030;
+    color: #D87757;
 }
 .rol-author-kairin {
     background: rgba(255, 130, 170, 0.2);
@@ -267,7 +267,7 @@
     line-height: 1.5;
 }
 
-/* Toggle */
+/* 🩷 切换 */
 .rol-toggle-wrap {
     position: relative;
     width: 36px;
@@ -292,10 +292,10 @@
     border-radius: 50%;
     transition: transform 0.2s;
 }
-.rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #7b8cde); }
+.rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #D87757); }
 .rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
 
-/* Tags */
+/* 🩷 标签 */
 .rol-card-triggers {
     display: flex;
     flex-wrap: wrap;
@@ -304,10 +304,10 @@
 }
 .rol-tag {
     padding: 2px 8px;
-    background: rgba(123, 140, 222, 0.2);
+    background: rgba(216, 119, 87, 0.2);
     border-radius: 10px;
     font-size: 11px;
-    color: var(--SmartThemeQuoteColor, #aab);
+    color: var(--SmartThemeQuoteColor, #D87757);
 }
 .rol-card-preview {
     font-size: 12px;
@@ -340,7 +340,7 @@
     color: #f0c060;
 }
 
-/* Editor Panel */
+/* 🩷 编辑面板 */
 .rol-editor-panel {
     display: none;
     position: fixed;
@@ -379,7 +379,7 @@
     margin-top: 16px;
 }
 
-/* Letter View Panel */
+/* 🩷 爱意展开查看面板 */
 .rol-letter-panel {
     display: none;
     position: fixed;
@@ -452,7 +452,7 @@
 }
 .rol-letter-actions .rol-btn:active { opacity: 0.7; }
 
-/* Config */
+/* 🩷 设置 */
 .rol-config-group { margin-bottom: 14px; }
 .rol-config-group .rol-label {
     display: flex;
@@ -463,13 +463,13 @@
     color: var(--SmartThemeBodyColor, #ccc);
 }
 
-/* Toast */
+/* 🩷 提示 */
 #rol-toast {
     position: fixed;
     bottom: 80px;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: var(--SmartThemeQuoteColor, #7b8cde);
+    background: var(--SmartThemeQuoteColor, #D87757);
     color: #fff;
     padding: 8px 18px;
     border-radius: 20px;
@@ -484,7 +484,7 @@
     transform: translateX(-50%) translateY(0);
 }
 
-/* Form Row (side by side) */
+/* 🩷 表单行（并排） */
 .rol-form-row {
     display: flex;
     gap: 12px;
@@ -492,7 +492,7 @@
 }
 .rol-form-half { flex: 1; margin-bottom: 0; }
 
-/* AI Source Panel */
+/* 🩷 AI 源面板 */
 .rol-ai-source-panel {
     display: none;
     position: fixed;
@@ -534,8 +534,8 @@
     transition: border-color 0.2s, background 0.2s;
 }
 .rol-ai-source-btn:hover {
-    border-color: #a78bfa;
-    background: rgba(167, 139, 250, 0.08);
+    border-color: #D87757;
+    background: rgba(216, 119, 87, 0.08);
 }
 .rol-ai-source-icon { font-size: 20px; margin-bottom: 4px; }
 .rol-ai-source-label { font-size: 14px; font-weight: 600; color: var(--SmartThemeBodyColor, #eee); }
@@ -553,7 +553,7 @@
 .rol-ai-spinner {
     width: 18px; height: 18px;
     border: 2px solid rgba(167, 139, 250, 0.3);
-    border-top-color: #a78bfa;
+    border-top-color: #ffb3df;
     border-radius: 50%;
     animation: rol-spin 0.8s linear infinite;
 }
@@ -566,7 +566,7 @@
     font-size: 13px;
 }
 
-/* [FIX-2] Floor Range Selector */
+/* 🩷 AI 聊天区域 */
 .rol-ai-chat-section {
     padding: 14px 16px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
@@ -600,7 +600,7 @@
     width: 100%;
     margin-top: 6px;
 }
-/* [FIX-4] Checkbox label for hidden messages */
+/* 🩷 复选框标签 */
 .rol-checkbox-label {
     display: flex;
     align-items: center;
@@ -615,7 +615,7 @@
     margin: 0;
 }
 
-/* ========== Mobile ========== */
+/* ========== 🩷 移动端样式 🩷 ========== */
 @media (max-width: 768px) {
     .rol-container { padding: 4px; }
     .rol-toolbar { flex-direction: column; }
@@ -624,6 +624,6 @@
     .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
     .rol-memory-list { max-height: 50vh; }
     .rol-card-actions { justify-content: flex-end; }
-    /* [FIX-1] Mobile drawer width */
+    /* 🩷 移动端侧边栏宽度 */
     .rol-drawer-panel { width: 80vw; }
 }
