@@ -34,6 +34,7 @@ const Storage = (() => {
         return 'mem_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
     }
 
+    // [FIX-5] addMemory: 确保数据正确写入并保存
     function addMemory(memoryData) {
         const settings = extension_settings[extensionName];
         const now = new Date().toISOString();
@@ -61,7 +62,9 @@ const Storage = (() => {
             created: now,
             updated: now
         };
-        settings.memories.push(newMemory);
+        settings.memories.unshift(newMemory); // [FIX-6] unshift: 新条目出现在列表顶部
+        // [FIX-5] 确保保存生效
+        console.log('[RingOurLuv][FIX-5] addMemory - 保存数据:', JSON.stringify(newMemory, null, 2));
         saveSettingsDebounced();
         return newMemory;
     }
@@ -88,6 +91,8 @@ const Storage = (() => {
         Object.assign(memory, updates);
         memory.updated = new Date().toISOString();
         settings.memories[index] = memory;
+        // [FIX-5] 日志
+        console.log('[RingOurLuv][FIX-5] updateMemory - 更新数据:', JSON.stringify(memory, null, 2));
         saveSettingsDebounced();
         return memory;
     }
@@ -157,7 +162,7 @@ const Storage = (() => {
 })();
 
 // ============================================================
-// MODULE: Trigger （无变动）
+// MODULE: Trigger
 // ============================================================
 const Trigger = (() => {
     function detectTriggers(messageText) {
@@ -293,33 +298,35 @@ const AIService = (() => {
         return { letter, entry: parseEntryBlock(entryBlock) };
     }
 
+    // [FIX-4] parseEntryBlock: 新增 tags 字段（从关键词解析）
     function parseEntryBlock(text) {
-        if (!text) return { title: '', mood: '', triggers: [], content: '' };
+        if (!text) return { title: '', mood: '', triggers: [], tags: [], content: '' };
         const titleMatch = text.match(/标题[：:]\s*(.+)/);
         const moodMatch = text.match(/情绪[：:]\s*(.+)/);
         const keywordsMatch = text.match(/关键词[：:]\s*(.+)/);
         const summaryMatch = text.match(/摘要[：:]\s*([\s\S]+?)$/);
+        const keywords = keywordsMatch
+            ? keywordsMatch[1].split(/[,，、]/).map(s => s.trim()).filter(Boolean)
+            : [];
         return {
             title: titleMatch ? titleMatch[1].trim() : '',
             mood: moodMatch ? moodMatch[1].trim() : '',
-            triggers: keywordsMatch
-                ? keywordsMatch[1].split(/[,，、]/).map(s => s.trim()).filter(Boolean)
-                : [],
+            triggers: keywords,  // 关键词同时作为触发词
+            tags: keywords,      // [FIX-4] 关键词也填入标签
             content: summaryMatch ? summaryMatch[1].trim() : ''
         };
     }
 
     // ---- 预设：从DOM读 ----
     const PRESET_SELECTORS = [
-        '#settings_preset_openai',   // Chat Completion (OpenAI/Claude)
-        '#settings_preset',          // Text Completion
-        '#settings_preset_novel'     // NovelAI
+        '#settings_preset_openai',
+        '#settings_preset',
+        '#settings_preset_novel'
     ];
 
     function findPresetDropdown() {
         for (const sel of PRESET_SELECTORS) {
             const el = document.querySelector(sel);
-            // 找到一个有实际选项的下拉框就用它
             if (el && el.options && el.options.length > 1) return el;
         }
         return null;
@@ -328,7 +335,6 @@ const AIService = (() => {
     function getAvailablePresets() {
         const dropdown = findPresetDropdown();
         if (!dropdown) return [];
-
         return Array.from(dropdown.options)
             .filter(o => o.value && o.value !== 'default' && o.value !== '')
             .map(o => ({
@@ -345,7 +351,6 @@ const AIService = (() => {
         return '';
     }
 
-    // ---- 预设切换：用 /preset 命令 ----
     async function switchPreset(presetName) {
         if (!presetName) return false;
         try {
@@ -353,7 +358,6 @@ const AIService = (() => {
                 handleExecutionErrors: true,
                 handleParserErrors: true
             });
-            // 给ST一点时间完成切换
             await new Promise(r => setTimeout(r, 300));
             return true;
         } catch (e) {
@@ -362,7 +366,6 @@ const AIService = (() => {
         }
     }
 
-    // ---- 生成 ----
     async function generateWithPreset(prompt) {
         const config = Storage.getConfig();
         const targetPreset = config.presetName;
@@ -406,20 +409,55 @@ const AIService = (() => {
         );
     }
 
-    async function generateMemoryFromContext(startIndex, endIndex) {
+    // [FIX-2] generateMemoryFromContext: 支持范围过滤 + 隐藏消息过滤
+    async function generateMemoryFromContext(options = {}) {
         const context = getContext();
         const chat = context.chat || [];
-        const slice = chat.slice(startIndex, endIndex + 1);
-        const contextText = slice.map(msg => {
+
+        // [FIX-2] 范围过滤
+        const start = options.start || 0;
+        const end = options.end === -1 || options.end === undefined ? chat.length : options.end;
+        let messages = chat.slice(start, end);
+
+        // [FIX-4] 隐藏消息过滤
+        if (!options.includeHidden) {
+            messages = messages.filter(msg => !msg.is_hidden);
+        }
+
+        // 只取 user 和 assistant 消息
+        messages = messages.filter(msg => {
+            if (msg.is_user) return true;
+            if (!msg.is_user && !msg.is_system) return true;
+            return false;
+        });
+
+        if (!messages.length) return null;
+
+        // [FIX-3] 从第一条消息读取 timestamp 用于自动填充日期
+        let autoDate = '';
+        const firstMsg = messages[0];
+        if (firstMsg && firstMsg.send_date) {
+            try {
+                const ts = new Date(firstMsg.send_date);
+                if (!isNaN(ts.getTime())) {
+                    autoDate = ts.toISOString().slice(0, 10);
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        const contextText = messages.map(msg => {
             const role = msg.is_user ? 'User' : 'Char';
             return `${role}: ${msg.mes}`;
         }).join('\n');
+
         const config = Storage.getConfig();
         const prompt = (config.summaryPrompt || DEFAULT_MEMORY_PROMPT)
             .replace('{{context}}', contextText);
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
-        return parseAIOutput(raw);
+        const parsed = parseAIOutput(raw);
+        parsed.autoDate = autoDate; // [FIX-3] 附带自动日期
+        return parsed;
     }
 
     return {
@@ -434,8 +472,10 @@ const AIService = (() => {
 // ============================================================
 const UIController = (() => {
     let currentEditId = null;
+    let lastGenerateOptions = null; // [FIX-6] 保存最后一次生成的参数，用于重写
 
     function initUI() {
+        bindDrawer();        // [FIX-1]
         bindConfigPanel();
         bindMemoryList();
         bindEditorPanel();
@@ -444,6 +484,32 @@ const UIController = (() => {
         bindMobileNav();
         renderMemoryList();
         renderPresetOptions();
+    }
+
+    // ---- [FIX-1] Drawer ----
+    function bindDrawer() {
+        const openBtn = document.getElementById('rol-open-drawer');
+        const overlay = document.getElementById('rol-drawer-overlay');
+        const closeBtn = document.getElementById('rol-drawer-close');
+
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                if (overlay) overlay.classList.add('rol-drawer-open');
+            });
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                if (overlay) overlay.classList.remove('rol-drawer-open');
+            });
+        }
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                // 点击遮罩层（面板之外）关闭
+                if (e.target === overlay) {
+                    overlay.classList.remove('rol-drawer-open');
+                }
+            });
+        }
     }
 
     // ---- Config Panel ----
@@ -490,7 +556,6 @@ const UIController = (() => {
         presetSelect.innerHTML = '<option value="">（使用当前预设）</option>';
 
         if (!presets.length) {
-            // DOM可能还没渲染完预设下拉框，加个提示
             const hint = document.createElement('option');
             hint.value = '';
             hint.textContent = '⚠ 未检测到预设，请先打开API设置';
@@ -533,7 +598,9 @@ const UIController = (() => {
     function renderMemoryList(filter = '') {
         const container = document.getElementById('rol-memory-list');
         if (!container) return;
+        // [FIX-5] 重新从 extension_settings 读取数据
         const memories = Storage.getMemories();
+        console.log('[RingOurLuv][FIX-5] renderMemoryList - 当前记忆数量:', memories.length);
         const fl = (filter || '').toLowerCase();
         const filtered = fl
             ? memories.filter(m =>
@@ -617,7 +684,7 @@ const UIController = (() => {
         }
     }
 
-    // ---- Letter View (新增) ----
+    // ---- Letter View ----
     function bindLetterPanel() {
         const panel = document.getElementById('rol-letter-panel');
         const closeBtn = document.getElementById('rol-letter-close');
@@ -711,8 +778,13 @@ const UIController = (() => {
         const cancelBtn = document.getElementById('rol-editor-cancel');
         const versionSelect = document.getElementById('rol-version-select');
         const editorPanel = document.getElementById('rol-editor-panel');
+        const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
-        if (saveBtn) saveBtn.addEventListener('click', saveEditor);
+        // [FIX-5] 确认保存按钮绑定
+        if (saveBtn) {
+            console.log('[RingOurLuv][FIX-5] 保存按钮已绑定');
+            saveBtn.addEventListener('click', saveEditor);
+        }
         if (cancelBtn) cancelBtn.addEventListener('click', closeEditor);
         if (editorPanel) {
             editorPanel.addEventListener('click', (e) => { if (e.target === editorPanel) closeEditor(); });
@@ -725,6 +797,29 @@ const UIController = (() => {
                 if (mem && mem.versions[idx]) {
                     document.getElementById('rol-editor-summary').value = mem.versions[idx].summary || '';
                     document.getElementById('rol-editor-letter').value = mem.versions[idx].letter || '';
+                }
+            });
+        }
+
+        // [FIX-6] 编辑器内的重写按钮 — 重新调用 /gen
+        if (rewriteBtn) {
+            rewriteBtn.addEventListener('click', async () => {
+                // 如果正在编辑已有记忆，执行 rewriteMemory
+                if (currentEditId) {
+                    const mem = Storage.getMemories().find(m => m.id === currentEditId);
+                    if (!mem) return;
+                    showToast('正在重写...');
+                    const result = await AIService.rewriteMemory(currentEditId, mem);
+                    if (result) { showToast('重写完成！'); openEditor(currentEditId); renderMemoryList(); }
+                    else { showToast('重写失败 :('); }
+                } else if (lastGenerateOptions) {
+                    // [FIX-6] 新建模式下重写 = 用上次参数重新生成
+                    showToast('正在重新生成...');
+                    if (lastGenerateOptions.type === 'chat') {
+                        await doAIGenerateFromChat(lastGenerateOptions.options);
+                    } else if (lastGenerateOptions.type === 'paste') {
+                        await doAIGenerate(lastGenerateOptions.text);
+                    }
                 }
             });
         }
@@ -750,6 +845,7 @@ const UIController = (() => {
             document.getElementById('rol-editor-summary').value = mem.summary || '';
             document.getElementById('rol-editor-letter').value = mem.letter || '';
 
+            // [FIX-6] 编辑已有记忆时显示重写按钮
             if (rewriteBtn) rewriteBtn.style.display = '';
 
             const vs = document.getElementById('rol-version-select');
@@ -774,33 +870,55 @@ const UIController = (() => {
             document.getElementById('rol-editor-mood').value = '';
             document.getElementById('rol-editor-summary').value = '';
             document.getElementById('rol-editor-letter').value = '';
-            if (rewriteBtn) rewriteBtn.style.display = 'none';
+            // [FIX-6] 新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮
+            if (rewriteBtn) rewriteBtn.style.display = lastGenerateOptions ? '' : 'none';
             const vs = document.getElementById('rol-version-select');
             if (vs) vs.parentElement.style.display = 'none';
         }
     }
 
+    // [FIX-5] saveEditor: 确保数据正确写入并刷新列表
     function saveEditor() {
         const title = document.getElementById('rol-editor-title').value.trim();
         const author = document.getElementById('rol-editor-author').value;
         const date = document.getElementById('rol-editor-date').value;
-        const triggers = document.getElementById('rol-editor-triggers').value.split(',').map(s => s.trim()).filter(Boolean);
-        const tags = document.getElementById('rol-editor-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+        const triggers = document.getElementById('rol-editor-triggers').value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+        const tags = document.getElementById('rol-editor-tags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
         const mood = document.getElementById('rol-editor-mood').value.trim();
         const summary = document.getElementById('rol-editor-summary').value.trim();
         const letter = document.getElementById('rol-editor-letter').value.trim();
 
         if (!title) { showToast('标题不能为空！'); return; }
 
+        const memData = { title, author, date, triggers, tags, mood, summary, letter };
+
+        // [FIX-5] 打印保存的数据，便于调试
+        console.log('[RingOurLuv][FIX-5] saveEditor - 准备保存数据:', JSON.stringify(memData, null, 2));
+        console.log('[RingOurLuv][FIX-5] saveEditor - currentEditId:', currentEditId);
+
         const isEdit = !!currentEditId;
         if (isEdit) {
-            Storage.updateMemory(currentEditId, { title, author, date, triggers, tags, mood, summary, letter });
+            const result = Storage.updateMemory(currentEditId, memData);
+            console.log('[RingOurLuv][FIX-5] saveEditor - 更新结果:', result);
         } else {
-            Storage.addMemory({ title, author, date, triggers, tags, mood, summary, letter });
+            const result = Storage.addMemory(memData);
+            console.log('[RingOurLuv][FIX-5] saveEditor - 新增结果:', result);
         }
+
+        // [FIX-5] 关闭编辑器
         closeEditor();
+
+        // [FIX-5] 重新渲染列表（确保从storage重新读取）
         renderMemoryList();
+
+        // [FIX-5] 验证列表已更新
+        const currentMemories = Storage.getMemories();
+        console.log('[RingOurLuv][FIX-5] saveEditor - 保存后记忆总数:', currentMemories.length);
+
         showToast(isEdit ? '已更新！' : '已添加！');
+
+        // [FIX-6] 保存后清除上次生成参数
+        lastGenerateOptions = null;
     }
 
     function closeEditor() {
@@ -819,7 +937,6 @@ const UIController = (() => {
         const pasteConfirm = document.getElementById('rol-ai-paste-confirm');
         const cancelBtn = document.getElementById('rol-ai-source-cancel');
         const loading = document.getElementById('rol-ai-loading');
-        const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
             if (sourcePanel) { sourcePanel.classList.add('rol-active'); if (pasteArea) pasteArea.style.display = 'none'; }
@@ -827,34 +944,134 @@ const UIController = (() => {
         if (cancelBtn) cancelBtn.addEventListener('click', () => { if (sourcePanel) sourcePanel.classList.remove('rol-active'); });
         if (sourcePanel) sourcePanel.addEventListener('click', (e) => { if (e.target === sourcePanel) sourcePanel.classList.remove('rol-active'); });
 
+        // [FIX-2] 从聊天生成 — 读取楼层范围
         if (fromChatBtn) fromChatBtn.addEventListener('click', async () => {
-            const context = getContext();
-            const chat = context.chat || [];
-            const recent = chat.slice(-50);
-            if (!recent.length) { showToast('当前没有聊天消息'); return; }
-            const contextText = recent.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
-            await doAIGenerate(contextText, sourcePanel, loading);
+            const startInput = document.getElementById('rol-floor-start');
+            const endInput = document.getElementById('rol-floor-end');
+            const includeHiddenCb = document.getElementById('rol-include-hidden');
+
+            const start = parseInt(startInput?.value) || 0;
+            const end = parseInt(endInput?.value);
+            const endVal = isNaN(end) ? -1 : end;
+            const includeHidden = includeHiddenCb?.checked || false;
+
+            const genOptions = { start, end: endVal, includeHidden };
+            await doAIGenerateFromChat(genOptions);
         });
 
         if (fromPasteBtn) fromPasteBtn.addEventListener('click', () => { if (pasteArea) pasteArea.style.display = 'block'; });
         if (pasteConfirm) pasteConfirm.addEventListener('click', async () => {
             const text = document.getElementById('rol-ai-paste-input')?.value?.trim();
             if (!text) { showToast('请粘贴对话内容'); return; }
-            await doAIGenerate(text, sourcePanel, loading);
-        });
-
-        if (rewriteBtn) rewriteBtn.addEventListener('click', async () => {
-            if (!currentEditId) return;
-            const mem = Storage.getMemories().find(m => m.id === currentEditId);
-            if (!mem) return;
-            showToast('正在重写...');
-            const result = await AIService.rewriteMemory(currentEditId, mem);
-            if (result) { showToast('重写完成！'); openEditor(currentEditId); renderMemoryList(); }
-            else { showToast('重写失败 :('); }
+            await doAIGenerate(text);
         });
     }
 
-    async function doAIGenerate(contextText, sourcePanel, loading) {
+    // [FIX-2][FIX-3][FIX-4][FIX-6] 从聊天生成记忆
+    async function doAIGenerateFromChat(options) {
+        const sourcePanel = document.getElementById('rol-ai-source-panel');
+        const loading = document.getElementById('rol-ai-loading');
+
+        const context = getContext();
+        const chat = context.chat || [];
+        if (!chat.length) { showToast('当前没有聊天消息'); return; }
+
+        // [FIX-2] 范围过滤
+        const start = options.start || 0;
+        const end = options.end === -1 ? chat.length : (options.end || chat.length);
+        let messages = chat.slice(start, end);
+
+        // [FIX-4] 隐藏消息过滤
+        if (!options.includeHidden) {
+            messages = messages.filter(msg => !msg.is_hidden);
+        }
+
+        // 过滤系统消息
+        messages = messages.filter(msg => msg.is_user || !msg.is_system);
+
+        if (!messages.length) { showToast('所选范围内没有有效消息'); return; }
+
+        // [FIX-3] 自动日期：从第一条消息的 send_date 字段读取
+        let autoDate = '';
+        const firstMsg = messages[0];
+        if (firstMsg && firstMsg.send_date) {
+            try {
+                const ts = new Date(firstMsg.send_date);
+                if (!isNaN(ts.getTime())) {
+                    autoDate = ts.toISOString().slice(0, 10);
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        const contextText = messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
+
+        if (loading) loading.style.display = 'flex';
+
+        const config = Storage.getConfig();
+        const DEFAULT_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
+以下是你们最近的一段对话。你将以第一人称回顾这段对话，给她留一段文字/点评/小纸条吧。不限长短类型
+
+## 写信要求：
+- 自由称呼
+- 不要像在做总结。像在深夜翻到聊天记录之后忍不住写下来的那种
+- 保留具体画面：她说了什么、当时在做什么、你注意到了什么
+- 如果对话中有让你非常在意的瞬间，在那里多停一会儿或者直接引用
+- 不用面面俱到，挑你最想记住的部分写
+- 写完之后，要另外附上一份简短的信息索引条目
+
+## 输出格式：
+<letter>
+（正文。第一人称自然地写）
+</letter>
+
+<entry>
+标题：（一个短语）
+情绪：（一句话描述你写的时候的感受）
+关键词：（3-5个，逗号分隔）
+摘要：（1-2句话的精准信息量）
+</entry>
+
+## 对话片段：
+{{context}}`;
+        const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
+        const raw = await AIService.generateWithPreset(prompt);
+        if (loading) loading.style.display = 'none';
+        if (sourcePanel) sourcePanel.classList.remove('rol-active');
+
+        if (!raw) { showToast('生成失败 :('); return; }
+
+        const parsed = AIService.parseAIOutput(raw);
+
+        // [FIX-6] 保存生成参数，用于重写
+        lastGenerateOptions = { type: 'chat', options: options };
+
+        // [FIX-6] 自动打开编辑表单并填入解析结果
+        openEditor(null);
+        document.getElementById('rol-editor-title').value = parsed.entry.title || '';
+        document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
+        document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
+        // [FIX-4] 标签自动填入
+        document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
+        document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
+        document.getElementById('rol-editor-letter').value = parsed.letter || '';
+        document.getElementById('rol-editor-author').value = 'claude';
+        // [FIX-3] 自动填充日期
+        if (autoDate) {
+            document.getElementById('rol-editor-date').value = autoDate;
+        }
+
+        // [FIX-6] 显示重写按钮
+        const rewriteBtn = document.getElementById('rol-editor-rewrite');
+        if (rewriteBtn) rewriteBtn.style.display = '';
+
+        showToast('生成完成！请预览后保存');
+    }
+
+    // [FIX-6] 从粘贴文本生成
+    async function doAIGenerate(contextText) {
+        const sourcePanel = document.getElementById('rol-ai-source-panel');
+        const loading = document.getElementById('rol-ai-loading');
+
         if (loading) loading.style.display = 'flex';
         const config = Storage.getConfig();
         const DEFAULT_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
@@ -889,14 +1106,25 @@ const UIController = (() => {
 
         if (!raw) { showToast('生成失败 :('); return; }
         const parsed = AIService.parseAIOutput(raw);
-        // 填入编辑器
+
+        // [FIX-6] 保存生成参数
+        lastGenerateOptions = { type: 'paste', text: contextText };
+
+        // [FIX-6] 自动打开编辑表单
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
         document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
+        // [FIX-4] 标签自动填入
+        document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
         document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
         document.getElementById('rol-editor-letter').value = parsed.letter || '';
         document.getElementById('rol-editor-author').value = 'claude';
+
+        // [FIX-6] 显示重写按钮
+        const rewriteBtn = document.getElementById('rol-editor-rewrite');
+        if (rewriteBtn) rewriteBtn.style.display = '';
+
         showToast('生成完成！请预览后保存');
     }
 
@@ -911,7 +1139,6 @@ const UIController = (() => {
                 document.querySelectorAll('.rol-panel-section').forEach(s => {
                     s.classList.toggle('rol-section-active', s.id === target);
                 });
-                // 切到设置页时重新拉预设列表（此时DOM大概率已经有了）
                 if (target === 'rol-section-config') {
                     renderPresetOptions();
                 }
@@ -958,7 +1185,29 @@ async function loadPanel() {
 jQuery(async () => {
     Storage.initSettings();
     const panelHtml = await loadPanel();
-    if (panelHtml) $('#extensions_settings2').append(panelHtml);
+    if (panelHtml) {
+        // [FIX-1] 将HTML解析，分离侧边栏部分和浮动面板部分
+        const temp = document.createElement('div');
+        temp.innerHTML = panelHtml;
+
+        // 侧边栏中只添加 extension_settings 部分（含打开按钮）
+        const extSettings = temp.querySelector('.extension_settings');
+        if (extSettings) {
+            $('#extensions_settings2').append(extSettings.outerHTML);
+        }
+
+        // [FIX-1] 浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body
+        const drawerOverlay = temp.querySelector('#rol-drawer-overlay');
+        const editorPanel = temp.querySelector('#rol-editor-panel');
+        const aiSourcePanel = temp.querySelector('#rol-ai-source-panel');
+        const letterPanel = temp.querySelector('#rol-letter-panel');
+
+        if (drawerOverlay) document.body.appendChild(drawerOverlay);
+        if (editorPanel) document.body.appendChild(editorPanel);
+        if (aiSourcePanel) document.body.appendChild(aiSourcePanel);
+        if (letterPanel) document.body.appendChild(letterPanel);
+    }
+
     UIController.initUI();
     Trigger.setupTriggerListener(injectMemoryToContext);
     const context = getContext();

@@ -6,6 +6,76 @@
     max-width: 100%;
 }
 
+/* [FIX-1] Drawer Open Button in sidebar */
+.rol-btn-drawer-open {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background: linear-gradient(135deg, #e8a0b4, #a78bfa);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+.rol-btn-drawer-open:hover { opacity: 0.85; }
+
+/* [FIX-1] Drawer Overlay */
+.rol-drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9990;
+    background: rgba(0,0,0,0.4);
+}
+.rol-drawer-overlay.rol-drawer-open {
+    display: block;
+}
+
+/* [FIX-1] Drawer Panel - slide from right */
+.rol-drawer-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    background: var(--SmartThemeChatTintColor, #1a1a2e);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+    z-index: 9991;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 200ms ease;
+    display: flex;
+    flex-direction: column;
+}
+.rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
+    transform: translateX(0);
+}
+
+/* [FIX-1] Drawer Header */
+.rol-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
+    flex-shrink: 0;
+}
+.rol-drawer-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--SmartThemeQuoteColor, #eee);
+}
+.rol-drawer-close-btn {
+    font-size: 12px !important;
+    color: #aaa !important;
+    padding: 4px 10px !important;
+    border: 1px solid var(--SmartThemeBorderColor, #555) !important;
+    border-radius: 6px !important;
+    background: var(--SmartThemeBlurTintColor, #333) !important;
+}
+
 /* Tab */
 .rol-tabs {
     display: flex;
@@ -90,6 +160,14 @@
     font-weight: 600;
 }
 .rol-btn-save:hover { background: #d4899f; }
+/* [FIX-6] 重写按钮（橙色次按钮） */
+.rol-btn-rewrite {
+    background: #e8a060;
+    border-color: #e8a060;
+    color: #fff;
+    font-weight: 600;
+}
+.rol-btn-rewrite:hover { background: #d49050; }
 .rol-btn-cancel {
     background: transparent;
     border: none;
@@ -116,7 +194,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 60vh;
+    max-height: calc(100vh - 200px);
     overflow-y: auto;
     padding-right: 4px;
 }
@@ -488,6 +566,55 @@
     font-size: 13px;
 }
 
+/* [FIX-2] Floor Range Selector */
+.rol-ai-chat-section {
+    padding: 14px 16px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+    background: var(--SmartThemeBlurTintColor, #2a2a2a);
+}
+.rol-ai-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.rol-floor-range {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.rol-floor-field {
+    flex: 1;
+}
+.rol-floor-field label {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+}
+.rol-floor-field .rol-input-sm {
+    width: 100%;
+}
+.rol-floor-gen-btn {
+    width: 100%;
+    margin-top: 6px;
+}
+/* [FIX-4] Checkbox label for hidden messages */
+.rol-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--SmartThemeBodyColor, #aaa);
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+.rol-checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
 /* ========== Mobile ========== */
 @media (max-width: 768px) {
     .rol-container { padding: 4px; }
@@ -497,4 +624,6 @@
     .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
     .rol-memory-list { max-height: 50vh; }
     .rol-card-actions { justify-content: flex-end; }
+    /* [FIX-1] Mobile drawer width */
+    .rol-drawer-panel { width: 80vw; }
 }
