@@ -1,4 +1,40 @@
 /* ========== 🩷 Ring Our Luv 🩷 ========== */
+.rol-editor-panel {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.3s ease;
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.rol-editor-panel.rol-active {
+  transform: translateX(0);
+  opacity: 1;
+}
+.rol-editor-panel,
+.rol-editor-inner,
+.rol-editor-inner textarea,
+.rol-editor-inner input {
+  transition: background-color 0.4s ease,
+              color 0.4s ease,
+              border-color 0.4s ease;
+}
+/* 🩷 默认：夜间模式 */
+.rol-editor-panel {
+  --rol-bg: rgb(30, 30, 35);
+  --rol-card: rgb(45, 42, 50);
+  --rol-text: rgb(230, 220, 235);
+  --rol-accent: rgb(255, 168, 195);
+  --rol-input-bg: rgb(55, 50, 60);
+}
+
+/* 🩷 日间模式 */
+.rol-editor-panel.rol-light {
+  --rol-bg: rgb(255, 245, 248);
+  --rol-card: rgb(255, 228, 242);
+  --rol-text: rgb(80, 60, 70);
+  --rol-accent: rgb(219, 112, 147);
+  --rol-input-bg: rgb(255, 240, 245);
+}
 
 .rol-container {
     font-family: inherit;
@@ -352,14 +388,25 @@
     padding: 16px;
 }
 .rol-editor-panel.rol-active { display: flex; }
-.rol-editor-inner {
-    background: var(--SmartThemeChatTintColor, #1a1a2e);
-    border-radius: 12px;
-    padding: 20px;
-    width: 100%;
-    max-width: 500px;
-    max-height: 85vh;
+/* 🩷 手机端适配 */
+@media (max-width: 480px) {
+  .rol-editor-inner {
+    max-width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    max-height: 70vh;
     overflow-y: auto;
+  }
+
+  .rol-editor-inner textarea {
+    font-size: 14px;
+    min-height: 80px;
+  }
+
+  .rol-editor-inner input {
+    font-size: 14px;
+    height: 36px;
+  }
 }
 .rol-editor-heading {
     margin: 0 0 16px;

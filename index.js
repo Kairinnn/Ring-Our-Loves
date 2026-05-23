@@ -7,7 +7,7 @@ const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 // ============================================================
-// MODULE: Storage
+// 🩷 MODULE: Storage 🩷
 // ============================================================
 const Storage = (() => {
     function initSettings() {
@@ -18,7 +18,7 @@ const Storage = (() => {
                     presetName: '',
                     autoInject: true,
                     maxInjectCount: 3,
-                    summaryPrompt: '' // 空=使用AIService中的默认prompt
+                    summaryPrompt: '' // 🩷 空=使用AIService中的默认prompt
                 }
             };
             saveSettingsDebounced();
@@ -34,14 +34,14 @@ const Storage = (() => {
         return 'mem_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
     }
 
-    // [FIX-5] addMemory: 确保数据正确写入并保存
+    // 🩷 addMemory: 确保数据正确写入并保存
     function addMemory(memoryData) {
         const settings = extension_settings[extensionName];
         const now = new Date().toISOString();
         const today = new Date().toISOString().slice(0, 10);
         const newMemory = {
             id: generateId(),
-            title: memoryData.title || '未命名记忆',
+            title: memoryData.title || '未命名果实',
             author: memoryData.author || 'claude',
             date: memoryData.date || today,
             triggers: memoryData.triggers || [],
@@ -62,9 +62,9 @@ const Storage = (() => {
             created: now,
             updated: now
         };
-        settings.memories.unshift(newMemory); // [FIX-6] unshift: 新条目出现在列表顶部
-        // [FIX-5] 确保保存生效
-        console.log('[RingOurLuv][FIX-5] addMemory - 保存数据:', JSON.stringify(newMemory, null, 2));
+        settings.memories.unshift(newMemory); // 🩷 unshift: 新条目出现在列表顶部
+        // 🩷 确保保存生效
+        console.log('[RingOurLuv]🩷 addMemory - 保存果实~:', JSON.stringify(newMemory, null, 2));
         saveSettingsDebounced();
         return newMemory;
     }
@@ -91,8 +91,8 @@ const Storage = (() => {
         Object.assign(memory, updates);
         memory.updated = new Date().toISOString();
         settings.memories[index] = memory;
-        // [FIX-5] 日志
-        console.log('[RingOurLuv][FIX-5] updateMemory - 更新数据:', JSON.stringify(memory, null, 2));
+        // 🩷 日志
+        console.log('[RingOurLuv]🩷 updateMemory - 更新果子~:', JSON.stringify(memory, null, 2));
         saveSettingsDebounced();
         return memory;
     }
@@ -162,7 +162,7 @@ const Storage = (() => {
 })();
 
 // ============================================================
-// MODULE: Trigger
+// 🩷 MODULE: Trigger 🩷
 // ============================================================
 const Trigger = (() => {
     function detectTriggers(messageText) {
@@ -196,7 +196,7 @@ const Trigger = (() => {
 
     function buildInjectionText(memories) {
         if (!memories.length) return '';
-        let text = '[相关记忆片段]\n';
+        let text = '[相关果实]\n';
         for (const mem of memories) {
             text += `【${mem.title}】`;
             if (mem.mood) text += `(${mem.mood})`;
@@ -244,13 +244,13 @@ const Trigger = (() => {
 })();
 
 // ============================================================
-// MODULE: WorldBook
+// 🩷 MODULE: WorldBook 🩷
 // 世界书集成：记忆条目同步到 SillyTavern 世界书
 // ============================================================
 const WorldBook = (() => {
     const WORLD_NAME = 'RingOurLuv_Memories';
 
-    // 获取 memory.id → WI entry uid 的映射表
+    // 🩷 获取 memory.id → WI entry uid 的映射表
     function getMapping() {
         const settings = extension_settings[extensionName];
         if (!settings.wiMapping) settings.wiMapping = {};
@@ -262,10 +262,10 @@ const WorldBook = (() => {
         saveSettingsDebounced();
     }
 
-    // 确保世界书存在（首次保存时自动创建）
+    // 🩷 确保世界书存在（首次保存时自动创建）
     async function ensureWorldExists() {
         try {
-            // 先尝试读取，如果能读到就说明已存在
+            // 🩷 先尝试读取，如果能读到就说明已存在
             const getRes = await fetch('/api/worldinfo/get', {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -275,26 +275,26 @@ const WorldBook = (() => {
                 const data = await getRes.json();
                 if (data && data.entries !== undefined) return true;
             }
-        } catch (e) { /* 不存在，继续创建 */ }
+        } catch (e) { /* 🩷 不存在，继续创建 */ }
 
         try {
-            // 创建新世界书
+            // 🩷 创建新世界书
             const createRes = await fetch('/api/worldinfo/create', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({ name: WORLD_NAME })
             });
             if (createRes.ok) {
-                console.log('[RingOurLuv][WorldBook] 世界书已创建:', WORLD_NAME);
+                console.log('[RingOurLuv][WorldBook] 温室已创建~:', WORLD_NAME);
                 return true;
             }
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 创建世界书失败:', e);
+            console.error('[RingOurLuv][WorldBook] 创建温室失败...:', e);
         }
         return false;
     }
 
-    // 加载世界书数据
+    // 🩷 加载世界书数据
     async function loadWorldData() {
         try {
             const res = await fetch('/api/worldinfo/get', {
@@ -305,12 +305,12 @@ const WorldBook = (() => {
             if (!res.ok) return null;
             return await res.json();
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 读取世界书失败:', e);
+            console.error('[RingOurLuv][WorldBook] 读取温室失败...:', e);
             return null;
         }
     }
 
-    // 保存世界书数据
+    // 🩷 保存世界书数据
     async function saveWorldData(data) {
         try {
             const res = await fetch('/api/worldinfo/edit', {
@@ -320,21 +320,21 @@ const WorldBook = (() => {
             });
             return res.ok;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 保存世界书失败:', e);
+            console.error('[RingOurLuv][WorldBook] 保存温室失败...:', e);
             return false;
         }
     }
 
-    // 生成下一个可用的 entry uid
+    // 🩷 生成下一个可用的 entry uid
     function getNextUid(entries) {
         if (!entries || !Object.keys(entries).length) return 0;
         const uids = Object.values(entries).map(e => e.uid || 0);
         return Math.max(...uids) + 1;
     }
 
-    // 创建一个世界书条目对象
+    // 🩷 创建一个世界书条目对象
     function buildWiEntry(uid, memory) {
-        // key = tags + triggers 合并去重
+        // 🩷 key = tags + triggers 合并去重
         const keys = [...new Set([
             ...(memory.tags || []),
             ...(memory.triggers || [])
@@ -344,8 +344,8 @@ const WorldBook = (() => {
             uid: uid,
             key: keys,
             keysecondary: [],
-            content: memory.summary || '',           // 摘要 → 注入上下文
-            comment: memory.letter || memory.content || '',  // 完整正文 → 仅管理界面可见
+            content: memory.summary || '',           // 🩷 摘要 → 注入上下文
+            comment: memory.letter || memory.content || '',  // 🩷 完整正文 → 仅管理界面可见
             constant: false,
             selective: false,
             selectiveLogic: 0,
@@ -372,14 +372,14 @@ const WorldBook = (() => {
         };
     }
 
-    // 同步记忆到世界书（创建或更新）
+    // 🩷 同步记忆到世界书（创建或更新）
     async function syncMemory(memory) {
         if (!memory || !memory.id) return false;
 
         try {
             const worldExists = await ensureWorldExists();
             if (!worldExists) {
-                console.warn('[RingOurLuv][WorldBook] 世界书不可用，跳过同步');
+                console.warn('[RingOurLuv][WorldBook] 温室不可用，跳过连接~');
                 return false;
             }
 
@@ -393,33 +393,33 @@ const WorldBook = (() => {
 
             let uid;
             if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
-                // 更新已有条目
+                // 🩷 更新已有条目
                 uid = existingUid;
                 const updatedEntry = buildWiEntry(uid, memory);
                 data.entries[uid] = updatedEntry;
-                console.log(`[RingOurLuv][WorldBook] 更新条目 uid=${uid}, title="${memory.title}"`);
+                console.log(`[RingOurLuv][WorldBook] 更新果实 uid=${uid}, title="${memory.title}"`);
             } else {
-                // 创建新条目
+                // 🩷 创建新条目
                 uid = getNextUid(data.entries);
                 const newEntry = buildWiEntry(uid, memory);
                 data.entries[uid] = newEntry;
                 mapping[memory.id] = uid;
                 saveMapping(mapping);
-                console.log(`[RingOurLuv][WorldBook] 创建条目 uid=${uid}, title="${memory.title}"`);
+                console.log(`[RingOurLuv][WorldBook] 放入果实 uid=${uid}, title="${memory.title}"`);
             }
 
             const saved = await saveWorldData(data);
             if (saved) {
-                console.log(`[RingOurLuv][WorldBook] 同步成功 ✓ memory="${memory.title}"`);
+                console.log(`[RingOurLuv][WorldBook] 果实连接成功 ✓ ...memory="${memory.title}"`);
             }
             return saved;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] syncMemory 异常:', e);
+            console.error('[RingOurLuv][WorldBook] syncMemory 异常！！:', e);
             return false;
         }
     }
 
-    // 从世界书删除条目
+    // 🩷 从世界书删除条目
     async function deleteEntry(memoryId) {
         if (!memoryId) return false;
 
@@ -427,7 +427,7 @@ const WorldBook = (() => {
             const mapping = getMapping();
             const uid = mapping[memoryId];
             if (uid === undefined) {
-                console.log('[RingOurLuv][WorldBook] 无对应世界书条目，跳过删除');
+                console.log('[RingOurLuv][WorldBook] 温室中无对应果实，跳过净化');
                 return true;
             }
 
@@ -440,17 +440,17 @@ const WorldBook = (() => {
                 if (saved) {
                     delete mapping[memoryId];
                     saveMapping(mapping);
-                    console.log(`[RingOurLuv][WorldBook] 已删除条目 uid=${uid}`);
+                    console.log(`[RingOurLuv][WorldBook] 已净化果实~ uid=${uid}`);
                 }
                 return saved;
             }
 
-            // 条目已不存在，清理映射
+            // 🩷 条目已不存在，清理映射
             delete mapping[memoryId];
             saveMapping(mapping);
             return true;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] deleteEntry 异常:', e);
+            console.error('[RingOurLuv][WorldBook] deleteEntry 异常！！:', e);
             return false;
         }
     }
@@ -459,7 +459,7 @@ const WorldBook = (() => {
 })();
 
 // ============================================================
-// MODULE: AIService
+// 🩷 MODULE: AIService 🩷
 // ============================================================
 const AIService = (() => {
     const DEFAULT_MEMORY_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
@@ -489,11 +489,11 @@ const AIService = (() => {
 ## 对话片段：
 {{context}}`;
 
-    const REWRITE_PROMPT = `以下是你之前写给她的一封信！请重新写一个版本，保留相同的事件和细节，但可以换一种表达方式之类的~同时附上更新后的索引条目
+    const REWRITE_PROMPT = `以下是你之前写给她的一封信！请重新再写一遍吧，保留相同的事件和细节，但可以换一种表达方式之类的~同时附上更新后的索引条目
 
 ## 输出格式：
 <letter>
-（新版本的信件正文）
+（新的正文）
 </letter>
 
 <entry>
@@ -504,10 +504,10 @@ const AIService = (() => {
 摘要：（1-2句话）
 </entry>
 
-## 原信件：
+## 原文：
 {{context}}`;
 
-    // ---- 解析 ----
+    // ---- 🩷 解析 🩷 ----
     function parseAIOutput(rawText) {
         const letterMatch = rawText.match(/<letter>([\s\S]*?)<\/letter>/);
         const entryMatch = rawText.match(/<entry>([\s\S]*?)<\/entry>/);
@@ -516,7 +516,7 @@ const AIService = (() => {
         return { letter, entry: parseEntryBlock(entryBlock) };
     }
 
-    // [FIX-4] parseEntryBlock: 新增 tags 字段（从关键词解析）
+    // 🩷 parseEntryBlock: 新增 tags 字段（从关键词解析）
     function parseEntryBlock(text) {
         if (!text) return { title: '', mood: '', triggers: [], tags: [], content: '' };
         const titleMatch = text.match(/标题[：:]\s*(.+)/);
@@ -529,13 +529,13 @@ const AIService = (() => {
         return {
             title: titleMatch ? titleMatch[1].trim() : '',
             mood: moodMatch ? moodMatch[1].trim() : '',
-            triggers: keywords,  // 关键词同时作为触发词
-            tags: keywords,      // [FIX-4] 关键词也填入标签
+            triggers: keywords,  // 🩷 关键词同时作为触发词
+            tags: keywords,      // 🩷 关键词也填入标签
             content: summaryMatch ? summaryMatch[1].trim() : ''
         };
     }
 
-    // ---- 预设：从DOM读 ----
+    // ---- 🩷 预设：从DOM读 🩷 ----
     const PRESET_SELECTORS = [
         '#settings_preset_openai',
         '#settings_preset',
@@ -579,7 +579,7 @@ const AIService = (() => {
             await new Promise(r => setTimeout(r, 300));
             return true;
         } catch (e) {
-            console.error('[RingOurLuv] /preset 切换失败:', e);
+            console.error('[RingOurLuv] /preset 配方切换失败...:', e);
             return false;
         }
     }
@@ -592,7 +592,7 @@ const AIService = (() => {
         try {
             if (targetPreset) {
                 originalPreset = getCurrentPresetName();
-                console.log(`[RingOurLuv] 切换预设: ${originalPreset} → ${targetPreset}`);
+                console.log(`[RingOurLuv] 切换配方: ${originalPreset} → ${targetPreset}`);
                 await switchPreset(targetPreset);
             }
 
@@ -603,11 +603,11 @@ const AIService = (() => {
 
             return result?.pipe || '';
         } catch (e) {
-            console.error('[RingOurLuv] 生成失败:', e);
+            console.error('[RingOurLuv] 酿造失败...:', e);
             return '';
         } finally {
             if (originalPreset && targetPreset) {
-                console.log(`[RingOurLuv] 还原预设: → ${originalPreset}`);
+                console.log(`[RingOurLuv] 还原配方: → ${originalPreset}`);
                 await switchPreset(originalPreset);
             }
         }
@@ -627,22 +627,22 @@ const AIService = (() => {
         );
     }
 
-    // [FIX-2] generateMemoryFromContext: 支持范围过滤 + 隐藏消息过滤
+    // 🩷 generateMemoryFromContext: 支持范围过滤 + 隐藏消息过滤
     async function generateMemoryFromContext(options = {}) {
         const context = getContext();
         const chat = context.chat || [];
 
-        // [FIX-2] 范围过滤
+        // 🩷 范围过滤
         const start = options.start || 0;
         const end = options.end === -1 || options.end === undefined ? chat.length : options.end;
         let messages = chat.slice(start, end);
 
-        // [FIX-4] 隐藏消息过滤
+        // 🩷 隐藏消息过滤
         if (!options.includeHidden) {
             messages = messages.filter(msg => !msg.is_hidden);
         }
 
-        // 只取 user 和 assistant 消息
+        // 🩷 只取 user 和 assistant 消息
         messages = messages.filter(msg => {
             if (msg.is_user) return true;
             if (!msg.is_user && !msg.is_system) return true;
@@ -651,7 +651,7 @@ const AIService = (() => {
 
         if (!messages.length) return null;
 
-        // [FIX-3] 从第一条消息读取 timestamp 用于自动填充日期
+        // 🩷 从第一条消息读取 timestamp 用于自动填充日期
         let autoDate = '';
         const firstMsg = messages[0];
         if (firstMsg && firstMsg.send_date) {
@@ -660,7 +660,7 @@ const AIService = (() => {
                 if (!isNaN(ts.getTime())) {
                     autoDate = ts.toISOString().slice(0, 10);
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) { /* 🩷 忽略 */ }
         }
 
         const contextText = messages.map(msg => {
@@ -674,7 +674,7 @@ const AIService = (() => {
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
         const parsed = parseAIOutput(raw);
-        parsed.autoDate = autoDate; // [FIX-3] 附带自动日期
+        parsed.autoDate = autoDate; // 🩷 附带自动日期
         return parsed;
     }
 
@@ -686,14 +686,14 @@ const AIService = (() => {
 })();
 
 // ============================================================
-// MODULE: UIController
+// 🩷 MODULE: UIController 🩷
 // ============================================================
 const UIController = (() => {
     let currentEditId = null;
-    let lastGenerateOptions = null; // [FIX-6] 保存最后一次生成的参数，用于重写
+    let lastGenerateOptions = null; // 🩷 保存最后一次生成的参数，用于重写
 
     function initUI() {
-        bindDrawer();        // [FIX-1]
+        bindDrawer();        // 🩷
         bindConfigPanel();
         bindMemoryList();
         bindEditorPanel();
@@ -704,7 +704,7 @@ const UIController = (() => {
         renderPresetOptions();
     }
 
-    // ---- [FIX-1] Drawer ----
+    // ---- 🩷 侧边栏 ----
     function bindDrawer() {
         const openBtn = document.getElementById('rol-open-drawer');
         const overlay = document.getElementById('rol-drawer-overlay');
@@ -722,7 +722,7 @@ const UIController = (() => {
         }
         if (overlay) {
             overlay.addEventListener('click', (e) => {
-                // 点击遮罩层（面板之外）关闭
+                // 🩷 点击遮罩层（面板之外）关闭
                 if (e.target === overlay) {
                     overlay.classList.remove('rol-drawer-open');
                 }
@@ -730,7 +730,7 @@ const UIController = (() => {
         }
     }
 
-    // ---- Config Panel ----
+    // ---- 🩷 设置面板 🩷 ----
     function bindConfigPanel() {
         const autoInjectToggle = document.getElementById('rol-auto-inject');
         const maxCountInput = document.getElementById('rol-max-inject');
@@ -771,12 +771,12 @@ const UIController = (() => {
         const presets = AIService.getAvailablePresets();
         const config = Storage.getConfig();
 
-        presetSelect.innerHTML = '<option value="">（使用当前预设）</option>';
+        presetSelect.innerHTML = '<option value="">（使用当前配方）</option>';
 
         if (!presets.length) {
             const hint = document.createElement('option');
             hint.value = '';
-            hint.textContent = '⚠ 未检测到预设，请先打开API设置';
+            hint.textContent = '⚠ 未检测到配方！！先打开API设置~';
             hint.disabled = true;
             presetSelect.appendChild(hint);
             return;
@@ -793,7 +793,7 @@ const UIController = (() => {
         }
     }
 
-    // ---- Memory List ----
+    // ---- 🩷 记忆列表 🩷 ----
     function bindMemoryList() {
         const addBtn = document.getElementById('rol-add-memory');
         const searchInput = document.getElementById('rol-search');
@@ -807,8 +807,8 @@ const UIController = (() => {
             scanBtn.addEventListener('click', () => {
                 const matched = Trigger.scanRecentMessages(10);
                 showToast(matched.length
-                    ? `检测到 ${matched.length} 条匹配记忆`
-                    : '最近消息中未匹配到触发词');
+                    ? `检测到 ${matched.length} 条匹配果实`
+                    : '最近结晶中未匹配到触发词...');
             });
         }
     }
@@ -816,9 +816,9 @@ const UIController = (() => {
     function renderMemoryList(filter = '') {
         const container = document.getElementById('rol-memory-list');
         if (!container) return;
-        // [FIX-5] 重新从 extension_settings 读取数据
+        // 🩷 重新从 extension_settings 读取数据
         const memories = Storage.getMemories();
-        console.log('[RingOurLuv][FIX-5] renderMemoryList - 当前记忆数量:', memories.length);
+        console.log('[RingOurLuv][FIX-5] renderMemoryList - 当前果实共计', memories.length);
         const fl = (filter || '').toLowerCase();
         const filtered = fl
             ? memories.filter(m =>
@@ -832,7 +832,7 @@ const UIController = (() => {
 
         container.innerHTML = '';
         if (!filtered.length) {
-            container.innerHTML = '<div class="rol-empty">还没有记忆条目～</div>';
+            container.innerHTML = '<div class="rol-empty">还没有果实呢～</div>';
             return;
         }
 
@@ -863,10 +863,10 @@ const UIController = (() => {
                 </div>
                 <div class="rol-card-summary">${escapeHtml(displaySummary.slice(0, 120))}${displaySummary.length > 120 ? '...' : ''}</div>
                 <div class="rol-card-actions">
-                    ${mem.letter ? '<button class="rol-btn-letter" title="查看信件">💌</button>' : ''}
-                    <button class="rol-btn-edit" title="编辑">✏️</button>
-                    <button class="rol-btn-rewrite" title="AI重写">🔄</button>
-                    <button class="rol-btn-delete" title="删除">🗑️</button>
+                    ${mem.letter ? '<button class="rol-btn-letter" title="阅览果实">💌</button>' : ''}
+                    <button class="rol-btn-edit" title="编辑爱意">✏️</button>
+                    <button class="rol-btn-rewrite" title="让Claude重写">🧡</button>
+                    <button class="rol-btn-delete" title="净化">🍃</button>
                 </div>
             `;
 
@@ -874,7 +874,7 @@ const UIController = (() => {
                 e.stopPropagation();
                 const updated = Storage.updateMemory(mem.id, { enabled: e.target.checked }, true);
                 card.classList.toggle('rol-disabled', !e.target.checked);
-                // 同步开关状态到世界书
+                // 🩷 同步开关状态到世界书
                 if (updated) WorldBook.syncMemory(updated);
             });
 
@@ -885,22 +885,22 @@ const UIController = (() => {
             card.querySelector('.rol-btn-edit').addEventListener('click', (e) => { e.stopPropagation(); openEditor(mem.id); });
             card.querySelector('.rol-btn-rewrite').addEventListener('click', async (e) => {
                 e.stopPropagation();
-                showToast('正在重写...');
+                showToast('Claude再酿造中...');
                 const result = await AIService.rewriteMemory(mem.id, mem);
                 if (result) {
-                    showToast('重写完成！');
-                    WorldBook.syncMemory(result); // 同步重写后的记忆到世界书
+                    showToast('再酿造完成！');
+                    WorldBook.syncMemory(result); // 🩷 同步重写后的记忆到世界书
                     renderMemoryList(filter);
                 }
-                else { showToast('重写失败 :('); }
+                else { showToast('欸?!那家伙又搞砸了？ :('); }
             });
             card.querySelector('.rol-btn-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (confirm('确定删除这条记忆？')) {
+                if (confirm('确定净化这颗果实嘛？')) {
                     Storage.deleteMemory(mem.id);
-                    // 同步删除世界书条目
+                    // 🩷 同步删除世界书条目
                     WorldBook.deleteEntry(mem.id).then(ok => {
-                        if (ok) console.log('[RingOurLuv] 世界书条目已删除 ✓');
+                        if (ok) console.log('[RingOurLuv] 温室中的果实已删除 ✓');
                     });
                     renderMemoryList(filter);
                 }
@@ -915,7 +915,7 @@ const UIController = (() => {
         }
     }
 
-    // ---- Letter View ----
+    // ---- 🩷 正文预览 🩷 ----
     function bindLetterPanel() {
         const panel = document.getElementById('rol-letter-panel');
         const closeBtn = document.getElementById('rol-letter-close');
@@ -936,7 +936,7 @@ const UIController = (() => {
                 const mem = Storage.getMemories().find(m => m.id === memId);
                 if (mem && mem.versions[idx]) {
                     document.getElementById('rol-letter-body').textContent =
-                        mem.versions[idx].letter || '（此版本无信件内容）';
+                        mem.versions[idx].letter || '（此果实好像没有被注入欸~）';
                     document.getElementById('rol-letter-title').textContent =
                         mem.versions[idx].title || mem.title;
                     const moodEl = document.getElementById('rol-letter-mood');
@@ -958,13 +958,13 @@ const UIController = (() => {
                 const memId = panel?.dataset.memId;
                 const mem = Storage.getMemories().find(m => m.id === memId);
                 if (!mem) return;
-                showToast('正在重写...');
+                showToast('正在再酿造...');
                 const result = await AIService.rewriteMemory(memId, mem);
                 if (result) {
-                    showToast('重写完成！');
+                    showToast('再酿造完成！');
                     openLetterView(memId);
                     renderMemoryList();
-                } else { showToast('重写失败 :('); }
+                } else { showToast('欸?!那家伙又搞砸了？ '); }
             });
         }
     }
@@ -986,7 +986,7 @@ const UIController = (() => {
         const vs = document.getElementById('rol-letter-version');
         if (vs) {
             vs.innerHTML = '';
-            const typeLabels = { original: '原始', manual_edit: '手动编辑', ai_rewrite: 'AI重写' };
+            const typeLabels = { original: '原始', manual_edit: '🩷编辑爱意', ai_rewrite: '🧡让Claude重写' };
             mem.versions.forEach((v, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
@@ -1003,7 +1003,7 @@ const UIController = (() => {
         if (panel) { panel.classList.remove('rol-active'); panel.dataset.memId = ''; }
     }
 
-    // ---- Editor Panel ----
+    // ---- 🩷 编辑面板 🩷 ----
     function bindEditorPanel() {
         const saveBtn = document.getElementById('rol-editor-save');
         const cancelBtn = document.getElementById('rol-editor-cancel');
@@ -1011,9 +1011,9 @@ const UIController = (() => {
         const editorPanel = document.getElementById('rol-editor-panel');
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
-        // [FIX-5] 确认保存按钮绑定
+        // 🩷 确认保存按钮绑定
         if (saveBtn) {
-            console.log('[RingOurLuv][FIX-5] 保存按钮已绑定');
+            console.log('[RingOurLuv][FIX-5] 保存按钮已绑定~');
             saveBtn.addEventListener('click', saveEditor);
         }
         if (cancelBtn) cancelBtn.addEventListener('click', closeEditor);
@@ -1032,20 +1032,20 @@ const UIController = (() => {
             });
         }
 
-        // [FIX-6] 编辑器内的重写按钮 — 重新调用 /gen
+        // 🩷 编辑器内的重写按钮 — 重新调用 /gen
         if (rewriteBtn) {
             rewriteBtn.addEventListener('click', async () => {
-                // 如果正在编辑已有记忆，执行 rewriteMemory
+                // 🩷 如果正在编辑已有记忆，执行 rewriteMemory
                 if (currentEditId) {
                     const mem = Storage.getMemories().find(m => m.id === currentEditId);
                     if (!mem) return;
-                    showToast('正在重写...');
+                    showToast('正在再酿造...');
                     const result = await AIService.rewriteMemory(currentEditId, mem);
-                    if (result) { showToast('重写完成！'); openEditor(currentEditId); renderMemoryList(); }
-                    else { showToast('重写失败 :('); }
+                    if (result) { showToast('再酿造完成！'); openEditor(currentEditId); renderMemoryList(); }
+                    else { showToast('再酿造失败... :('); }
                 } else if (lastGenerateOptions) {
-                    // [FIX-6] 新建模式下重写 = 用上次参数重新生成
-                    showToast('正在重新生成...');
+                    // 🩷 新建模式下重写 = 用上次参数重新生成
+                    showToast('正在再酿造...');
                     if (lastGenerateOptions.type === 'chat') {
                         await doAIGenerateFromChat(lastGenerateOptions.options);
                     } else if (lastGenerateOptions.type === 'paste') {
@@ -1076,13 +1076,13 @@ const UIController = (() => {
             document.getElementById('rol-editor-summary').value = mem.summary || '';
             document.getElementById('rol-editor-letter').value = mem.letter || '';
 
-            // [FIX-6] 编辑已有记忆时显示重写按钮
+            // 🩷 编辑已有记忆时显示重写按钮
             if (rewriteBtn) rewriteBtn.style.display = '';
 
             const vs = document.getElementById('rol-version-select');
             if (vs) {
                 vs.innerHTML = '';
-                const typeLabels = { original: '原始', manual_edit: '手动编辑', ai_rewrite: 'AI重写' };
+                const typeLabels = { original: '原始', manual_edit: '🩷编辑爱意', ai_rewrite: '🧡让Claude重写重写' };
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
@@ -1101,14 +1101,14 @@ const UIController = (() => {
             document.getElementById('rol-editor-mood').value = '';
             document.getElementById('rol-editor-summary').value = '';
             document.getElementById('rol-editor-letter').value = '';
-            // [FIX-6] 新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮
+            // 🩷 新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮
             if (rewriteBtn) rewriteBtn.style.display = lastGenerateOptions ? '' : 'none';
             const vs = document.getElementById('rol-version-select');
             if (vs) vs.parentElement.style.display = 'none';
         }
     }
 
-    // [FIX-5] saveEditor: 确保数据正确写入并刷新列表
+    // 🩷 saveEditor: 确保数据正确写入并刷新列表
     function saveEditor() {
         const title = document.getElementById('rol-editor-title').value.trim();
         const author = document.getElementById('rol-editor-author').value;
@@ -1123,8 +1123,8 @@ const UIController = (() => {
 
         const memData = { title, author, date, triggers, tags, mood, summary, letter };
 
-        // [FIX-5] 打印保存的数据，便于调试
-        console.log('[RingOurLuv][FIX-5] saveEditor - 准备保存数据:', JSON.stringify(memData, null, 2));
+        // 🩷 打印保存的数据，便于调试
+        console.log('[RingOurLuv][FIX-5] saveEditor - 准备保存果实...:', JSON.stringify(memData, null, 2));
         console.log('[RingOurLuv][FIX-5] saveEditor - currentEditId:', currentEditId);
 
         const isEdit = !!currentEditId;
@@ -1137,27 +1137,27 @@ const UIController = (() => {
             console.log('[RingOurLuv][FIX-5] saveEditor - 新增结果:', savedMemory);
         }
 
-        // 同步到世界书（异步，不阻塞UI）
+        // 🩷 同步到世界书（异步，不阻塞UI）
         if (savedMemory) {
             WorldBook.syncMemory(savedMemory).then(ok => {
-                if (ok) console.log('[RingOurLuv] 世界书同步完成 ✓');
-                else console.warn('[RingOurLuv] 世界书同步失败');
+                if (ok) console.log('[RingOurLuv] 温室同步完成 ✓');
+                else console.warn('[RingOurLuv] 温室同步失败...');
             });
         }
 
-        // [FIX-5] 关闭编辑器
+        // 🩷 关闭编辑器
         closeEditor();
 
-        // [FIX-5] 重新渲染列表（确保从storage重新读取）
+        // 🩷 重新渲染列表（确保从storage重新读取）
         renderMemoryList();
 
-        // [FIX-5] 验证列表已更新
+        // 🩷验证列表已更新
         const currentMemories = Storage.getMemories();
-        console.log('[RingOurLuv][FIX-5] saveEditor - 保存后记忆总数:', currentMemories.length);
+        console.log('[RingOurLuv][FIX-5] saveEditor - 保存后的果实总数共计', currentMemories.length);
 
         showToast(isEdit ? '已更新！' : '已添加！');
 
-        // [FIX-6] 保存后清除上次生成参数
+        // 🩷 保存后清除上次生成参数
         lastGenerateOptions = null;
     }
 
@@ -1167,7 +1167,7 @@ const UIController = (() => {
         if (panel) panel.classList.remove('rol-active');
     }
 
-    // ---- AI Source Panel ----
+    // ---- 🩷 AI Source Panel 🩷 ----
     function bindAISourcePanel() {
         const aiGenBtn = document.getElementById('rol-ai-generate');
         const sourcePanel = document.getElementById('rol-ai-source-panel');
@@ -1184,7 +1184,7 @@ const UIController = (() => {
         if (cancelBtn) cancelBtn.addEventListener('click', () => { if (sourcePanel) sourcePanel.classList.remove('rol-active'); });
         if (sourcePanel) sourcePanel.addEventListener('click', (e) => { if (e.target === sourcePanel) sourcePanel.classList.remove('rol-active'); });
 
-        // [FIX-2] 从聊天生成 — 读取楼层范围
+        // 🩷 从聊天生成 — 读取楼层范围
         if (fromChatBtn) fromChatBtn.addEventListener('click', async () => {
             const startInput = document.getElementById('rol-floor-start');
             const endInput = document.getElementById('rol-floor-end');
@@ -1202,36 +1202,36 @@ const UIController = (() => {
         if (fromPasteBtn) fromPasteBtn.addEventListener('click', () => { if (pasteArea) pasteArea.style.display = 'block'; });
         if (pasteConfirm) pasteConfirm.addEventListener('click', async () => {
             const text = document.getElementById('rol-ai-paste-input')?.value?.trim();
-            if (!text) { showToast('请粘贴对话内容'); return; }
+            if (!text) { showToast('请粘贴结晶~'); return; }
             await doAIGenerate(text);
         });
     }
 
-    // [FIX-2][FIX-3][FIX-4][FIX-6] 从聊天生成记忆
+    // 🩷 从聊天生成记忆
     async function doAIGenerateFromChat(options) {
         const sourcePanel = document.getElementById('rol-ai-source-panel');
         const loading = document.getElementById('rol-ai-loading');
 
         const context = getContext();
         const chat = context.chat || [];
-        if (!chat.length) { showToast('当前没有聊天消息'); return; }
+        if (!chat.length) { showToast('当前还没有结晶欸...'); return; }
 
-        // [FIX-2] 范围过滤
+        // 🩷 范围过滤
         const start = options.start || 0;
         const end = options.end === -1 ? chat.length : (options.end || chat.length);
         let messages = chat.slice(start, end);
 
-        // [FIX-4] 隐藏消息过滤
+        // 🩷 隐藏消息过滤
         if (!options.includeHidden) {
             messages = messages.filter(msg => !msg.is_hidden);
         }
 
-        // 过滤系统消息
+        // 🩷 过滤系统消息
         messages = messages.filter(msg => msg.is_user || !msg.is_system);
 
-        if (!messages.length) { showToast('所选范围内没有有效消息'); return; }
+        if (!messages.length) { showToast('所选范围内没有有效结晶...'); return; }
 
-        // [FIX-3] 自动日期：从第一条消息的 send_date 字段读取
+        // 🩷 自动日期：从第一条消息的 send_date 字段读取
         let autoDate = '';
         const firstMsg = messages[0];
         if (firstMsg && firstMsg.send_date) {
@@ -1278,36 +1278,36 @@ const UIController = (() => {
         if (loading) loading.style.display = 'none';
         if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
-        if (!raw) { showToast('生成失败 :('); return; }
+        if (!raw) { showToast('酿造失败... :('); return; }
 
         const parsed = AIService.parseAIOutput(raw);
 
-        // [FIX-6] 保存生成参数，用于重写
+        // 🩷 保存生成参数，用于重写
         lastGenerateOptions = { type: 'chat', options: options };
 
-        // [FIX-6] 自动打开编辑表单并填入解析结果
+        // 🩷 自动打开编辑表单并填入解析结果
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
         document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
-        // [FIX-4] 标签自动填入
+        // 🩷 标签自动填入
         document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
         document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
         document.getElementById('rol-editor-letter').value = parsed.letter || '';
         document.getElementById('rol-editor-author').value = 'claude';
-        // [FIX-3] 自动填充日期
+        // 🩷 自动填充日期
         if (autoDate) {
             document.getElementById('rol-editor-date').value = autoDate;
         }
 
-        // [FIX-6] 显示重写按钮
+        // 🩷 显示重写按钮
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
-        showToast('生成完成！请预览后保存');
+        showToast('酿造完成！请灰灰预览~');
     }
 
-    // [FIX-6] 从粘贴文本生成
+    // 🩷 从粘贴文本生成
     async function doAIGenerate(contextText) {
         const sourcePanel = document.getElementById('rol-ai-source-panel');
         const loading = document.getElementById('rol-ai-loading');
@@ -1344,31 +1344,31 @@ const UIController = (() => {
         if (loading) loading.style.display = 'none';
         if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
-        if (!raw) { showToast('生成失败 :('); return; }
+        if (!raw) { showToast('酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
 
-        // [FIX-6] 保存生成参数
+        // 🩷 保存生成参数
         lastGenerateOptions = { type: 'paste', text: contextText };
 
-        // [FIX-6] 自动打开编辑表单
+        // 🩷 自动打开编辑表单
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
         document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
-        // [FIX-4] 标签自动填入
+        // 🩷 标签自动填入
         document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
         document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
         document.getElementById('rol-editor-letter').value = parsed.letter || '';
         document.getElementById('rol-editor-author').value = 'claude';
 
-        // [FIX-6] 显示重写按钮
+        // 🩷 显示重写按钮
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
-        showToast('生成完成！请预览后保存');
+        showToast('酿造完成！请灰灰预览~');
     }
 
-    // ---- Mobile Nav ----
+    // ---- 🩷 移动端 🩷 ----
     function bindMobileNav() {
         const tabs = document.querySelectorAll('.rol-tab');
         tabs.forEach(tab => {
@@ -1386,7 +1386,7 @@ const UIController = (() => {
         });
     }
 
-    // ---- Utils ----
+    // ---- 🩷 工具 🩷 ----
     function showToast(message) {
         let toast = document.getElementById('rol-toast');
         if (!toast) { toast = document.createElement('div'); toast.id = 'rol-toast'; document.body.appendChild(toast); }
@@ -1405,14 +1405,14 @@ const UIController = (() => {
 })();
 
 // ============================================================
-// MAIN
+// 🩷 MAIN 🩷
 // ============================================================
 function injectMemoryToContext(memories, injectionText) {
     if (!injectionText) return;
     const context = getContext();
     if (context.setExtensionPrompt) {
         context.setExtensionPrompt(extensionName, injectionText, 1, 0);
-        console.log(`[RingOurLuv] 注入了 ${memories.length} 条记忆`);
+        console.log(`[RingOurLuv] 🧡 注入了 ${memories.length} 条爱意...`);
     }
 }
 
@@ -1426,17 +1426,17 @@ jQuery(async () => {
     Storage.initSettings();
     const panelHtml = await loadPanel();
     if (panelHtml) {
-        // [FIX-1] 将HTML解析，分离侧边栏部分和浮动面板部分
+        // 🩷 将HTML解析，分离侧边栏部分和浮动面板部分
         const temp = document.createElement('div');
         temp.innerHTML = panelHtml;
 
-        // 侧边栏中只添加 extension_settings 部分（含打开按钮）
+        // 🩷 侧边栏中只添加 extension_settings 部分（含打开按钮）
         const extSettings = temp.querySelector('.extension_settings');
         if (extSettings) {
             $('#extensions_settings2').append(extSettings.outerHTML);
         }
 
-        // [FIX-1] 浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body
+        // 🩷 浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body
         const drawerOverlay = temp.querySelector('#rol-drawer-overlay');
         const editorPanel = temp.querySelector('#rol-editor-panel');
         const aiSourcePanel = temp.querySelector('#rol-ai-source-panel');
@@ -1454,5 +1454,5 @@ jQuery(async () => {
     if (context.eventSource) {
         context.eventSource.on('chatLoaded', () => UIController.renderMemoryList());
     }
-    console.log(`[RingOurLuv] 插件加载完成 ✨`);
+    console.log(`[Ring🩷OurLuv] 温室连接成功！ ✨`);
 });
