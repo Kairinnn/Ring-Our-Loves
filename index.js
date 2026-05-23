@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, eventSource, event_types } from '../../../../script.js';
+import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders } from '../../../../script.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { getPresetManager } from '../../../preset-manager.js';
 import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
@@ -241,6 +241,221 @@ const Trigger = (() => {
         detectTriggers, selectForInjection, buildInjectionText,
         setupTriggerListener, scanRecentMessages
     };
+})();
+
+// ============================================================
+// MODULE: WorldBook
+// 世界书集成：记忆条目同步到 SillyTavern 世界书
+// ============================================================
+const WorldBook = (() => {
+    const WORLD_NAME = 'RingOurLuv_Memories';
+
+    // 获取 memory.id → WI entry uid 的映射表
+    function getMapping() {
+        const settings = extension_settings[extensionName];
+        if (!settings.wiMapping) settings.wiMapping = {};
+        return settings.wiMapping;
+    }
+
+    function saveMapping(mapping) {
+        extension_settings[extensionName].wiMapping = mapping;
+        saveSettingsDebounced();
+    }
+
+    // 确保世界书存在（首次保存时自动创建）
+    async function ensureWorldExists() {
+        try {
+            // 先尝试读取，如果能读到就说明已存在
+            const getRes = await fetch('/api/worldinfo/get', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ name: WORLD_NAME })
+            });
+            if (getRes.ok) {
+                const data = await getRes.json();
+                if (data && data.entries !== undefined) return true;
+            }
+        } catch (e) { /* 不存在，继续创建 */ }
+
+        try {
+            // 创建新世界书
+            const createRes = await fetch('/api/worldinfo/create', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ name: WORLD_NAME })
+            });
+            if (createRes.ok) {
+                console.log('[RingOurLuv][WorldBook] 世界书已创建:', WORLD_NAME);
+                return true;
+            }
+        } catch (e) {
+            console.error('[RingOurLuv][WorldBook] 创建世界书失败:', e);
+        }
+        return false;
+    }
+
+    // 加载世界书数据
+    async function loadWorldData() {
+        try {
+            const res = await fetch('/api/worldinfo/get', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ name: WORLD_NAME })
+            });
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (e) {
+            console.error('[RingOurLuv][WorldBook] 读取世界书失败:', e);
+            return null;
+        }
+    }
+
+    // 保存世界书数据
+    async function saveWorldData(data) {
+        try {
+            const res = await fetch('/api/worldinfo/edit', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ name: WORLD_NAME, data: data })
+            });
+            return res.ok;
+        } catch (e) {
+            console.error('[RingOurLuv][WorldBook] 保存世界书失败:', e);
+            return false;
+        }
+    }
+
+    // 生成下一个可用的 entry uid
+    function getNextUid(entries) {
+        if (!entries || !Object.keys(entries).length) return 0;
+        const uids = Object.values(entries).map(e => e.uid || 0);
+        return Math.max(...uids) + 1;
+    }
+
+    // 创建一个世界书条目对象
+    function buildWiEntry(uid, memory) {
+        // key = tags + triggers 合并去重
+        const keys = [...new Set([
+            ...(memory.tags || []),
+            ...(memory.triggers || [])
+        ])].filter(Boolean);
+
+        return {
+            uid: uid,
+            key: keys,
+            keysecondary: [],
+            content: memory.summary || '',           // 摘要 → 注入上下文
+            comment: memory.letter || memory.content || '',  // 完整正文 → 仅管理界面可见
+            constant: false,
+            selective: false,
+            selectiveLogic: 0,
+            addMemo: true,
+            order: 100,
+            position: 0,
+            disable: !memory.enabled,
+            excludeRecursion: false,
+            preventRecursion: false,
+            delayUntilRecursion: false,
+            probability: 100,
+            useProbability: true,
+            depth: 4,
+            group: '',
+            groupOverride: false,
+            groupWeight: 100,
+            scanDepth: null,
+            caseSensitive: null,
+            matchWholeWords: null,
+            automationId: '',
+            role: null,
+            vectorized: false,
+            displayIndex: uid
+        };
+    }
+
+    // 同步记忆到世界书（创建或更新）
+    async function syncMemory(memory) {
+        if (!memory || !memory.id) return false;
+
+        try {
+            const worldExists = await ensureWorldExists();
+            if (!worldExists) {
+                console.warn('[RingOurLuv][WorldBook] 世界书不可用，跳过同步');
+                return false;
+            }
+
+            const data = await loadWorldData();
+            if (!data) return false;
+
+            if (!data.entries) data.entries = {};
+
+            const mapping = getMapping();
+            const existingUid = mapping[memory.id];
+
+            let uid;
+            if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
+                // 更新已有条目
+                uid = existingUid;
+                const updatedEntry = buildWiEntry(uid, memory);
+                data.entries[uid] = updatedEntry;
+                console.log(`[RingOurLuv][WorldBook] 更新条目 uid=${uid}, title="${memory.title}"`);
+            } else {
+                // 创建新条目
+                uid = getNextUid(data.entries);
+                const newEntry = buildWiEntry(uid, memory);
+                data.entries[uid] = newEntry;
+                mapping[memory.id] = uid;
+                saveMapping(mapping);
+                console.log(`[RingOurLuv][WorldBook] 创建条目 uid=${uid}, title="${memory.title}"`);
+            }
+
+            const saved = await saveWorldData(data);
+            if (saved) {
+                console.log(`[RingOurLuv][WorldBook] 同步成功 ✓ memory="${memory.title}"`);
+            }
+            return saved;
+        } catch (e) {
+            console.error('[RingOurLuv][WorldBook] syncMemory 异常:', e);
+            return false;
+        }
+    }
+
+    // 从世界书删除条目
+    async function deleteEntry(memoryId) {
+        if (!memoryId) return false;
+
+        try {
+            const mapping = getMapping();
+            const uid = mapping[memoryId];
+            if (uid === undefined) {
+                console.log('[RingOurLuv][WorldBook] 无对应世界书条目，跳过删除');
+                return true;
+            }
+
+            const data = await loadWorldData();
+            if (!data || !data.entries) return false;
+
+            if (data.entries[uid] !== undefined) {
+                delete data.entries[uid];
+                const saved = await saveWorldData(data);
+                if (saved) {
+                    delete mapping[memoryId];
+                    saveMapping(mapping);
+                    console.log(`[RingOurLuv][WorldBook] 已删除条目 uid=${uid}`);
+                }
+                return saved;
+            }
+
+            // 条目已不存在，清理映射
+            delete mapping[memoryId];
+            saveMapping(mapping);
+            return true;
+        } catch (e) {
+            console.error('[RingOurLuv][WorldBook] deleteEntry 异常:', e);
+            return false;
+        }
+    }
+
+    return { syncMemory, deleteEntry, ensureWorldExists, WORLD_NAME };
 })();
 
 // ============================================================
@@ -657,8 +872,10 @@ const UIController = (() => {
 
             card.querySelector('.rol-mem-toggle').addEventListener('change', (e) => {
                 e.stopPropagation();
-                Storage.updateMemory(mem.id, { enabled: e.target.checked }, true);
+                const updated = Storage.updateMemory(mem.id, { enabled: e.target.checked }, true);
                 card.classList.toggle('rol-disabled', !e.target.checked);
+                // 同步开关状态到世界书
+                if (updated) WorldBook.syncMemory(updated);
             });
 
             const letterBtn = card.querySelector('.rol-btn-letter');
@@ -670,12 +887,23 @@ const UIController = (() => {
                 e.stopPropagation();
                 showToast('正在重写...');
                 const result = await AIService.rewriteMemory(mem.id, mem);
-                if (result) { showToast('重写完成！'); renderMemoryList(filter); }
+                if (result) {
+                    showToast('重写完成！');
+                    WorldBook.syncMemory(result); // 同步重写后的记忆到世界书
+                    renderMemoryList(filter);
+                }
                 else { showToast('重写失败 :('); }
             });
             card.querySelector('.rol-btn-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (confirm('确定删除这条记忆？')) { Storage.deleteMemory(mem.id); renderMemoryList(filter); }
+                if (confirm('确定删除这条记忆？')) {
+                    Storage.deleteMemory(mem.id);
+                    // 同步删除世界书条目
+                    WorldBook.deleteEntry(mem.id).then(ok => {
+                        if (ok) console.log('[RingOurLuv] 世界书条目已删除 ✓');
+                    });
+                    renderMemoryList(filter);
+                }
             });
 
             card.addEventListener('click', () => {
@@ -900,12 +1128,21 @@ const UIController = (() => {
         console.log('[RingOurLuv][FIX-5] saveEditor - currentEditId:', currentEditId);
 
         const isEdit = !!currentEditId;
+        let savedMemory;
         if (isEdit) {
-            const result = Storage.updateMemory(currentEditId, memData);
-            console.log('[RingOurLuv][FIX-5] saveEditor - 更新结果:', result);
+            savedMemory = Storage.updateMemory(currentEditId, memData);
+            console.log('[RingOurLuv][FIX-5] saveEditor - 更新结果:', savedMemory);
         } else {
-            const result = Storage.addMemory(memData);
-            console.log('[RingOurLuv][FIX-5] saveEditor - 新增结果:', result);
+            savedMemory = Storage.addMemory(memData);
+            console.log('[RingOurLuv][FIX-5] saveEditor - 新增结果:', savedMemory);
+        }
+
+        // 同步到世界书（异步，不阻塞UI）
+        if (savedMemory) {
+            WorldBook.syncMemory(savedMemory).then(ok => {
+                if (ok) console.log('[RingOurLuv] 世界书同步完成 ✓');
+                else console.warn('[RingOurLuv] 世界书同步失败');
+            });
         }
 
         // [FIX-5] 关闭编辑器
