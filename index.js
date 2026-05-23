@@ -1447,7 +1447,17 @@ jQuery(async () => {
         if (aiSourcePanel) document.body.appendChild(aiSourcePanel);
         if (letterPanel) document.body.appendChild(letterPanel);
     }
+    
+const rolPanel = document.getElementById('rol-editor-panel');
+        const rolCloseBtn = document.getElementById('rol-close-btn');
+        // 🩷 ↑ 这个id要跟HTML里关闭按钮の id 对上
 
+        if (rolCloseBtn) {
+            rolCloseBtn.addEventListener('click', () => {
+                rolPanel.classList.remove('rol-active');
+            });
+        }
+ 
     UIController.initUI();
     Trigger.setupTriggerListener(injectMemoryToContext);
     const context = getContext();
