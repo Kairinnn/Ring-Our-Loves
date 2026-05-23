@@ -818,7 +818,7 @@ const UIController = (() => {
         if (!container) return;
         // 🩷 重新从 extension_settings 读取数据
         const memories = Storage.getMemories();
-        console.log('[RingOurLuv][FIX-5] renderMemoryList - 当前果实共计', memories.length);
+        console.log('[RingOurLuv]🩷 renderMemoryList - 当前果实共计', memories.length);
         const fl = (filter || '').toLowerCase();
         const filtered = fl
             ? memories.filter(m =>
@@ -1013,7 +1013,7 @@ const UIController = (() => {
 
         // 🩷 确认保存按钮绑定
         if (saveBtn) {
-            console.log('[RingOurLuv][FIX-5] 保存按钮已绑定~');
+            console.log('[RingOurLuv]🩷 保存按钮已绑定~');
             saveBtn.addEventListener('click', saveEditor);
         }
         if (cancelBtn) cancelBtn.addEventListener('click', closeEditor);
@@ -1124,17 +1124,17 @@ const UIController = (() => {
         const memData = { title, author, date, triggers, tags, mood, summary, letter };
 
         // 🩷 打印保存的数据，便于调试
-        console.log('[RingOurLuv][FIX-5] saveEditor - 准备保存果实...:', JSON.stringify(memData, null, 2));
-        console.log('[RingOurLuv][FIX-5] saveEditor - currentEditId:', currentEditId);
+        console.log('[RingOurLuv]🩷 saveEditor - 准备保存果实...:', JSON.stringify(memData, null, 2));
+        console.log('[RingOurLuv]🩷 saveEditor - currentEditId:', currentEditId);
 
         const isEdit = !!currentEditId;
         let savedMemory;
         if (isEdit) {
             savedMemory = Storage.updateMemory(currentEditId, memData);
-            console.log('[RingOurLuv][FIX-5] saveEditor - 更新结果:', savedMemory);
+            console.log('[RingOurLuv]🩷 saveEditor - 更新结果:', savedMemory);
         } else {
             savedMemory = Storage.addMemory(memData);
-            console.log('[RingOurLuv][FIX-5] saveEditor - 新增结果:', savedMemory);
+            console.log('[RingOurLuv]🩷 saveEditor - 新增结果:', savedMemory);
         }
 
         // 🩷 同步到世界书（异步，不阻塞UI）
@@ -1153,7 +1153,7 @@ const UIController = (() => {
 
         // 🩷验证列表已更新
         const currentMemories = Storage.getMemories();
-        console.log('[RingOurLuv][FIX-5] saveEditor - 保存后的果实总数共计', currentMemories.length);
+        console.log('[RingOurLuv]🩷 saveEditor - 保存后的果实总数共计', currentMemories.length);
 
         showToast(isEdit ? '已更新！' : '已添加！');
 
