@@ -1,18 +1,38 @@
 /* ========== 🩷 Ring Our Luv 🩷 ========== */
-.rol-editor-panel {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.3s ease;
-  transform: translateX(100%);
-  opacity: 0;
+
+/* ═══ 主题切换按钮 ═══ */
+.rol-theme-toggle {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.rol-editor-panel.rol-active {
-    position: fixed;
-    right: 0;
-    top: 0;
-    height: 100vh;
+.rol-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.1);
 }
 
+.rol-light .rol-theme-toggle {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.rol-light .rol-theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* 🩷 主题过渡动画 */
 .rol-editor-panel,
 .rol-editor-inner,
 .rol-editor-inner textarea,
@@ -21,7 +41,8 @@
               color 0.4s ease,
               border-color 0.4s ease;
 }
-/* 🩷 默认：夜间模式 */
+
+/* 🩷 默认：夜间模式变量 */
 .rol-editor-panel {
   --rol-bg: rgb(30, 30, 35);
   --rol-card: rgb(45, 42, 50);
@@ -30,7 +51,7 @@
   --rol-input-bg: rgb(55, 50, 60);
 }
 
-/* 🩷 日间模式 */
+/* 🩷 日间模式变量 */
 .rol-editor-panel.rol-light {
   --rol-bg: rgb(255, 245, 248);
   --rol-card: rgb(255, 228, 242);
@@ -379,7 +400,7 @@
     color: #f0c060;
 }
 
-/* 🩷 编辑面板 */
+/* 🩷 编辑面板（遮罩层） */
 .rol-editor-panel {
     display: none;
     position: fixed;
@@ -390,7 +411,93 @@
     align-items: center;
     padding: 16px;
 }
-.rol-editor-panel.rol-active { display: flex; }
+.rol-editor-panel.rol-active {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    opacity: 1 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    overflow: hidden !important;
+}
+
+/* 🩷 编辑面板内部卡片 */
+.rol-editor-inner {
+    position: relative;
+    background: rgba(22, 22, 26, 0.96);
+    border-radius: 14px;
+    padding: 24px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+}
+
+/* ═══ 日间模式 ═══ */
+.rol-editor-panel.rol-light .rol-editor-inner {
+    background:
+        url('https://i.postimg.cc/SRmYmwFB/heart.png') center/cover no-repeat,
+        rgba(255, 245, 248, 0.97) !important;
+    border: 1px solid rgba(255, 182, 193, 0.3) !important;
+    box-shadow:
+        0 8px 32px rgba(255, 150, 170, 0.15),
+        0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* 日间模式字体颜色 */
+.rol-editor-panel.rol-light .rol-editor-inner,
+.rol-editor-panel.rol-light .rol-editor-inner * {
+    color: #d4627a !important;
+}
+
+.rol-editor-panel.rol-light .rol-editor-inner input,
+.rol-editor-panel.rol-light .rol-editor-inner textarea,
+.rol-editor-panel.rol-light .rol-editor-inner select {
+    color: #c75b73 !important;
+    background: rgba(255, 240, 245, 0.7) !important;
+    border-color: rgba(255, 150, 170, 0.3) !important;
+}
+
+.rol-editor-panel.rol-light .rol-editor-inner input::placeholder,
+.rol-editor-panel.rol-light .rol-editor-inner textarea::placeholder {
+    color: rgba(212, 98, 122, 0.45) !important;
+}
+
+/* 日间模式滚动条 */
+.rol-editor-panel.rol-light .rol-editor-inner::-webkit-scrollbar-thumb {
+    background: rgba(255, 150, 170, 0.3) !important;
+}
+
+.rol-editor-panel.rol-light .rol-editor-inner::-webkit-scrollbar-track {
+    background: rgba(255, 220, 230, 0.2) !important;
+}
+
+/* 🩷 编辑面板滚动条美化（夜间） */
+.rol-editor-inner::-webkit-scrollbar {
+    width: 6px;
+}
+.rol-editor-inner::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+.rol-editor-inner::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 /* 🩷 手机端适配 */
 @media (max-width: 480px) {
   .rol-editor-inner {

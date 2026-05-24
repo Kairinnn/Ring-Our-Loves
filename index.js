@@ -1078,22 +1078,32 @@ const UIController = (() => {
     function openEditor(memId) {
         currentEditId = memId;
         const panel = document.getElementById('rol-editor-panel');
-        if (!panel) return;
+        if (!panel) { console.error('[RingOurLuv] 🥀 找不到编辑面板 #rol-editor-panel'); return; }
         panel.classList.add('rol-active');
 
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
+        // 🩷 安全获取表单元素
+        const elTitle = document.getElementById('rol-editor-title');
+        const elAuthor = document.getElementById('rol-editor-author');
+        const elDate = document.getElementById('rol-editor-date');
+        const elTriggers = document.getElementById('rol-editor-triggers');
+        const elTags = document.getElementById('rol-editor-tags');
+        const elMood = document.getElementById('rol-editor-mood');
+        const elSummary = document.getElementById('rol-editor-summary');
+        const elLetter = document.getElementById('rol-editor-letter');
+
         if (memId) {
             const mem = Storage.getMemories().find(m => m.id === memId);
             if (!mem) return;
-            document.getElementById('rol-editor-title').value = mem.title;
-            document.getElementById('rol-editor-author').value = mem.author || 'claude';
-            document.getElementById('rol-editor-date').value = mem.date || '';
-            document.getElementById('rol-editor-triggers').value = mem.triggers.join(', ');
-            document.getElementById('rol-editor-tags').value = mem.tags.join(', ');
-            document.getElementById('rol-editor-mood').value = mem.mood || '';
-            document.getElementById('rol-editor-summary').value = mem.summary || '';
-            document.getElementById('rol-editor-letter').value = mem.letter || '';
+            if (elTitle) elTitle.value = mem.title;
+            if (elAuthor) elAuthor.value = mem.author || 'claude';
+            if (elDate) elDate.value = mem.date || '';
+            if (elTriggers) elTriggers.value = mem.triggers.join(', ');
+            if (elTags) elTags.value = mem.tags.join(', ');
+            if (elMood) elMood.value = mem.mood || '';
+            if (elSummary) elSummary.value = mem.summary || '';
+            if (elLetter) elLetter.value = mem.letter || '';
 
             // 🩷 编辑已有记忆时显示重写按钮
             if (rewriteBtn) rewriteBtn.style.display = '';
@@ -1112,18 +1122,18 @@ const UIController = (() => {
                 vs.parentElement.style.display = '';
             }
         } else {
-            document.getElementById('rol-editor-title').value = '';
-            document.getElementById('rol-editor-author').value = 'claude';
-            document.getElementById('rol-editor-date').value = new Date().toISOString().slice(0, 10);
-            document.getElementById('rol-editor-triggers').value = '';
-            document.getElementById('rol-editor-tags').value = '';
-            document.getElementById('rol-editor-mood').value = '';
-            document.getElementById('rol-editor-summary').value = '';
-            document.getElementById('rol-editor-letter').value = '';
+            if (elTitle) elTitle.value = '';
+            if (elAuthor) elAuthor.value = 'claude';
+            if (elDate) elDate.value = new Date().toISOString().slice(0, 10);
+            if (elTriggers) elTriggers.value = '';
+            if (elTags) elTags.value = '';
+            if (elMood) elMood.value = '';
+            if (elSummary) elSummary.value = '';
+            if (elLetter) elLetter.value = '';
             // 🩷 新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮
             if (rewriteBtn) rewriteBtn.style.display = lastGenerateOptions ? '' : 'none';
             const vs = document.getElementById('rol-version-select');
-            if (vs) vs.parentElement.style.display = 'none';
+            if (vs && vs.parentElement) vs.parentElement.style.display = 'none';
         }
     }
 
@@ -1466,17 +1476,7 @@ jQuery(async () => {
         if (aiSourcePanel) document.body.appendChild(aiSourcePanel);
         if (letterPanel) document.body.appendChild(letterPanel);
     }
-    
-const rolPanel = document.getElementById('rol-editor-panel');
-        const rolCloseBtn = document.getElementById('rol-close-btn');
-        // 🩷 ↑ 这个id要跟HTML里关闭按钮的id对上
 
-        if (rolCloseBtn) {
-            rolCloseBtn.addEventListener('click', () => {
-                rolPanel.classList.remove('rol-active');
-            });
-        }
- 
     UIController.initUI();
     Trigger.setupTriggerListener(injectMemoryToContext);
     const context = getContext();
