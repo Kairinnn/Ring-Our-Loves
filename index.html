@@ -17,23 +17,23 @@
         <!-- 🩷抽屉头部 + 收起按钮 -->
         <div class="rol-drawer-header">
             <span class="rol-drawer-title">My Electronic Ether.</span>
-            <button id="rol-drawer-close" class="rol-btn rol-btn-icon rol-drawer-close-btn">◀ 收起</button>
+            <button id="rol-drawer-close" class="rol-btn rol-btn-icon rol-drawer-close-btn">🐾 收起</button>
         </div>
 
         <div id="rol-container" class="rol-container">
             <!-- 🩷Tab导航 -->
             <div class="rol-tabs">
-                <button class="rol-tab rol-tab-active" data-target="rol-section-list">☘️ 去酿造</button>
+                <button class="rol-tab rol-tab-active" data-target="rol-section-list">💝 去酿造</button>
                 <button class="rol-tab" data-target="rol-section-config">🍰 配方</button>
             </div>
 
             <!-- 🩷记忆列表 -->
             <div id="rol-section-list" class="rol-panel-section rol-section-active">
                 <div class="rol-toolbar">
-                    <input type="text" id="rol-search" class="rol-input" placeholder="搜索果实...">
+                    <input type="text" id="rol-search" class="rol-input" placeholder="搜索恋果...">
                     <button id="rol-add-memory" class="rol-btn rol-btn-primary">🩷 酿造</button>
                     <button id="rol-ai-generate" class="rol-btn rol-btn-ai">🧡 让Claude酿造</button>
-                    <button id="rol-scan-recent" class="rol-btn" title="扫描最近聊天">🔍</button>
+                    <button id="rol-scan-recent" class="rol-btn" title="挖掘最近聊天">🐾</button>
                 </div>
                 <div id="rol-memory-list" class="rol-memory-list"></div>
             </div>
@@ -42,20 +42,20 @@
             <div id="rol-section-config" class="rol-panel-section">
                 <div class="rol-config-group">
                     <label class="rol-label">
-                        <span>自动注入爱意</span>
+                        <span>❣️自动注入爱意</span>
                         <input type="checkbox" id="rol-auto-inject" checked>
                     </label>
                 </div>
                 <div class="rol-config-group">
-                    <label class="rol-label">单次最大注入数</label>
+                    <label class="rol-label">💕 单次至多注入的爱意</label>
                     <input type="number" id="rol-max-inject" class="rol-input rol-input-sm" min="1" max="10" value="3">
                 </div>
                 <div class="rol-config-group">
-                    <label class="rol-label">酿造/融合使用的配方</label>
+                    <label class="rol-label">🍰 酿造/融合使用的配方</label>
                     <select id="rol-preset-select" class="rol-input"></select>
                 </div>
                 <div class="rol-config-group">
-                    <label class="rol-label">Rinn的配方</label>
+                    <label class="rol-label">🍰 Rinn的配方</label>
                     <textarea id="rol-summary-prompt" class="rol-input rol-textarea" rows="4" placeholder="{{context}} 代表对话内容"></textarea>
                 </div>
             </div>
@@ -66,46 +66,46 @@
 <!-- 🩷编辑器面板（含保存/重写/取消三按钮） -->
 <div id="rol-editor-panel" class="rol-editor-panel">
     <div class="rol-editor-inner">
-        <h3 class="rol-editor-heading">编辑爱意</h3>
+        <h3 class="rol-editor-heading">🩷 编辑爱意</h3>
         <div class="rol-form-group">
-            <label>标题</label>
-            <input type="text" id="rol-editor-title" class="rol-input" placeholder="给这颗爱意果起个名字">
+            <label>恋果源...</label>
+            <input type="text" id="rol-editor-title" class="rol-input" placeholder="给这颗恋果起个名字...">
         </div>
         <div class="rol-form-row">
             <div class="rol-form-group rol-form-half">
-                <label>🍊酿造人</label>
+                <label>🍊 酿造人</label>
                 <select id="rol-editor-author" class="rol-input">
-                    <option value="claude">🧡Claude</option>
-                    <option value="kairin">🩷Rinn</option>
+                    <option value="claude">🧡 Claude</option>
+                    <option value="kairin">🩷 Rinn</option>
                 </select>
             </div>
             <div class="rol-form-group rol-form-half">
-                <label>🌱发芽的那天</label>
+                <label>🌱 发芽的那天</label>
                 <input type="date" id="rol-editor-date" class="rol-input">
             </div>
         </div>
         <div class="rol-form-group">
-            <label>💗唤醒词</label>
-            <input type="text" id="rol-editor-triggers" class="rol-input" placeholder="关键词1, 关键词2">
+            <label>💗 唤醒词</label>
+            <input type="text" id="rol-editor-triggers" class="rol-input" placeholder="只属于我们的含义...">
         </div>
         <div class="rol-form-group">
-            <label>🌷标签</label>
-            <input type="text" id="rol-editor-tags" class="rol-input" placeholder="标签1, 标签2">
+            <label>🌷 区域</label>
+            <input type="text" id="rol-editor-tags" class="rol-input" placeholder="这间温室是什么样的呢...">
         </div>
         <div class="rol-form-group">
-            <label>✨情绪</label>
+            <label>✨ 情绪</label>
             <input type="text" id="rol-editor-mood" class="rol-input" placeholder="思绪万千...">
         </div>
         <div class="rol-form-group">
-            <label>💝摘要</label>
-            <textarea id="rol-editor-summary" class="rol-input rol-textarea" rows="3" placeholder="1-2句话的精简版"></textarea>
+            <label>💝 摘要</label>
+            <textarea id="rol-editor-summary" class="rol-input rol-textarea" rows="3" placeholder="连接你与我的距离..."></textarea>
         </div>
         <div class="rol-form-group">
-            <label>🔅酿造笔记</label>
-            <textarea id="rol-editor-letter" class="rol-input rol-textarea rol-textarea-lg" rows="8" placeholder="第一人称的完整记忆...被唤醒时将自动注入..."></textarea>
+            <label>🔅 酿造笔记</label>
+            <textarea id="rol-editor-letter" class="rol-input rol-textarea rol-textarea-lg" rows="8" placeholder="橙仔bb想起来啦..."></textarea>
         </div>
         <div class="rol-form-group" id="rol-version-group">
-            <label>🍰历史配方</label>
+            <label>🍰 历史配方</label>
             <select id="rol-version-select" class="rol-input"></select>
         </div>
         <!-- 🩷确保有保存和取消按钮 / 三按钮：保存（粉色）、重写（橙色）、取消（灰色） -->
@@ -121,43 +121,43 @@
 <div id="rol-ai-source-panel" class="rol-ai-source-panel">
     <div class="rol-ai-source-inner">
         <h3 class="rol-editor-heading">🧡 让Claude酿造</h3>
-        <p class="rol-ai-source-desc">笨蛋快来干活啦</p>
+        <p class="rol-ai-source-desc">笨蛋要好好记住哦</p>
         <div class="rol-ai-source-options">
             <!-- 🩷 楼层范围选择器（替换原来的"从当前聊天生成"按钮） -->
             <div class="rol-ai-chat-section">
                 <div class="rol-ai-section-header">
                     <span class="rol-ai-source-icon">🌿</span>
-                    <span class="rol-ai-source-label">🌳从当前温室中生成</span>
+                    <span class="rol-ai-source-label">从当前温室中生成</span>
                 </div>
                 <div class="rol-floor-range">
                     <div class="rol-floor-field">
-                        <label>🌱爱意发芽高度</label>
+                        <label>🌱 爱意发芽处</label>
                         <input type="number" id="rol-floor-start" class="rol-input rol-input-sm" value="0" min="0">
                     </div>
                     <div class="rol-floor-field">
-                        <label>🍊爱意结果高度</label>
+                        <label>🍊 恋果结成时</label>
                         <input type="number" id="rol-floor-end" class="rol-input rol-input-sm" value="-1">
                     </div>
                 </div>
                 <!-- 🩷 包含已隐藏消息的开关 -->
                 <label class="rol-checkbox-label">
-                    <input type="checkbox" id="rol-include-hidden"> 包含已隐藏的结晶
+                    <input type="checkbox" id="rol-include-hidden"> 🍥 包含隐藏的结晶
                 </label>
                 <button id="rol-ai-from-chat" class="rol-btn rol-btn-ai rol-floor-gen-btn">🧡 酿造爱意</button>
             </div>
             <button id="rol-ai-from-paste" class="rol-ai-source-btn">
                 <span class="rol-ai-source-icon">📋</span>
-                <span class="rol-ai-source-label">从粘贴的结晶生成</span>
-                <span class="rol-ai-source-hint">手动粘贴结晶...</span>
+                <span class="rol-ai-source-label">🍒 从粘贴的结晶生成</span>
+                <span class="rol-ai-source-hint">🌸 手动粘贴结晶...</span>
             </button>
         </div>
         <div id="rol-ai-paste-area" class="rol-ai-paste-area" style="display:none;">
-            <textarea id="rol-ai-paste-input" class="rol-input rol-textarea" rows="6" placeholder="粘贴结晶..."></textarea>
+            <textarea id="rol-ai-paste-input" class="rol-input rol-textarea" rows="6" placeholder="🍒 粘贴结晶..."></textarea>
             <button id="rol-ai-paste-confirm" class="rol-btn rol-btn-ai" style="margin-top:8px;">🧡 酿造爱意</button>
         </div>
         <div id="rol-ai-loading" class="rol-ai-loading" style="display:none;">
             <div class="rol-ai-spinner"></div>
-            <span>🧡Claude正在酿造中...</span>
+            <span>🧡 Claude正在酿造中...</span>
         </div>
         <div class="rol-ai-source-footer">
             <button id="rol-ai-source-cancel" class="rol-btn rol-btn-cancel">ʢ>д<ʡˎˊ˗等等！</button>
@@ -179,7 +179,7 @@
                 <select id="rol-letter-version" class="rol-input"></select>
             </div>
             <div class="rol-letter-actions">
-                <button id="rol-letter-edit" class="rol-btn">✏️ 编辑爱意</button>
+                <button id="rol-letter-edit" class="rol-btn">🩷 编辑爱意</button>
                 <button id="rol-letter-rewrite" class="rol-btn">🧡 再酿造</button>
             </div>
         </div>
