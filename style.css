@@ -520,7 +520,7 @@
 .rol-editor-panel.rol-light .rol-editor-inner {
     background:
         url('https://i.postimg.cc/SRmYmwFB/heart.png') center/cover no-repeat,
-        rgba(255, 245, 248, 0.97) !important;
+        rgba(255, 245, 248, 0.712) !important;
     border: 1px solid rgba(255, 182, 193, 0.3) !important;
     box-shadow:
         0 8px 32px rgba(255, 150, 170, 0.15),
