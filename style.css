@@ -1,5 +1,14 @@
 /* ┣========== 🩷 Ring Our Luv 🩷 ==========┫ */
+@font-face {
+  font-family: 'Clairine';
+  src: url('./fonts/Clairine.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
 
+.rol-editor-panel {
+  font-family: 'Clairine', sans-serif !important;
+}
 /* ┏━━━━━━━ ☀️ 主题切换按钮 🌙 ━━━━━━━┓ */
 .rol-theme-toggle {
   position: absolute;
