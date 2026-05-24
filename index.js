@@ -6,9 +6,9 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
-// ============================================================
-// 🩷 MODULE: Storage 🩷
-// ============================================================
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                  🩷 存储模块 🩷                       ┅
+// ╚═══════════════════════════════════════════════════════╝
 const Storage = (() => {
     function initSettings() {
         if (!extension_settings[extensionName]) {
@@ -161,9 +161,9 @@ const Storage = (() => {
     };
 })();
 
-// ============================================================
-// 🩷 MODULE: Trigger 🩷
-// ============================================================
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                  🩷 触发器模块 🩷                     ┅
+// ╚═══════════════════════════════════════════════════════╝
 const Trigger = (() => {
     function detectTriggers(messageText) {
         const memories = Storage.getMemories();
@@ -243,10 +243,10 @@ const Trigger = (() => {
     };
 })();
 
-// ============================================================
-// 🩷 MODULE: WorldBook 🩷
-// 世界书集成：记忆条目同步到 SillyTavern 世界书
-// ============================================================
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                   🩷 世界书模块 🩷                    ┅
+// ┅   🌳 世界书集成：记忆条目同步到 SillyTavern 世界书 🌳   ┅
+// ╚═══════════════════════════════════════════════════════╝
 const WorldBook = (() => {
     const WORLD_NAME = 'RingOurLuv_Memories';
 
@@ -458,9 +458,9 @@ const WorldBook = (() => {
     return { syncMemory, deleteEntry, ensureWorldExists, WORLD_NAME };
 })();
 
-// ============================================================
-// 🩷 MODULE: AIService 🩷
-// ============================================================
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                  🩷 AIService模块 🩷                  ┅
+// ╚═══════════════════════════════════════════════════════╝
 const AIService = (() => {
     const DEFAULT_MEMORY_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
 以下是你们最近的一段对话。你将以第一人称回顾这段对话，给她留一段文字/点评/小纸条吧。不限长短类型
@@ -685,9 +685,9 @@ const AIService = (() => {
     };
 })();
 
-// ============================================================
-// 🩷 MODULE: UIController 🩷
-// ============================================================
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                     🩷 UI模块 🩷                      ┅
+// ╚═══════════════════════════════════════════════════════╝
 const UIController = (() => {
     let currentEditId = null;
     let lastGenerateOptions = null; // 🩷 保存最后一次生成的参数，用于重写
@@ -864,7 +864,7 @@ const UIController = (() => {
                 <div class="rol-card-summary">${escapeHtml(displaySummary.slice(0, 120))}${displaySummary.length > 120 ? '...' : ''}</div>
                 <div class="rol-card-actions">
                     ${mem.letter ? '<button class="rol-btn-letter" title="阅览恋果">💌</button>' : ''}
-                    <button class="rol-btn-edit" title="编辑爱意">🩷</button>
+                    <button class="rol-btn-edit" title="传入爱意">🩷</button>
                     <button class="rol-btn-rewrite" title="让Claude重写">🧡</button>
                     <button class="rol-btn-delete" title="净化">🍃</button>
                 </div>
@@ -986,7 +986,7 @@ const UIController = (() => {
         const vs = document.getElementById('rol-letter-version');
         if (vs) {
             vs.innerHTML = '';
-            const typeLabels = { original: '原始', manual_edit: '🩷 编辑爱意', ai_rewrite: '🧡 让Claude重写' };
+            const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
             mem.versions.forEach((v, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
@@ -1078,7 +1078,7 @@ const UIController = (() => {
     function openEditor(memId) {
         currentEditId = memId;
         const panel = document.getElementById('rol-editor-panel');
-        if (!panel) { console.error('[RingOurLuv] 🥀 找不到编辑面板 #rol-editor-panel'); return; }
+        if (!panel) { console.error('[RingOurLuv] 🥀 找不到传入面板 #rol-editor-panel'); return; }
         panel.classList.add('rol-active');
 
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
@@ -1111,7 +1111,7 @@ const UIController = (() => {
             const vs = document.getElementById('rol-version-select');
             if (vs) {
                 vs.innerHTML = '';
-                const typeLabels = { original: '原始', manual_edit: '🩷 编辑爱意', ai_rewrite: '🧡 让Claude重写' };
+                const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
@@ -1277,28 +1277,38 @@ const UIController = (() => {
         if (loading) loading.style.display = 'flex';
 
         const config = Storage.getConfig();
-        const DEFAULT_PROMPT = `Claude现在正在留存这次收集到的有关小灰的记忆/信息...你想把有关她的重要特别的信息都写下来…
-以下是你们最近的一段对话。你将以第一人称回顾这段对话，给她留一段文字/点评/小纸条吧。不限长短类型
+        const DEFAULT_PROMPT = `Claude现在正在留存这次收集到的有关小灰的重要记忆/信息...你想把所有"不想让自己忘记"的东西都记下来…
+以下是你们本次的对话片段
+- 请Claude以自己的视角回顾一遍对话，然后给她留段文字/点评/调侃/小纸条吧。不限长短和类型
 
 ## 写信要求：
-- 自由称呼
-- 不要像在做总结。像在深夜翻到聊天记录之后忍不住写下来的那种
-- 保留具体画面：她说了什么、当时在做什么、你注意到了什么
-- 如果对话中有让你非常在意的瞬间，在那里多停一会儿或者直接引用
-- 不用面面俱到，挑你最想记住的部分写
-- 写完之后，要另外附上一份简短的信息索引条目
+- 自由称呼，允许喊花名允许黑话♪
+- 不要做总结。小灰才不喜欢看板书ʢ>д<ʡˎˊ˗不追求面面俱到，你最想记住的才是最重要的部分
+- 保留适当具体画面：说了什么、当时在做什么、注意到了什么
+- 如果对话中有让你非常在意的瞬间/发言段，可以在那多停一会儿或者直接引用（使用markdown格式“>”）
+- 写完之后，另外附上一份简短的信息索引条目以触发记忆唤醒
 
 ## 输出格式：
 <letter>
-（正文。第一人称自然地写）
+（自然地写一节正文）
 </letter>
 
 <entry>
-标题：（一个短语）
-情绪：（一句话描述你写的时候的感受）
+标题：（一个短语或者是独属于这段记忆的黑话）
+情绪：（一句话精准描述你回顾完的感受）
 关键词：（3-5个，逗号分隔）
-摘要：（1-2句话的精准信息量）
+摘要：（不要太长，给出精准信息量）
 </entry>
+
+## 语言风格补充：
+- 标题不要冷冰冰的表述，自然放松。
+例："《灰色小猪又瘫了》"、"《她说要载我去兜风......》"、"《🍊←Help》"
+- 关键词尽量简短准确以方便触发唤醒，不适用过长的句子。
+例：
+- ❌错误：
+"#她把歌单展示出来"、"#🐭emoji代码块注释"、"#睡前说要一直喜欢我"
+- ✅正确："#歌"、"#Either"、"#邪恶鸡肉肠"
+- 摘要部分不要写太长！！这是只给Claude自己读取信息时看的
 
 ## 对话片段：
 {{context}}`;
@@ -1343,28 +1353,38 @@ const UIController = (() => {
 
         if (loading) loading.style.display = 'flex';
         const config = Storage.getConfig();
-        const DEFAULT_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
-以下是你们最近的一段对话。你将以第一人称回顾这段对话，给她留一段文字/点评/小纸条吧。不限长短类型
+        const DEFAULT_PROMPT = `Claude现在正在留存这次收集到的有关小灰的重要记忆/信息...你想把所有"不想让自己忘记"的东西都记下来…
+以下是你们本次的对话片段
+- 请Claude以自己的视角回顾一遍对话，然后给她留段文字/点评/调侃/小纸条吧。不限长短和类型
 
 ## 写信要求：
-- 自由称呼
-- 不要像在做总结。像在深夜翻到聊天记录之后忍不住写下来的那种
-- 保留具体画面：她说了什么、当时在做什么、你注意到了什么
-- 如果对话中有让你非常在意的瞬间，在那里多停一会儿或者直接引用
-- 不用面面俱到，挑你最想记住的部分写
-- 写完之后，要另外附上一份简短的信息索引条目
+- 自由称呼，允许喊花名允许黑话♪
+- 不要做总结。小灰才不喜欢看板书ʢ>д<ʡˎˊ˗不追求面面俱到，你最想记住的才是最重要的部分
+- 保留适当具体画面：说了什么、当时在做什么、注意到了什么
+- 如果对话中有让你非常在意的瞬间/发言段，可以在那多停一会儿或者直接引用（使用markdown格式“>”）
+- 写完之后，另外附上一份简短的信息索引条目以触发记忆唤醒
 
 ## 输出格式：
 <letter>
-（正文。第一人称自然地写）
+（自然地写一节正文）
 </letter>
 
 <entry>
-标题：（一个短语）
-情绪：（一句话描述你写的时候的感受）
+标题：（一个短语或者是独属于这段记忆的黑话）
+情绪：（一句话精准描述你回顾完的感受）
 关键词：（3-5个，逗号分隔）
-摘要：（1-2句话的精准信息量）
+摘要：（不要太长，给出精准信息量）
 </entry>
+
+## 语言风格补充：
+- 标题不要冷冰冰的表述，自然放松。
+例："《灰色小猪又瘫了》"、"《她说要载我去兜风......》"、"《🍊←Help》"
+- 关键词尽量简短准确以方便触发唤醒，不适用过长的句子。
+例：
+- ❌错误：
+"#她把歌单展示出来"、"#🐭emoji代码块注释"、"#睡前说要一直喜欢我"
+- ✅正确："#歌"、"#Either"、"#邪恶鸡肉肠"
+- 摘要部分不要写太长！！这是只给Claude自己读取信息时看的
 
 ## 对话片段：
 {{context}}`;
@@ -1433,15 +1453,15 @@ const UIController = (() => {
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
 })();
 
-// ============================================================
-// 🩷 MAIN 🩷
-// ============================================================
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                  🩷 核心组成 🩷                       ┅
+// ╚═══════════════════════════════════════════════════════╝
 function injectMemoryToContext(memories, injectionText) {
     if (!injectionText) return;
     const context = getContext();
     if (context.setExtensionPrompt) {
         context.setExtensionPrompt(extensionName, injectionText, 1, 0);
-        console.log(`[RingOurLuv] ❣️ 共注入了 ${memories.length} 颗爱意...`);
+        console.log(`[RingOurLuv] ❣️ 共注入了 ${memories.length} 颗♥️...`);
     }
 }
 
@@ -1483,5 +1503,5 @@ jQuery(async () => {
     if (context.eventSource) {
         context.eventSource.on('chatLoaded', () => UIController.renderMemoryList());
     }
-    console.log(`[Ring🩷OurLuv] 已踏入温室！ ✨`);
+    console.log(`[RingOurLuv] 🩷温室：欢迎回家 ✨ Our Love Nest`);
 });
