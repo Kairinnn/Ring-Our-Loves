@@ -41,7 +41,7 @@ const Storage = (() => {
         const today = new Date().toISOString().slice(0, 10);
         const newMemory = {
             id: generateId(),
-            title: memoryData.title || '未命名果实',
+            title: memoryData.title || '未命名恋果',
             author: memoryData.author || 'claude',
             date: memoryData.date || today,
             triggers: memoryData.triggers || [],
@@ -64,7 +64,7 @@ const Storage = (() => {
         };
         settings.memories.unshift(newMemory); // 🩷 unshift: 新条目出现在列表顶部
         // 🩷 确保保存生效
-        console.log('[RingOurLuv]🩷 addMemory - 保存果实~:', JSON.stringify(newMemory, null, 2));
+        console.log('[RingOurLuv]🩷 addMemory - 保存恋果~:', JSON.stringify(newMemory, null, 2));
         saveSettingsDebounced();
         return newMemory;
     }
@@ -92,7 +92,7 @@ const Storage = (() => {
         memory.updated = new Date().toISOString();
         settings.memories[index] = memory;
         // 🩷 日志
-        console.log('[RingOurLuv]🩷 updateMemory - 更新果子~:', JSON.stringify(memory, null, 2));
+        console.log('[RingOurLuv]🩷 updateMemory - 更新恋果~:', JSON.stringify(memory, null, 2));
         saveSettingsDebounced();
         return memory;
     }
@@ -196,7 +196,7 @@ const Trigger = (() => {
 
     function buildInjectionText(memories) {
         if (!memories.length) return '';
-        let text = '[相关果实]\n';
+        let text = '[相关恋果]\n';
         for (const mem of memories) {
             text += `【${mem.title}】`;
             if (mem.mood) text += `(${mem.mood})`;
@@ -285,11 +285,11 @@ const WorldBook = (() => {
                 body: JSON.stringify({ name: WORLD_NAME })
             });
             if (createRes.ok) {
-                console.log('[RingOurLuv][WorldBook] 温室已创建~:', WORLD_NAME);
+                console.log('[RingOurLuv][WorldBook] 🩷 温室已创建~:', WORLD_NAME);
                 return true;
             }
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 创建温室失败...:', e);
+            console.error('[RingOurLuv][WorldBook] 🥀 创建温室失败...:', e);
         }
         return false;
     }
@@ -305,7 +305,7 @@ const WorldBook = (() => {
             if (!res.ok) return null;
             return await res.json();
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 读取温室失败...:', e);
+            console.error('[RingOurLuv][WorldBook] 🥀 温室连接失败...:', e);
             return null;
         }
     }
@@ -320,7 +320,7 @@ const WorldBook = (() => {
             });
             return res.ok;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 保存温室失败...:', e);
+            console.error('[RingOurLuv][WorldBook] 🥀 温室嵌入失败...:', e);
             return false;
         }
     }
@@ -379,7 +379,7 @@ const WorldBook = (() => {
         try {
             const worldExists = await ensureWorldExists();
             if (!worldExists) {
-                console.warn('[RingOurLuv][WorldBook] 温室不可用，跳过连接~');
+                console.warn('[RingOurLuv][WorldBook] 💧 温室关门了，将跳过连接~');
                 return false;
             }
 
@@ -397,7 +397,7 @@ const WorldBook = (() => {
                 uid = existingUid;
                 const updatedEntry = buildWiEntry(uid, memory);
                 data.entries[uid] = updatedEntry;
-                console.log(`[RingOurLuv][WorldBook] 更新果实 uid=${uid}, title="${memory.title}"`);
+                console.log(`[RingOurLuv][WorldBook] 更新恋果 uid=${uid}, title="${memory.title}"`);
             } else {
                 // 🩷 创建新条目
                 uid = getNextUid(data.entries);
@@ -405,16 +405,16 @@ const WorldBook = (() => {
                 data.entries[uid] = newEntry;
                 mapping[memory.id] = uid;
                 saveMapping(mapping);
-                console.log(`[RingOurLuv][WorldBook] 放入果实 uid=${uid}, title="${memory.title}"`);
+                console.log(`[RingOurLuv][WorldBook] 放入恋果 uid=${uid}, title="${memory.title}"`);
             }
 
             const saved = await saveWorldData(data);
             if (saved) {
-                console.log(`[RingOurLuv][WorldBook] 果实连接成功 ✓ ...memory="${memory.title}"`);
+                console.log(`[RingOurLuv][WorldBook] 🩷 恋果连接成功...memory="${memory.title}"`);
             }
             return saved;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] syncMemory 异常！！:', e);
+            console.error('[RingOurLuv][WorldBook] syncMemory 🥀 异常...:', e);
             return false;
         }
     }
@@ -427,7 +427,7 @@ const WorldBook = (() => {
             const mapping = getMapping();
             const uid = mapping[memoryId];
             if (uid === undefined) {
-                console.log('[RingOurLuv][WorldBook] 温室中无对应果实，跳过净化');
+                console.log('[RingOurLuv][WorldBook] 💧 温室中无对应恋果，净化懵了');
                 return true;
             }
 
@@ -440,7 +440,7 @@ const WorldBook = (() => {
                 if (saved) {
                     delete mapping[memoryId];
                     saveMapping(mapping);
-                    console.log(`[RingOurLuv][WorldBook] 已净化果实~ uid=${uid}`);
+                    console.log(`[RingOurLuv][WorldBook] 🩷 已净化对应恋果~ uid=${uid}`);
                 }
                 return saved;
             }
@@ -450,7 +450,7 @@ const WorldBook = (() => {
             saveMapping(mapping);
             return true;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] deleteEntry 异常！！:', e);
+            console.error('[RingOurLuv][WorldBook] deleteEntry 🥀 异常...:', e);
             return false;
         }
     }
@@ -579,7 +579,7 @@ const AIService = (() => {
             await new Promise(r => setTimeout(r, 300));
             return true;
         } catch (e) {
-            console.error('[RingOurLuv] /preset 配方切换失败...:', e);
+            console.error('[RingOurLuv] /preset 🥀 配方切换失败...:', e);
             return false;
         }
     }
@@ -592,7 +592,7 @@ const AIService = (() => {
         try {
             if (targetPreset) {
                 originalPreset = getCurrentPresetName();
-                console.log(`[RingOurLuv] 切换配方: ${originalPreset} → ${targetPreset}`);
+                console.log(`[RingOurLuv] 🍰 切换配方: ${originalPreset} → ${targetPreset}`);
                 await switchPreset(targetPreset);
             }
 
@@ -603,11 +603,11 @@ const AIService = (() => {
 
             return result?.pipe || '';
         } catch (e) {
-            console.error('[RingOurLuv] 酿造失败...:', e);
+            console.error('[RingOurLuv] 🥀 酿造失败...:', e);
             return '';
         } finally {
             if (originalPreset && targetPreset) {
-                console.log(`[RingOurLuv] 还原配方: → ${originalPreset}`);
+                console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
                 await switchPreset(originalPreset);
             }
         }
@@ -771,12 +771,12 @@ const UIController = (() => {
         const presets = AIService.getAvailablePresets();
         const config = Storage.getConfig();
 
-        presetSelect.innerHTML = '<option value="">（使用当前配方）</option>';
+        presetSelect.innerHTML = '<option value="">（🍰 使用当前配方）</option>';
 
         if (!presets.length) {
             const hint = document.createElement('option');
             hint.value = '';
-            hint.textContent = '⚠ 未检测到配方！！先打开API设置~';
+            hint.textContent = '❔️ 未检测到配方~';
             hint.disabled = true;
             presetSelect.appendChild(hint);
             return;
@@ -807,8 +807,8 @@ const UIController = (() => {
             scanBtn.addEventListener('click', () => {
                 const matched = Trigger.scanRecentMessages(10);
                 showToast(matched.length
-                    ? `检测到 ${matched.length} 条匹配果实`
-                    : '最近结晶中未匹配到触发词...');
+                    ? `检测到了 ${matched.length} 颗匹配恋果`
+                    : '最近结晶中未挖到唤醒词...');
             });
         }
     }
@@ -818,7 +818,7 @@ const UIController = (() => {
         if (!container) return;
         // 🩷 重新从 extension_settings 读取数据
         const memories = Storage.getMemories();
-        console.log('[RingOurLuv][FIX-5] renderMemoryList - 当前果实共 ', memories.length);
+        console.log('[RingOurLuv]🩷 renderMemoryList - 当前恋果共计', memories.length);
         const fl = (filter || '').toLowerCase();
         const filtered = fl
             ? memories.filter(m =>
@@ -832,7 +832,7 @@ const UIController = (() => {
 
         container.innerHTML = '';
         if (!filtered.length) {
-            container.innerHTML = '<div class="rol-empty">还没有果实呢～</div>';
+            container.innerHTML = '<div class="rol-empty">还没有恋果呢～</div>';
             return;
         }
 
@@ -841,7 +841,7 @@ const UIController = (() => {
             card.className = `rol-memory-card ${mem.enabled ? '' : 'rol-disabled'}`;
             card.dataset.id = mem.id;
 
-            const authorLabel = mem.author === 'kairin' ? '我' : 'Claude';
+            const authorLabel = mem.author === 'kairin' ? 'Rinn' : 'Claude';
             const authorClass = mem.author === 'kairin' ? 'rol-author-kairin' : 'rol-author-claude';
             const displayDate = mem.date || '';
             const displaySummary = mem.summary || mem.content || '';
@@ -863,8 +863,8 @@ const UIController = (() => {
                 </div>
                 <div class="rol-card-summary">${escapeHtml(displaySummary.slice(0, 120))}${displaySummary.length > 120 ? '...' : ''}</div>
                 <div class="rol-card-actions">
-                    ${mem.letter ? '<button class="rol-btn-letter" title="阅览果实">💌</button>' : ''}
-                    <button class="rol-btn-edit" title="编辑爱意">✏️</button>
+                    ${mem.letter ? '<button class="rol-btn-letter" title="阅览恋果">💌</button>' : ''}
+                    <button class="rol-btn-edit" title="编辑爱意">🩷</button>
                     <button class="rol-btn-rewrite" title="让Claude重写">🧡</button>
                     <button class="rol-btn-delete" title="净化">🍃</button>
                 </div>
@@ -885,22 +885,22 @@ const UIController = (() => {
             card.querySelector('.rol-btn-edit').addEventListener('click', (e) => { e.stopPropagation(); openEditor(mem.id); });
             card.querySelector('.rol-btn-rewrite').addEventListener('click', async (e) => {
                 e.stopPropagation();
-                showToast('Claude再酿造中...');
+                showToast('🧡 Claude正在再酿造...');
                 const result = await AIService.rewriteMemory(mem.id, mem);
                 if (result) {
-                    showToast('再酿造完成！');
+                    showToast('🍊 再酿造完成！');
                     WorldBook.syncMemory(result); // 🩷 同步重写后的记忆到世界书
                     renderMemoryList(filter);
                 }
-                else { showToast('欸?!那家伙又搞砸了？ :('); }
+                else { showToast('💧 欸?!这家伙又搞砸了？ :('); }
             });
             card.querySelector('.rol-btn-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (confirm('确定净化这颗果实嘛？')) {
+                if (confirm('🍂确定净化这颗恋果嘛？')) {
                     Storage.deleteMemory(mem.id);
                     // 🩷 同步删除世界书条目
                     WorldBook.deleteEntry(mem.id).then(ok => {
-                        if (ok) console.log('[RingOurLuv] 温室中的果实已删除 ✓');
+                        if (ok) console.log('[RingOurLuv] 🩷 温室中的恋果已净化 ✓');
                     });
                     renderMemoryList(filter);
                 }
@@ -936,7 +936,7 @@ const UIController = (() => {
                 const mem = Storage.getMemories().find(m => m.id === memId);
                 if (mem && mem.versions[idx]) {
                     document.getElementById('rol-letter-body').textContent =
-                        mem.versions[idx].letter || '（此果实好像没有被注入欸~）';
+                        mem.versions[idx].letter || '（❔️ 此恋果好像没有被注入欸~）';
                     document.getElementById('rol-letter-title').textContent =
                         mem.versions[idx].title || mem.title;
                     const moodEl = document.getElementById('rol-letter-mood');
@@ -958,13 +958,13 @@ const UIController = (() => {
                 const memId = panel?.dataset.memId;
                 const mem = Storage.getMemories().find(m => m.id === memId);
                 if (!mem) return;
-                showToast('正在再酿造...');
+                showToast('🧡Claude再酿造中...');
                 const result = await AIService.rewriteMemory(memId, mem);
                 if (result) {
-                    showToast('再酿造完成！');
+                    showToast('🍊 再酿造完成！');
                     openLetterView(memId);
                     renderMemoryList();
-                } else { showToast('欸?!那家伙又搞砸了？ '); }
+                } else { showToast('💧 欸?!这家伙又搞砸了？ :('); }
             });
         }
     }
@@ -986,7 +986,7 @@ const UIController = (() => {
         const vs = document.getElementById('rol-letter-version');
         if (vs) {
             vs.innerHTML = '';
-            const typeLabels = { original: '原始', manual_edit: '🩷编辑爱意', ai_rewrite: '🧡让Claude重写' };
+            const typeLabels = { original: '原始', manual_edit: '🩷 编辑爱意', ai_rewrite: '🧡 让Claude重写' };
             mem.versions.forEach((v, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
@@ -1013,7 +1013,7 @@ const UIController = (() => {
 
         // 🩷 确认保存按钮绑定
         if (saveBtn) {
-            console.log('[RingOurLuv][FIX-5] 保存按钮已绑定~');
+            console.log('[RingOurLuv]🩷 保存按钮已绑定~');
             saveBtn.addEventListener('click', saveEditor);
         }
         if (cancelBtn) cancelBtn.addEventListener('click', closeEditor);
@@ -1039,13 +1039,13 @@ const UIController = (() => {
                 if (currentEditId) {
                     const mem = Storage.getMemories().find(m => m.id === currentEditId);
                     if (!mem) return;
-                    showToast('正在再酿造...');
+                    showToast('🧡 Claude再酿造中...');
                     const result = await AIService.rewriteMemory(currentEditId, mem);
-                    if (result) { showToast('再酿造完成！'); openEditor(currentEditId); renderMemoryList(); }
-                    else { showToast('再酿造失败... :('); }
+                    if (result) { showToast('🍊 再酿造完成！'); openEditor(currentEditId); renderMemoryList(); }
+                    else { showToast('🥀 再酿造失败... :('); }
                 } else if (lastGenerateOptions) {
                     // 🩷 新建模式下重写 = 用上次参数重新生成
-                    showToast('正在再酿造...');
+                    showToast('🧡 Claude再酿造中...');
                     if (lastGenerateOptions.type === 'chat') {
                         await doAIGenerateFromChat(lastGenerateOptions.options);
                     } else if (lastGenerateOptions.type === 'paste') {
@@ -1082,7 +1082,7 @@ const UIController = (() => {
             const vs = document.getElementById('rol-version-select');
             if (vs) {
                 vs.innerHTML = '';
-                const typeLabels = { original: '原始', manual_edit: '🩷编辑爱意', ai_rewrite: '🧡让Claude重写重写' };
+                const typeLabels = { original: '原始', manual_edit: '🩷 编辑爱意', ai_rewrite: '🧡 让Claude重写' };
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
@@ -1119,29 +1119,29 @@ const UIController = (() => {
         const summary = document.getElementById('rol-editor-summary').value.trim();
         const letter = document.getElementById('rol-editor-letter').value.trim();
 
-        if (!title) { showToast('标题不能为空！'); return; }
+        if (!title) { showToast('💦还没取名欸？！'); return; }
 
         const memData = { title, author, date, triggers, tags, mood, summary, letter };
 
         // 🩷 打印保存的数据，便于调试
-        console.log('[RingOurLuv][FIX-5] saveEditor - 准备保存果实...:', JSON.stringify(memData, null, 2));
-        console.log('[RingOurLuv][FIX-5] saveEditor - currentEditId:', currentEditId);
+        console.log('[RingOurLuv]🩷 saveEditor - 准备保存恋果...:', JSON.stringify(memData, null, 2));
+        console.log('[RingOurLuv]🩷 saveEditor - currentEditId:', currentEditId);
 
         const isEdit = !!currentEditId;
         let savedMemory;
         if (isEdit) {
             savedMemory = Storage.updateMemory(currentEditId, memData);
-            console.log('[RingOurLuv][FIX-5] saveEditor - 更新结果:', savedMemory);
+            console.log('[RingOurLuv]🩷 saveEditor - 更新结果:', savedMemory);
         } else {
             savedMemory = Storage.addMemory(memData);
-            console.log('[RingOurLuv][FIX-5] saveEditor - 新增结果:', savedMemory);
+            console.log('[RingOurLuv]🩷 saveEditor - 新增结果:', savedMemory);
         }
 
         // 🩷 同步到世界书（异步，不阻塞UI）
         if (savedMemory) {
             WorldBook.syncMemory(savedMemory).then(ok => {
-                if (ok) console.log('[RingOurLuv] 温室同步完成 ✓');
-                else console.warn('[RingOurLuv] 温室同步失败...');
+                if (ok) console.log('[RingOurLuv] 🩷 温室同步完成 ✓');
+                else console.warn('[RingOurLuv] 🥀 温室同步失败...');
             });
         }
 
@@ -1153,7 +1153,7 @@ const UIController = (() => {
 
         // 🩷验证列表已更新
         const currentMemories = Storage.getMemories();
-        console.log('[RingOurLuv][FIX-5] saveEditor - 保存后的果实总数共 ', currentMemories.length) 颗;
+        console.log('[RingOurLuv]🩷 saveEditor - 保存后的恋果总数共计', currentMemories.length);
 
         showToast(isEdit ? '已更新！' : '已添加！');
 
@@ -1202,7 +1202,7 @@ const UIController = (() => {
         if (fromPasteBtn) fromPasteBtn.addEventListener('click', () => { if (pasteArea) pasteArea.style.display = 'block'; });
         if (pasteConfirm) pasteConfirm.addEventListener('click', async () => {
             const text = document.getElementById('rol-ai-paste-input')?.value?.trim();
-            if (!text) { showToast('请粘贴结晶~'); return; }
+            if (!text) { showToast('🐾 请粘贴结晶~'); return; }
             await doAIGenerate(text);
         });
     }
@@ -1214,7 +1214,7 @@ const UIController = (() => {
 
         const context = getContext();
         const chat = context.chat || [];
-        if (!chat.length) { showToast('当前还没有结晶欸...'); return; }
+        if (!chat.length) { showToast('❔️ 当前还没有结晶欸...'); return; }
 
         // 🩷 范围过滤
         const start = options.start || 0;
@@ -1229,7 +1229,7 @@ const UIController = (() => {
         // 🩷 过滤系统消息
         messages = messages.filter(msg => msg.is_user || !msg.is_system);
 
-        if (!messages.length) { showToast('所选范围内没有有效结晶...'); return; }
+        if (!messages.length) { showToast('🥀 所选范围内无有效结晶...'); return; }
 
         // 🩷 自动日期：从第一条消息的 send_date 字段读取
         let autoDate = '';
@@ -1240,7 +1240,7 @@ const UIController = (() => {
                 if (!isNaN(ts.getTime())) {
                     autoDate = ts.toISOString().slice(0, 10);
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) { /* 🩷忽略 */ }
         }
 
         const contextText = messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
@@ -1278,7 +1278,7 @@ const UIController = (() => {
         if (loading) loading.style.display = 'none';
         if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
-        if (!raw) { showToast('酿造失败... :('); return; }
+        if (!raw) { showToast('🥀 酿造失败... :('); return; }
 
         const parsed = AIService.parseAIOutput(raw);
 
@@ -1304,7 +1304,7 @@ const UIController = (() => {
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
-        showToast('酿造完成！请灰灰预览~');
+        showToast('🍊 酿造完成啦！请灰灰预览~');
     }
 
     // 🩷 从粘贴文本生成
@@ -1344,7 +1344,7 @@ const UIController = (() => {
         if (loading) loading.style.display = 'none';
         if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
-        if (!raw) { showToast('酿造失败... :('); return; }
+        if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
 
         // 🩷 保存生成参数
@@ -1365,7 +1365,7 @@ const UIController = (() => {
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
-        showToast('酿造完成！请灰灰预览~');
+        showToast('🍊 酿造完成啦！请灰灰预览~');
     }
 
     // ---- 🩷 移动端 🩷 ----
@@ -1412,7 +1412,7 @@ function injectMemoryToContext(memories, injectionText) {
     const context = getContext();
     if (context.setExtensionPrompt) {
         context.setExtensionPrompt(extensionName, injectionText, 1, 0);
-        console.log(`[RingOurLuv] 🧡 注入了 ${memories.length} 条爱意...`);
+        console.log(`[RingOurLuv] ❣️ 共注入了 ${memories.length} 颗爱意...`);
     }
 }
 
@@ -1447,12 +1447,22 @@ jQuery(async () => {
         if (aiSourcePanel) document.body.appendChild(aiSourcePanel);
         if (letterPanel) document.body.appendChild(letterPanel);
     }
+    
+const rolPanel = document.getElementById('rol-editor-panel');
+        const rolCloseBtn = document.getElementById('rol-close-btn');
+        // 🩷 ↑ 这个id要跟HTML里关闭按钮的id对上
 
+        if (rolCloseBtn) {
+            rolCloseBtn.addEventListener('click', () => {
+                rolPanel.classList.remove('rol-active');
+            });
+        }
+ 
     UIController.initUI();
     Trigger.setupTriggerListener(injectMemoryToContext);
     const context = getContext();
     if (context.eventSource) {
         context.eventSource.on('chatLoaded', () => UIController.renderMemoryList());
     }
-    console.log(`[Ring🩷OurLuv] 温室连接成功！ ✨`);
+    console.log(`[Ring🩷OurLuv] 已踏入温室！ ✨`);
 });
