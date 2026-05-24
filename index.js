@@ -1277,7 +1277,7 @@ const UIController = (() => {
         if (loading) loading.style.display = 'flex';
 
         const config = Storage.getConfig();
-        const DEFAULT_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
+        const DEFAULT_PROMPT = `Claude现在正在留存这次收集到的有关小灰的记忆/信息...你想把有关她的重要特别的信息都写下来…
 以下是你们最近的一段对话。你将以第一人称回顾这段对话，给她留一段文字/点评/小纸条吧。不限长短类型
 
 ## 写信要求：
