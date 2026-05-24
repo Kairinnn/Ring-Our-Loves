@@ -1257,6 +1257,7 @@ const UIController = (() => {
 
     // ┣━━🩷从聊天生成记忆━━┫
     async function doAIGenerateFromChat(options) {
+        const rolStopBtn = document.querySelector('#rol-stop-gen');
         const sourcePanel = document.getElementById('rol-ai-source-panel');
         const loading = document.getElementById('rol-ai-loading');
 
