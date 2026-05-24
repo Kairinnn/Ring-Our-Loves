@@ -7,9 +7,12 @@
 }
 
 .rol-editor-panel.rol-active {
-  transform: translateX(0);
-  opacity: 1;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
 }
+
 .rol-editor-panel,
 .rol-editor-inner,
 .rol-editor-inner textarea,
