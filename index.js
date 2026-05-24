@@ -1011,6 +1011,25 @@ const UIController = (() => {
         const editorPanel = document.getElementById('rol-editor-panel');
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
+        // 🩷 日夜主题切换按钮
+        if (editorPanel) {
+            const inner = editorPanel.querySelector('.rol-editor-inner');
+            if (inner && !inner.querySelector('.rol-theme-toggle')) {
+                const themeBtn = document.createElement('button');
+                themeBtn.className = 'rol-theme-toggle';
+                themeBtn.textContent = '☀️';
+                themeBtn.title = '切换日/夜间模式';
+                themeBtn.type = 'button';
+                themeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editorPanel.classList.toggle('rol-light');
+                    const isLight = editorPanel.classList.contains('rol-light');
+                    themeBtn.textContent = isLight ? '🌙' : '☀️';
+                });
+                inner.prepend(themeBtn);
+            }
+        }
+
         // 🩷 确认保存按钮绑定
         if (saveBtn) {
             console.log('[RingOurLuv]🩷 保存按钮已绑定~');
