@@ -1443,7 +1443,13 @@ const UIController = (() => {
         toast.classList.add('rol-toast-show');
         setTimeout(() => toast.classList.remove('rol-toast-show'), 2500);
     }
-
+    // ⭐️ 支持 blockquote 语法（> 开头的行）在摘要中保留引用格式
+    function parseBlockquotes(text) {
+        return text.replace(
+        /^(?:>|＞)\s?(.+)$/gm,
+        '<blockquote class="rol-quote">$1</blockquote>'
+      );
+    }
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;
