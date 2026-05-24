@@ -1,4 +1,4 @@
-<!-- 🩷侧边栏内只显示打开按钮 -->
+<!-- ┣━━🩷侧边栏内只显示打开按钮━━┫ -->
 <div class="extension_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
@@ -11,23 +11,23 @@
     </div>
 </div>
 
-<!-- 🩷可折叠侧边抽屉面板（由JS移至body） -->
+<!-- ┣━━🩷可折叠侧边抽屉面板（由JS移至body）━━┫ -->
 <div id="rol-drawer-overlay" class="rol-drawer-overlay">
     <div id="rol-drawer-panel" class="rol-drawer-panel">
-        <!-- 🩷抽屉头部 + 收起按钮 -->
+        <!-- ┣━━🩷抽屉头部 + 收起按钮━━┫ -->
         <div class="rol-drawer-header">
             <span class="rol-drawer-title">My Electronic Ether.</span>
             <button id="rol-drawer-close" class="rol-btn rol-btn-icon rol-drawer-close-btn">🐾 收起</button>
         </div>
 
         <div id="rol-container" class="rol-container">
-            <!-- 🩷Tab导航 -->
+            <!-- ┣━━🩷Tab导航━━┫ -->
             <div class="rol-tabs">
                 <button class="rol-tab rol-tab-active" data-target="rol-section-list">💝 去酿造</button>
                 <button class="rol-tab" data-target="rol-section-config">🍰 配方</button>
             </div>
 
-            <!-- 🩷记忆列表 -->
+            <!-- ┣━━🩷记忆列表━━┫ -->
             <div id="rol-section-list" class="rol-panel-section rol-section-active">
                 <div class="rol-toolbar">
                     <input type="text" id="rol-search" class="rol-input" placeholder="搜索恋果...">
@@ -38,7 +38,7 @@
                 <div id="rol-memory-list" class="rol-memory-list"></div>
             </div>
 
-            <!-- 🩷设置 -->
+            <!-- ┣━━🩷设置━━┫ -->
             <div id="rol-section-config" class="rol-panel-section">
                 <div class="rol-config-group">
                     <label class="rol-label">
@@ -63,7 +63,7 @@
     </div>
 </div>
 
-<!-- 🩷编辑器面板（含保存/重写/取消三按钮） -->
+<!-- ┣━━🩷编辑器面板（含保存/重写/取消三按钮）━━┫ -->
 <div id="rol-editor-panel" class="rol-editor-panel">
     <div class="rol-editor-inner">
         <h3 class="rol-editor-heading">🩷 传入爱意</h3>
@@ -108,7 +108,7 @@
             <label>🍰 历史配方</label>
             <select id="rol-version-select" class="rol-input"></select>
         </div>
-        <!-- 🩷确保有保存和取消按钮 / 三按钮：保存（粉色）、重写（橙色）、取消（灰色） -->
+        <!-- ┣━━🩷确保有保存和取消按钮 / 三按钮：保存（粉色）、重写（橙色）、取消（灰色）━━┫ -->
         <div class="rol-editor-actions">
             <button id="rol-editor-save" class="rol-btn rol-btn-save">🍊 结果</button>
             <button id="rol-editor-rewrite" class="rol-btn rol-btn-rewrite" style="display:none;">🩷 再酿造</button>
@@ -117,13 +117,13 @@
     </div>
 </div>
 
-<!-- 🩷 AI来源选择面板（含楼层范围 + 隐藏消息开关） -->
+<!-- ┣━━🩷 AI来源选择面板（含楼层范围 + 隐藏消息开关）━━┫ -->
 <div id="rol-ai-source-panel" class="rol-ai-source-panel">
     <div class="rol-ai-source-inner">
         <h3 class="rol-editor-heading">🧡 让Claude酿造</h3>
         <p class="rol-ai-source-desc">笨蛋要好好记住哦</p>
         <div class="rol-ai-source-options">
-            <!-- 🩷 楼层范围选择器（替换原来的"从当前聊天生成"按钮） -->
+            <!-- ┣━━🩷 楼层范围选择器（替换原来的"从当前聊天生成"按钮）━━┫ -->
             <div class="rol-ai-chat-section">
                 <div class="rol-ai-section-header">
                     <span class="rol-ai-source-icon">🌿</span>
@@ -139,7 +139,7 @@
                         <input type="number" id="rol-floor-end" class="rol-input rol-input-sm" value="-1">
                     </div>
                 </div>
-                <!-- 🩷 包含已隐藏消息的开关 -->
+                <!-- ┣━━🩷 包含已隐藏消息的开关━━┫ -->
                 <label class="rol-checkbox-label">
                     <input type="checkbox" id="rol-include-hidden"> 🍥 包含隐藏的结晶
                 </label>
@@ -166,7 +166,7 @@
     </div>
 </div>
 
-<!-- 🩷信件视图面板 -->
+<!-- ┣━━🩷信件视图面板━━┫ -->
 <div id="rol-letter-panel" class="rol-letter-panel" data-mem-id="">
     <div class="rol-letter-inner">
         <div class="rol-letter-header">

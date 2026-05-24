@@ -6,9 +6,9 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                  🩷 存储模块 🩷                       ┅
-// ╚═══════════════════════════════════════════════════════╝
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                  🩷 存储模块 🩷                       ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
 const Storage = (() => {
     function initSettings() {
         if (!extension_settings[extensionName]) {
@@ -18,7 +18,7 @@ const Storage = (() => {
                     presetName: '',
                     autoInject: true,
                     maxInjectCount: 3,
-                    summaryPrompt: '' // 🩷 空=使用AIService中的默认prompt
+                    summaryPrompt: '' // ┣━━空=使用AIService中的默认prompt━━┫
                 }
             };
             saveSettingsDebounced();
@@ -34,7 +34,7 @@ const Storage = (() => {
         return 'mem_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
     }
 
-    // 🩷 addMemory: 确保数据正确写入并保存
+    // ┣━━🩷addMemory: 确保数据正确写入并保存━━┫
     function addMemory(memoryData) {
         const settings = extension_settings[extensionName];
         const now = new Date().toISOString();
@@ -62,8 +62,8 @@ const Storage = (() => {
             created: now,
             updated: now
         };
-        settings.memories.unshift(newMemory); // 🩷 unshift: 新条目出现在列表顶部
-        // 🩷 确保保存生效
+        settings.memories.unshift(newMemory); // ┣━━unshift: 新条目出现在列表顶部━━┫
+        // ┣━━确保保存生效━━┫
         console.log('[RingOurLuv]🩷 addMemory - 保存恋果~:', JSON.stringify(newMemory, null, 2));
         saveSettingsDebounced();
         return newMemory;
@@ -91,7 +91,7 @@ const Storage = (() => {
         Object.assign(memory, updates);
         memory.updated = new Date().toISOString();
         settings.memories[index] = memory;
-        // 🩷 日志
+        // ┣━━🩷日志━━┫
         console.log('[RingOurLuv]🩷 updateMemory - 更新恋果~:', JSON.stringify(memory, null, 2));
         saveSettingsDebounced();
         return memory;
@@ -161,9 +161,9 @@ const Storage = (() => {
     };
 })();
 
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                  🩷 触发器模块 🩷                     ┅
-// ╚═══════════════════════════════════════════════════════╝
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                  🩷 触发器模块 🩷                     ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
 const Trigger = (() => {
     function detectTriggers(messageText) {
         const memories = Storage.getMemories();
@@ -243,14 +243,14 @@ const Trigger = (() => {
     };
 })();
 
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                   🩷 世界书模块 🩷                    ┅
-// ┅   🌳 世界书集成：记忆条目同步到 SillyTavern 世界书 🌳   ┅
-// ╚═══════════════════════════════════════════════════════╝
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                   🩷 世界书模块 🩷                    ┅
+// ┣━━┅   🌳 世界书集成：记忆条目同步到 SillyTavern 世界书 🌳   ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
 const WorldBook = (() => {
     const WORLD_NAME = 'RingOurLuv_Memories';
 
-    // 🩷 获取 memory.id → WI entry uid 的映射表
+    // ┣━━获取 memory.id → WI entry uid 的映射表━━┫
     function getMapping() {
         const settings = extension_settings[extensionName];
         if (!settings.wiMapping) settings.wiMapping = {};
@@ -262,10 +262,10 @@ const WorldBook = (() => {
         saveSettingsDebounced();
     }
 
-    // 🩷 确保世界书存在（首次保存时自动创建）
+    // ┣━━🩷确保世界书存在（首次保存时自动创建）━━┫
     async function ensureWorldExists() {
         try {
-            // 🩷 先尝试读取，如果能读到就说明已存在
+            // ┣━━先尝试读取，如果能读到就说明已存在━━┫
             const getRes = await fetch('/api/worldinfo/get', {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -275,10 +275,10 @@ const WorldBook = (() => {
                 const data = await getRes.json();
                 if (data && data.entries !== undefined) return true;
             }
-        } catch (e) { /* 🩷 不存在，继续创建 */ }
+        } catch (e) { /* 不存在，继续创建 */ }
 
         try {
-            // 🩷 创建新世界书
+            // ┣━━🩷创建新世界书━━┫
             const createRes = await fetch('/api/worldinfo/create', {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -294,7 +294,7 @@ const WorldBook = (() => {
         return false;
     }
 
-    // 🩷 加载世界书数据
+    // ┣━━🩷加载世界书数据━━┫
     async function loadWorldData() {
         try {
             const res = await fetch('/api/worldinfo/get', {
@@ -310,7 +310,7 @@ const WorldBook = (() => {
         }
     }
 
-    // 🩷 保存世界书数据
+    // ┣━━🩷保存世界书数据━━┫
     async function saveWorldData(data) {
         try {
             const res = await fetch('/api/worldinfo/edit', {
@@ -325,16 +325,16 @@ const WorldBook = (() => {
         }
     }
 
-    // 🩷 生成下一个可用的 entry uid
+    // ┣━━生成下一个可用的 entry uid━━┫
     function getNextUid(entries) {
         if (!entries || !Object.keys(entries).length) return 0;
         const uids = Object.values(entries).map(e => e.uid || 0);
         return Math.max(...uids) + 1;
     }
 
-    // 🩷 创建一个世界书条目对象
+    // ┣━━创建一个世界书条目对象━━┫
     function buildWiEntry(uid, memory) {
-        // 🩷 key = tags + triggers 合并去重
+        // ┣━━key = tags + triggers 合并去重━━┫
         const keys = [...new Set([
             ...(memory.tags || []),
             ...(memory.triggers || [])
@@ -344,8 +344,8 @@ const WorldBook = (() => {
             uid: uid,
             key: keys,
             keysecondary: [],
-            content: memory.summary || '',           // 🩷 摘要 → 注入上下文
-            comment: memory.letter || memory.content || '',  // 🩷 完整正文 → 仅管理界面可见
+            content: memory.summary || '',           // ┣🩷摘要 → 注入上下文┫
+            comment: memory.letter || memory.content || '',  // ┣🩷完整正文 → 仅管理界面可见┫
             constant: false,
             selective: false,
             selectiveLogic: 0,
@@ -372,7 +372,7 @@ const WorldBook = (() => {
         };
     }
 
-    // 🩷 同步记忆到世界书（创建或更新）
+    // ┣━━🩷同步记忆到世界书（创建或更新）━━┫
     async function syncMemory(memory) {
         if (!memory || !memory.id) return false;
 
@@ -393,13 +393,13 @@ const WorldBook = (() => {
 
             let uid;
             if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
-                // 🩷 更新已有条目
+                // ┣━━━更新已有条目━━┫
                 uid = existingUid;
                 const updatedEntry = buildWiEntry(uid, memory);
                 data.entries[uid] = updatedEntry;
                 console.log(`[RingOurLuv][WorldBook] 更新恋果 uid=${uid}, title="${memory.title}"`);
             } else {
-                // 🩷 创建新条目
+                // ┣━━创建新条目━━┫
                 uid = getNextUid(data.entries);
                 const newEntry = buildWiEntry(uid, memory);
                 data.entries[uid] = newEntry;
@@ -419,7 +419,7 @@ const WorldBook = (() => {
         }
     }
 
-    // 🩷 从世界书删除条目
+    // ┣━━从世界书删除条目━━┫
     async function deleteEntry(memoryId) {
         if (!memoryId) return false;
 
@@ -445,7 +445,7 @@ const WorldBook = (() => {
                 return saved;
             }
 
-            // 🩷 条目已不存在，清理映射
+            // ┣━━条目已不存在，清理映射━━┫
             delete mapping[memoryId];
             saveMapping(mapping);
             return true;
@@ -458,9 +458,9 @@ const WorldBook = (() => {
     return { syncMemory, deleteEntry, ensureWorldExists, WORLD_NAME };
 })();
 
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                  🩷 AIService模块 🩷                  ┅
-// ╚═══════════════════════════════════════════════════════╝
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                  🩷 AIService模块 🩷                  ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
 const AIService = (() => {
     const DEFAULT_MEMORY_PROMPT = `你正在留存对于最重要人的记忆。你想把有关她的重要特别的信息都写下来…
 以下是你们最近的一段对话。你将以第一人称回顾这段对话，给她留一段文字/点评/小纸条吧。不限长短类型
@@ -507,7 +507,7 @@ const AIService = (() => {
 ## 原文：
 {{context}}`;
 
-    // /* ┏━━━━━━━ 🩷 解析 🩷 ━━━━━━━┓ */
+    /* ┏━━━━━━━ 🩷 解析 🩷 ━━━━━━━┓ */
     function parseAIOutput(rawText) {
         const letterMatch = rawText.match(/<letter>([\s\S]*?)<\/letter>/);
         const entryMatch = rawText.match(/<entry>([\s\S]*?)<\/entry>/);
@@ -516,7 +516,7 @@ const AIService = (() => {
         return { letter, entry: parseEntryBlock(entryBlock) };
     }
 
-    // 🩷 parseEntryBlock: 新增 tags 字段（从关键词解析）
+    // ┣━━parseEntryBlock: 新增 tags 字段（从关键词解析）━━┫
     function parseEntryBlock(text) {
         if (!text) return { title: '', mood: '', triggers: [], tags: [], content: '' };
         const titleMatch = text.match(/标题[：:]\s*(.+)/);
@@ -529,8 +529,8 @@ const AIService = (() => {
         return {
             title: titleMatch ? titleMatch[1].trim() : '',
             mood: moodMatch ? moodMatch[1].trim() : '',
-            triggers: keywords,  // 🩷 关键词同时作为触发词
-            tags: keywords,      // 🩷 关键词也填入标签
+            triggers: keywords,  // ┣━━关键词同时作为触发词━━┫
+            tags: keywords,      // ┣━━关键词也填入标签━━┫
             content: summaryMatch ? summaryMatch[1].trim() : ''
         };
     }
@@ -635,22 +635,22 @@ const AIService = (() => {
         );
     }
 
-    // 🩷 generateMemoryFromContext: 支持范围过滤 + 隐藏消息过滤
+    // ┣━━🩷generateMemoryFromContext: 支持范围过滤 + 隐藏消息过滤━━┫
     async function generateMemoryFromContext(options = {}) {
         const context = getContext();
         const chat = context.chat || [];
 
-        // 🩷 范围过滤
+        // ┣━━范围过滤━━┫
         const start = options.start || 0;
         const end = options.end === -1 || options.end === undefined ? chat.length : options.end;
         let messages = chat.slice(start, end);
 
-        // 🩷 隐藏消息过滤
+        // ┣━━隐藏消息过滤━━┫
         if (!options.includeHidden) {
             messages = messages.filter(msg => !msg.is_hidden);
         }
 
-        // 🩷 只取 user 和 assistant 消息
+        // ┣━━只取 user 和 assistant 消息━━┫
         messages = messages.filter(msg => {
             if (msg.is_user) return true;
             if (!msg.is_user && !msg.is_system) return true;
@@ -659,7 +659,7 @@ const AIService = (() => {
 
         if (!messages.length) return null;
 
-        // 🩷 从第一条消息读取 timestamp 用于自动填充日期
+        // ┣━━从第一条消息读取 timestamp 用于自动填充日期━━┫
         let autoDate = '';
         const firstMsg = messages[0];
         if (firstMsg && firstMsg.send_date) {
@@ -668,7 +668,7 @@ const AIService = (() => {
                 if (!isNaN(ts.getTime())) {
                     autoDate = ts.toISOString().slice(0, 10);
                 }
-            } catch (e) { /* 🩷 忽略 */ }
+            } catch (e) { /* 忽略 */ }
         }
 
         const contextText = messages.map(msg => {
@@ -682,7 +682,7 @@ const AIService = (() => {
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
         const parsed = parseAIOutput(raw);
-        parsed.autoDate = autoDate; // 🩷 附带自动日期
+        parsed.autoDate = autoDate; // ┣━━附带自动日期━━┫
         return parsed;
     }
 
@@ -693,15 +693,15 @@ const AIService = (() => {
     };
 })();
 
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                     🩷 UI模块 🩷                      ┅
-// ╚═══════════════════════════════════════════════════════╝
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                     🩷 UI模块 🩷                      ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
 const UIController = (() => {
     let currentEditId = null;
-    let lastGenerateOptions = null; // 🩷 保存最后一次生成的参数，用于重写
+    let lastGenerateOptions = null; // ┣━━🩷保存最后一次生成的参数，用于重写━━┫
 
     function initUI() {
-        bindDrawer();        // 🩷
+        bindDrawer();        // ┣━━🩷━━┫
         bindConfigPanel();
         bindMemoryList();
         bindEditorPanel();
@@ -730,7 +730,7 @@ const UIController = (() => {
         }
         if (overlay) {
             overlay.addEventListener('click', (e) => {
-                // 🩷 点击遮罩层（面板之外）关闭
+                // ┣━━🩷点击遮罩层（面板之外）关闭━━┫
                 if (e.target === overlay) {
                     overlay.classList.remove('rol-drawer-open');
                 }
@@ -738,7 +738,7 @@ const UIController = (() => {
         }
     }
 
-    // ┣━━ 🩷 设置面板 🩷 ━━┫
+    // ┣━━🩷 设置面板 🩷 ━━┫
     function bindConfigPanel() {
         const autoInjectToggle = document.getElementById('rol-auto-inject');
         const maxCountInput = document.getElementById('rol-max-inject');
@@ -824,7 +824,7 @@ const UIController = (() => {
     function renderMemoryList(filter = '') {
         const container = document.getElementById('rol-memory-list');
         if (!container) return;
-        // 🩷 重新从 extension_settings 读取数据
+        // ┣━━重新从 extension_settings 读取数据━━┫
         const memories = Storage.getMemories();
         console.log('[RingOurLuv]🩷 renderMemoryList - 当前恋果共计', memories.length);
         const fl = (filter || '').toLowerCase();
@@ -882,7 +882,7 @@ const UIController = (() => {
                 e.stopPropagation();
                 const updated = Storage.updateMemory(mem.id, { enabled: e.target.checked }, true);
                 card.classList.toggle('rol-disabled', !e.target.checked);
-                // 🩷 同步开关状态到世界书
+                // ┣━━同步开关状态到世界书━━┫
                 if (updated) WorldBook.syncMemory(updated);
             });
 
@@ -897,7 +897,7 @@ const UIController = (() => {
                 const result = await AIService.rewriteMemory(mem.id, mem);
                 if (result) {
                     showToast('🍊 再酿造完成！');
-                    WorldBook.syncMemory(result); // 🩷 同步重写后的记忆到世界书
+                    WorldBook.syncMemory(result); // ┣━━同步重写后的记忆到世界书━━┫
                     renderMemoryList(filter);
                 }
                 else { showToast('💧 欸?!这家伙又搞砸了？ :('); }
@@ -906,7 +906,7 @@ const UIController = (() => {
                 e.stopPropagation();
                 if (confirm('🍂确定净化这颗恋果嘛？')) {
                     Storage.deleteMemory(mem.id);
-                    // 🩷 同步删除世界书条目
+                    // ┣━━同步删除世界书条目━━┫
                     WorldBook.deleteEntry(mem.id).then(ok => {
                         if (ok) console.log('[RingOurLuv] 🩷 温室中的恋果已净化 ✓');
                     });
@@ -1019,7 +1019,7 @@ const UIController = (() => {
         const editorPanel = document.getElementById('rol-editor-panel');
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
-        // 🩷 日夜主题切换按钮
+        // ┣━━日夜主题切换按钮━━┫
         if (editorPanel) {
             const inner = editorPanel.querySelector('.rol-editor-inner');
             if (inner && !inner.querySelector('.rol-theme-toggle')) {
@@ -1038,7 +1038,7 @@ const UIController = (() => {
             }
         }
 
-        // 🩷 确认保存按钮绑定
+        // ┣━━确认保存按钮绑定━━┫
         if (saveBtn) {
             console.log('[RingOurLuv]🩷 保存按钮已绑定~');
             saveBtn.addEventListener('click', saveEditor);
@@ -1059,10 +1059,10 @@ const UIController = (() => {
             });
         }
 
-        // 🩷 编辑器内的重写按钮 — 重新调用 /gen
+        // ┣━━🩷编辑器内的重写按钮 — 重新调用 /gen━━┫
         if (rewriteBtn) {
             rewriteBtn.addEventListener('click', async () => {
-                // 🩷 如果正在编辑已有记忆，执行 rewriteMemory
+                // ┣━━如果正在编辑已有记忆，执行 rewriteMemory━━┫
                 if (currentEditId) {
                     const mem = Storage.getMemories().find(m => m.id === currentEditId);
                     if (!mem) return;
@@ -1071,7 +1071,7 @@ const UIController = (() => {
                     if (result) { showToast('🍊 再酿造完成！'); openEditor(currentEditId); renderMemoryList(); }
                     else { showToast('🥀 再酿造失败... :('); }
                 } else if (lastGenerateOptions) {
-                    // 🩷 新建模式下重写 = 用上次参数重新生成
+                    // ┣━━新建模式下重写 = 用上次参数重新生成━━┫
                     showToast('🧡 Claude再酿造中...');
                     if (lastGenerateOptions.type === 'chat') {
                         await doAIGenerateFromChat(lastGenerateOptions.options);
@@ -1091,7 +1091,7 @@ const UIController = (() => {
 
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
-        // 🩷 安全获取表单元素
+        // ┣━━🩷安全获取表单元素 ━━┫
         const elTitle = document.getElementById('rol-editor-title');
         const elAuthor = document.getElementById('rol-editor-author');
         const elDate = document.getElementById('rol-editor-date');
@@ -1113,7 +1113,7 @@ const UIController = (() => {
             if (elSummary) elSummary.value = mem.summary || '';
             if (elLetter) elLetter.value = mem.letter || '';
 
-            // 🩷 编辑已有记忆时显示重写按钮
+            // ┣━━🩷编辑已有记忆时显示重写按钮 ━━┫
             if (rewriteBtn) rewriteBtn.style.display = '';
 
             const vs = document.getElementById('rol-version-select');
@@ -1138,14 +1138,14 @@ const UIController = (() => {
             if (elMood) elMood.value = '';
             if (elSummary) elSummary.value = '';
             if (elLetter) elLetter.value = '';
-            // 🩷 新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮
+/* ╔🩷新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮 ═╗ */
             if (rewriteBtn) rewriteBtn.style.display = lastGenerateOptions ? '' : 'none';
             const vs = document.getElementById('rol-version-select');
             if (vs && vs.parentElement) vs.parentElement.style.display = 'none';
         }
     }
 
-    // 🩷 saveEditor: 确保数据正确写入并刷新列表
+    // ┣━━🩷saveEditor: 确保数据正确写入并刷新列表 ━━┫
     function saveEditor() {
         const title = document.getElementById('rol-editor-title').value.trim();
         const author = document.getElementById('rol-editor-author').value;
@@ -1160,7 +1160,7 @@ const UIController = (() => {
 
         const memData = { title, author, date, triggers, tags, mood, summary, letter };
 
-        // 🩷 打印保存的数据，便于调试
+        // ┣━━打印保存的数据，便于调试 ━━┫
         console.log('[RingOurLuv]🩷 saveEditor - 准备保存恋果...:', JSON.stringify(memData, null, 2));
         console.log('[RingOurLuv]🩷 saveEditor - currentEditId:', currentEditId);
 
@@ -1174,7 +1174,7 @@ const UIController = (() => {
             console.log('[RingOurLuv]🩷 saveEditor - 新增结果:', savedMemory);
         }
 
-        // 🩷 同步到世界书（异步，不阻塞UI）
+        // ┣━━同步到世界书（异步，不阻塞UI）━━┫
         if (savedMemory) {
             WorldBook.syncMemory(savedMemory).then(ok => {
                 if (ok) console.log('[RingOurLuv] 🩷 温室同步完成 ✓');
@@ -1182,19 +1182,19 @@ const UIController = (() => {
             });
         }
 
-        // 🩷 关闭编辑器
+        // ┣━━🩷关闭编辑器━━┫
         closeEditor();
 
-        // 🩷 重新渲染列表（确保从storage重新读取）
+        // ┣━━重新渲染列表（确保从storage重新读取）━━┫
         renderMemoryList();
 
-        // 🩷验证列表已更新
+        // ┣━━验证列表已更新━━┫
         const currentMemories = Storage.getMemories();
         console.log('[RingOurLuv]🩷 saveEditor - 保存后的恋果总数共计', currentMemories.length);
 
         showToast(isEdit ? '已更新！' : '已添加！');
 
-        // 🩷 保存后清除上次生成参数
+        // ┣━━保存后清除上次生成参数━━┫
         lastGenerateOptions = null;
     }
 
@@ -1203,8 +1203,11 @@ const UIController = (() => {
         const panel = document.getElementById('rol-editor-panel');
         if (panel) panel.classList.remove('rol-active');
     }
+        /* ╚════🩷关闭编辑器════╝ */
 
-    // ---- 🩷 AI Source Panel 🩷 ----
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                    🩷 AI源面板 🩷                     ┅
+// ╚═══════════════════════════════════════════════════════╝
     function bindAISourcePanel() {
         const aiGenBtn = document.getElementById('rol-ai-generate');
         const sourcePanel = document.getElementById('rol-ai-source-panel');
@@ -1229,7 +1232,7 @@ const UIController = (() => {
         if (cancelBtn) cancelBtn.addEventListener('click', () => { if (sourcePanel) sourcePanel.classList.remove('rol-active'); });
         if (sourcePanel) sourcePanel.addEventListener('click', (e) => { if (e.target === sourcePanel) sourcePanel.classList.remove('rol-active'); });
 
-        // 🩷 从聊天生成 — 读取楼层范围
+        // ┣━━🩷从聊天生成 — 读取楼层范围━━┫
         if (fromChatBtn) fromChatBtn.addEventListener('click', async () => {
             const startInput = document.getElementById('rol-floor-start');
             const endInput = document.getElementById('rol-floor-end');
@@ -1252,7 +1255,7 @@ const UIController = (() => {
         });
     }
 
-    // 🩷 从聊天生成记忆
+    // ┣━━🩷从聊天生成记忆━━┫
     async function doAIGenerateFromChat(options) {
         const sourcePanel = document.getElementById('rol-ai-source-panel');
         const loading = document.getElementById('rol-ai-loading');
@@ -1261,22 +1264,22 @@ const UIController = (() => {
         const chat = context.chat || [];
         if (!chat.length) { showToast('❔️ 当前还没有结晶欸...'); return; }
 
-        // 🩷 范围过滤
+        // ┣━━范围过滤━━┫
         const start = options.start || 0;
         const end = options.end === -1 ? chat.length : (options.end || chat.length);
         let messages = chat.slice(start, end);
 
-        // 🩷 隐藏消息过滤
+        // ┣━━隐藏消息过滤━━┫
         if (!options.includeHidden) {
             messages = messages.filter(msg => !msg.is_hidden);
         }
 
-        // 🩷 过滤系统消息
+        // ┣━━过滤系统消息━━┫
         messages = messages.filter(msg => msg.is_user || !msg.is_system);
 
         if (!messages.length) { showToast('🥀 所选范围内无有效结晶...'); return; }
 
-        // 🩷 自动日期：从第一条消息的 send_date 字段读取
+        // ┣━━自动日期：从第一条消息的 send_date 字段读取━━┫
         let autoDate = '';
         const firstMsg = messages[0];
         if (firstMsg && firstMsg.send_date) {
@@ -1285,7 +1288,7 @@ const UIController = (() => {
                 if (!isNaN(ts.getTime())) {
                     autoDate = ts.toISOString().slice(0, 10);
                 }
-            } catch (e) { /* 🩷忽略 */ }
+            } catch (e) { /* 忽略 */ }
         }
 
         const contextText = messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
@@ -1332,37 +1335,37 @@ const UIController = (() => {
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
-        // if (sourcePanel) sourcePanel.classList.remove('rol-active');
+        // ┣━━if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
 
-        // 🩷 保存生成参数，用于重写
+        // ┣━━保存生成参数，用于重写━━┫
         lastGenerateOptions = { type: 'chat', options: options };
 
-        // 🩷 自动打开编辑表单并填入解析结果
+        // ┣━━自动打开编辑表单并填入解析结果━━┫
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
         document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
-        // 🩷 标签自动填入
+        // ┣━━标签自动填入━━┫
         document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
         document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
         document.getElementById('rol-editor-letter').value = parsed.letter || '';
         document.getElementById('rol-editor-author').value = 'claude';
-        // 🩷 自动填充日期
+        // ┣━━自动填充日期━━┫
         if (autoDate) {
             document.getElementById('rol-editor-date').value = autoDate;
         }
 
-        // 🩷 显示重写按钮
+        // ┣━━显示重写按钮━━┫
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
         showToast('🍊 酿造完成啦！请灰灰预览~');
     }
 
-    // 🩷 从粘贴文本生成
+    // ┣━━🩷从粘贴文本生成━━┫
     async function doAIGenerate(contextText) {
         const sourcePanel = document.getElementById('rol-ai-source-panel');
         const loading = document.getElementById('rol-ai-loading');
@@ -1408,33 +1411,35 @@ const UIController = (() => {
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
-        // if (sourcePanel) sourcePanel.classList.remove('rol-active');
+        // ┣━━if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
 
-        // 🩷 保存生成参数
+        // ┣━━保存生成参数，用于重写━━┫
         lastGenerateOptions = { type: 'paste', text: contextText };
 
-        // 🩷 自动打开编辑表单
+        // ┣━━自动打开编辑表单━━┫
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
         document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
-        // 🩷 标签自动填入
+        // ┣━━标签自动填入━━┫
         document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
         document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
         document.getElementById('rol-editor-letter').value = parsed.letter || '';
         document.getElementById('rol-editor-author').value = 'claude';
 
-        // 🩷 显示重写按钮
+        // ┣━━显示重写按钮━━┫
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
         showToast('🍊 酿造完成啦！请灰灰预览~');
     }
 
-    // ---- 🩷 移动端 🩷 ----
+// ╔═══════════════════════════════════════════════════════╗
+// ┅                    🩷 移动端 🩷                       ┅
+// ╚═══════════════════════════════════════════════════════╝
     function bindMobileNav() {
         const tabs = document.querySelectorAll('.rol-tab');
         tabs.forEach(tab => {
@@ -1452,7 +1457,7 @@ const UIController = (() => {
         });
     }
 
-    // ---- 🩷 工具 🩷 ----
+    // ┣━━ 🩷 工具 🩷 ━━┫
     function showToast(message) {
         let toast = document.getElementById('rol-toast');
         if (!toast) { toast = document.createElement('div'); toast.id = 'rol-toast'; document.body.appendChild(toast); }
@@ -1460,7 +1465,7 @@ const UIController = (() => {
         toast.classList.add('rol-toast-show');
         setTimeout(() => toast.classList.remove('rol-toast-show'), 2500);
     }
-    // ⭐️ 支持 blockquote 语法（> 开头的行）在摘要中保留引用格式
+    // ┣━━⭐️支持 blockquote 语法（> 开头的行）在摘要中保留引用格式━━┫
     function parseBlockquotes(text) {
         return text.replace(
         /^(?:>|＞)\s?(.+)$/gm,
@@ -1476,9 +1481,9 @@ const UIController = (() => {
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
 })();
 
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                  🩷 核心组成 🩷                       ┅
-// ╚═══════════════════════════════════════════════════════╝
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                  🩷 核心组成 🩷                       ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
 function injectMemoryToContext(memories, injectionText) {
     if (!injectionText) return;
     const context = getContext();
@@ -1498,17 +1503,17 @@ jQuery(async () => {
     Storage.initSettings();
     const panelHtml = await loadPanel();
     if (panelHtml) {
-        // 🩷 将HTML解析，分离侧边栏部分和浮动面板部分
+        // ┣━━🩷将HTML解析，分离侧边栏部分和浮动面板部分━━┫
         const temp = document.createElement('div');
         temp.innerHTML = panelHtml;
 
-        // 🩷 侧边栏中只添加 extension_settings 部分（含打开按钮）
+        // ┣━━侧边栏中只添加 extension_settings 部分（含打开按钮）━━┫
         const extSettings = temp.querySelector('.extension_settings');
         if (extSettings) {
             $('#extensions_settings2').append(extSettings.outerHTML);
         }
 
-        // 🩷 浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body
+        // ┣━━浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body━━┫
         const drawerOverlay = temp.querySelector('#rol-drawer-overlay');
         const editorPanel = temp.querySelector('#rol-editor-panel');
         const aiSourcePanel = temp.querySelector('#rol-ai-source-panel');
