@@ -817,6 +817,24 @@
     font-size: 13px;
     color: var(--SmartThemeBodyColor, #ccc);
 }
+
+.rol-stop-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: rgba(255, 100, 100, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: center;
+  transition: background 0.2s ease;
+  margin-top: 8px;
+}
+
+.rol-stop-btn:hover {
+  background: rgba(255, 100, 100, 0.25);
+}
+
 .rol-ai-spinner {
     width: 18px; height: 18px;
     border: 2px solid rgba(167, 139, 250, 0.3);

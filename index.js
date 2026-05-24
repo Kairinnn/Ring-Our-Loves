@@ -507,7 +507,7 @@ const AIService = (() => {
 ## 原文：
 {{context}}`;
 
-    // ---- 🩷 解析 🩷 ----
+    // /* ┏━━━━━━━ 🩷 解析 🩷 ━━━━━━━┓ */
     function parseAIOutput(rawText) {
         const letterMatch = rawText.match(/<letter>([\s\S]*?)<\/letter>/);
         const entryMatch = rawText.match(/<entry>([\s\S]*?)<\/entry>/);
@@ -535,7 +535,7 @@ const AIService = (() => {
         };
     }
 
-    // ---- 🩷 预设：从DOM读 🩷 ----
+  /* ┏━━━━━━━ 🩷 预设：从DOM读 🩷 ━━━━━━━┓ */
     const PRESET_SELECTORS = [
         '#settings_preset_openai',
         '#settings_preset',
@@ -616,8 +616,16 @@ const AIService = (() => {
     async function rewriteMemory(memoryId, memory) {
         const source = memory.letter || memory.content;
         const prompt = REWRITE_PROMPT.replace('{{context}}', source);
+        const rolStopBtn = document.querySelector('#rol-stop-gen');
+        if (rolStopBtn) rolStopBtn.style.display = 'block';
+    let raw;
+      try {
         const raw = await generateWithPreset(prompt);
+          } finally {
+        if (rolStopBtn) rolStopBtn.style.display = 'none';
+          }
         if (!raw) return null;
+
         const parsed = parseAIOutput(raw);
         if (!parsed.letter) return null;
         return Storage.addRewriteVersion(
@@ -704,7 +712,7 @@ const UIController = (() => {
         renderPresetOptions();
     }
 
-    // ---- 🩷 侧边栏 ----
+    // ┣━━ 🩷 侧边栏 🩷 ━━┫
     function bindDrawer() {
         const openBtn = document.getElementById('rol-open-drawer');
         const overlay = document.getElementById('rol-drawer-overlay');
@@ -730,7 +738,7 @@ const UIController = (() => {
         }
     }
 
-    // ---- 🩷 设置面板 🩷 ----
+    // ┣━━ 🩷 设置面板 🩷 ━━┫
     function bindConfigPanel() {
         const autoInjectToggle = document.getElementById('rol-auto-inject');
         const maxCountInput = document.getElementById('rol-max-inject');
@@ -793,7 +801,7 @@ const UIController = (() => {
         }
     }
 
-    // ---- 🩷 记忆列表 🩷 ----
+    // ┣━━ 🩷 记忆列表 🩷 ━━┫
     function bindMemoryList() {
         const addBtn = document.getElementById('rol-add-memory');
         const searchInput = document.getElementById('rol-search');
@@ -915,7 +923,7 @@ const UIController = (() => {
         }
     }
 
-    // ---- 🩷 正文预览 🩷 ----
+    // ┣━━ 🩷 正文预览 🩷 ━━┫
     function bindLetterPanel() {
         const panel = document.getElementById('rol-letter-panel');
         const closeBtn = document.getElementById('rol-letter-close');
@@ -1003,7 +1011,7 @@ const UIController = (() => {
         if (panel) { panel.classList.remove('rol-active'); panel.dataset.memId = ''; }
     }
 
-    // ---- 🩷 编辑面板 🩷 ----
+    // ┣━━ 🩷 编辑面板 🩷 ━━┫
     function bindEditorPanel() {
         const saveBtn = document.getElementById('rol-editor-save');
         const cancelBtn = document.getElementById('rol-editor-cancel');
@@ -1206,6 +1214,14 @@ const UIController = (() => {
         const pasteConfirm = document.getElementById('rol-ai-paste-confirm');
         const cancelBtn = document.getElementById('rol-ai-source-cancel');
         const loading = document.getElementById('rol-ai-loading');
+        const rolStopBtn = document.querySelector('#rol-stop-gen');
+             if (rolStopBtn) {
+              rolStopBtn.addEventListener('click', () => {
+        const stStop = document.querySelector('#mes_stop');
+             if (stStop) stStop.click();
+              rolStopBtn.style.display = 'none';
+        });
+       }
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
             if (sourcePanel) { sourcePanel.classList.add('rol-active'); if (pasteArea) pasteArea.style.display = 'none'; }
@@ -1315,10 +1331,10 @@ const UIController = (() => {
         const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
-        if (sourcePanel) sourcePanel.classList.remove('rol-active');
+        if (rolStopBtn) rolStopBtn.style.display = 'none';
+        // if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
-
         const parsed = AIService.parseAIOutput(raw);
 
         // 🩷 保存生成参数，用于重写
@@ -1391,7 +1407,8 @@ const UIController = (() => {
         const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
-        if (sourcePanel) sourcePanel.classList.remove('rol-active');
+        if (rolStopBtn) rolStopBtn.style.display = 'none';
+        // if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
