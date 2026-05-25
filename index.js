@@ -170,11 +170,19 @@ const Storage = (() => {
 // ┣━━┅                  🩷 触发器模块 🩷                     ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 const Trigger = (() => {
-    function detectTriggers(messageText) {
+    const cooldownMap = new Map();  // 记录每颗恋果上次触发的轮数
+    const COOLDOWN = 5;             // 冷却轮数
+
+    function detectTriggers(messageText, currentTurn) {
         const memories = Storage.getMemories();
         const matched = [];
         for (const memory of memories) {
             if (!memory.enabled) continue;
+
+            // ▸ 🩷冷却检查
+            const lastTurn = cooldownMap.get(memory.id) || -999;
+            if (currentTurn - lastTurn < COOLDOWN) continue;
+
             for (const trigger of memory.triggers) {
                 if (!trigger) continue;
                 let isMatch = false;
@@ -188,7 +196,11 @@ const Trigger = (() => {
                 } else {
                     isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
                 }
-                if (isMatch) { matched.push(memory); break; }
+                if (isMatch) {
+                    matched.push(memory);
+                    cooldownMap.set(memory.id, currentTurn);  // ▸ 🩷记录触发轮数
+                    break;
+                }
             }
         }
         return matched;
@@ -340,10 +352,9 @@ const WorldBook = (() => {
     // ┣━━创建一个世界书条目对象━━┫
     function buildWiEntry(uid, memory) {
         // ┣━━key = tags + triggers 合并去重━━┫
-        const keys = [...new Set([
-            ...(memory.tags || []),
-            ...(memory.triggers || [])
-        ])].filter(Boolean);
+        const keys = [...new Set(
+    memory.triggers || []
+)].filter(Boolean);
 
         return {
             uid: uid,
@@ -624,12 +635,12 @@ const AIService = (() => {
         const rolStopBtn = document.querySelector('#rol-stop-gen');
         if (rolStopBtn) rolStopBtn.style.display = 'block';
     let raw;
-      try {
-        const raw = await generateWithPreset(prompt);
-          } finally {
-        if (rolStopBtn) rolStopBtn.style.display = 'none';
-          }
-        if (!raw) return null;
+try {
+    raw = await generateWithPreset(prompt);
+} finally {
+    if (rolStopBtn) rolStopBtn.style.display = 'none';
+}
+if (!raw) return null;
 
         const parsed = parseAIOutput(raw);
         if (!parsed.letter) return null;
@@ -1225,10 +1236,14 @@ const UIController = (() => {
         const rolStopBtn = document.querySelector('#rol-stop-gen');
              if (rolStopBtn) {
               rolStopBtn.addEventListener('click', () => {
-        const stStop = document.querySelector('#mes_stop');
-             if (stStop) stStop.click();
-              rolStopBtn.style.display = 'none';
-        });
+              const stStop = document.querySelector('#mes_stop');
+  if (stStop && !stStop.disabled) stStop.click();
+  if (typeof stopGeneration === 'function') stopGeneration();
+  if (typeof abortController !== 'undefined' && abortController) {
+    abortController.abort();
+  }
+  rolStopBtn.style.display = 'none';
+});
        }
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
