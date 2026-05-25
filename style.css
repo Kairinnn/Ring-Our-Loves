@@ -416,7 +416,6 @@
     left: 2px; top: 2px;
     background: #fff;
     border-radius: 50%;
-    transition: transform 0.2s;
 }
 .rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #D87757); }
 .rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
