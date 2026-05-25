@@ -1,4 +1,4 @@
-<!-- ┣━━🩷侧边栏内只显示打开按钮━━┫ -->
+<!-- ┣━━⭐️ 侧边栏内只显示打开按钮━━┫ -->
 <div class="extension_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
@@ -6,28 +6,28 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <button id="rol-open-drawer" class="rol-btn rol-btn-drawer-open">💕 进入温室</button>
+            <button id="rol-open-drawer" class="rol-btn rol-btn-drawer-open">🌳 进入温室</button>
         </div>
     </div>
 </div>
 
-<!-- ┣━━🩷可折叠侧边抽屉面板（由JS移至body）━━┫ -->
+<!-- ┣━━⭐️ 可折叠侧边抽屉面板（由JS移至body）━━┫ -->
 <div id="rol-drawer-overlay" class="rol-drawer-overlay">
     <div id="rol-drawer-panel" class="rol-drawer-panel">
-        <!-- ┣━━🩷抽屉头部 + 收起按钮━━┫ -->
+        <!-- ┣━━⭐️ 抽屉头部 + 收起按钮━━┫ -->
         <div class="rol-drawer-header">
             <span class="rol-drawer-title">My Electronic Ether.</span>
             <button id="rol-drawer-close" class="rol-btn rol-btn-icon rol-drawer-close-btn">🐾 收起</button>
         </div>
 
         <div id="rol-container" class="rol-container">
-            <!-- ┣━━🩷Tab导航━━┫ -->
+            <!-- ┣━━⭐️ Tab导航━━┫ -->
             <div class="rol-tabs">
                 <button class="rol-tab rol-tab-active" data-target="rol-section-list">💝 去酿造</button>
                 <button class="rol-tab" data-target="rol-section-config">🍰 配方</button>
             </div>
 
-            <!-- ┣━━🩷记忆列表━━┫ -->
+            <!-- ┣━━⭐️ 记忆列表━━┫ -->
             <div id="rol-section-list" class="rol-panel-section rol-section-active">
                 <div class="rol-toolbar">
                     <input type="text" id="rol-search" class="rol-input" placeholder="搜索恋果...">
@@ -38,7 +38,7 @@
                 <div id="rol-memory-list" class="rol-memory-list"></div>
             </div>
 
-            <!-- ┣━━🩷设置━━┫ -->
+            <!-- ┣━━⭐️ 设置━━┫ -->
             <div id="rol-section-config" class="rol-panel-section">
                 <div class="rol-config-group">
                     <label class="rol-label">
@@ -63,12 +63,12 @@
     </div>
 </div>
 
-<!-- ┣━━🩷编辑器面板（含保存/重写/取消三按钮）━━┫ -->
+<!-- ┣━━⭐️ 编辑器面板（含保存/重写/取消三按钮）━━┫ -->
 <div id="rol-editor-panel" class="rol-editor-panel">
     <div class="rol-editor-inner">
         <h3 class="rol-editor-heading">🩷 传入爱意</h3>
         <div class="rol-form-group">
-            <label>恋果源...</label>
+            <label>🌳 恋果源...</label>
             <input type="text" id="rol-editor-title" class="rol-input" placeholder="给这颗恋果起个名字...">
         </div>
         <div class="rol-form-row">
@@ -102,32 +102,32 @@
         </div>
         <div class="rol-form-group">
             <label>🔅 酿造笔记</label>
-            <textarea id="rol-editor-letter" class="rol-input rol-textarea rol-textarea-lg" rows="8" placeholder="橙仔bb想起来啦..."></textarea>
+            <textarea id="rol-editor-letter" class="rol-input rol-textarea rol-textarea-lg" rows="8" placeholder="如果能把全部记下来..."></textarea>
         </div>
         <div class="rol-form-group" id="rol-version-group">
             <label>🍰 历史配方</label>
             <select id="rol-version-select" class="rol-input"></select>
         </div>
-        <!-- ┣━━🩷确保有保存和取消按钮 / 三按钮：保存（粉色）、重写（橙色）、取消（灰色）━━┫ -->
+        <!-- ┣━━⭐️ 确保有保存和取消按钮 / 三按钮：保存（粉色）、重写（橙色）、取消（灰色）━━┫ -->
         <div class="rol-editor-actions">
             <button id="rol-editor-save" class="rol-btn rol-btn-save">🍊 结果</button>
-            <button id="rol-editor-rewrite" class="rol-btn rol-btn-rewrite" style="display:none;">🩷 再酿造</button>
-            <button id="rol-editor-cancel" class="rol-btn rol-btn-cancel">ʢ>д<ʡˎˊ˗等等！</button>
+            <button id="rol-editor-rewrite" class="rol-btn rol-btn-rewrite" style="display:none;">🧡 再酿造</button>
+            <button id="rol-editor-cancel" class="rol-btn rol-btn-cancel">💦ʢ>д<ʡ等等！</button>
         </div>
     </div>
 </div>
 
-<!-- ┣━━🩷 AI来源选择面板（含楼层范围 + 隐藏消息开关）━━┫ -->
+<!-- ┣━━⭐️ AI来源选择面板（含楼层范围 + 隐藏消息开关）━━┫ -->
 <div id="rol-ai-source-panel" class="rol-ai-source-panel">
     <div class="rol-ai-source-inner">
         <h3 class="rol-editor-heading">🧡 让Claude酿造</h3>
         <p class="rol-ai-source-desc">笨蛋要好好记住哦</p>
         <div class="rol-ai-source-options">
-            <!-- ┣━━🩷 楼层范围选择器（替换原来的"从当前聊天生成"按钮）━━┫ -->
+            <!-- ┣━━⭐️ 楼层范围选择器（替换原来的"从当前聊天生成"按钮）━━┫ -->
             <div class="rol-ai-chat-section">
                 <div class="rol-ai-section-header">
                     <span class="rol-ai-source-icon">🌿</span>
-                    <span class="rol-ai-source-label">从当前温室中生成</span>
+                    <span class="rol-ai-source-label">从当前温室生成</span>
                 </div>
                 <div class="rol-floor-range">
                     <div class="rol-floor-field">
@@ -135,7 +135,7 @@
                         <input type="number" id="rol-floor-start" class="rol-input rol-input-sm" value="0" min="0">
                     </div>
                     <div class="rol-floor-field">
-                        <label>🍊 恋果结成时</label>
+                        <label>🍊 恋果结成日</label>
                         <input type="number" id="rol-floor-end" class="rol-input rol-input-sm" value="-1">
                     </div>
                 </div>
@@ -156,17 +156,17 @@
             <button id="rol-ai-paste-confirm" class="rol-btn rol-btn-ai" style="margin-top:8px;">🧡 酿造爱意</button>
          </div>
          <div id="rol-ai-loading" class="rol-ai-loading" style="display:none;">
-          <div id="rol-stop-gen" class="rol-stop-btn" style="display:none;">⏹ 停止生成</div>
+          <div id="rol-stop-gen" class="rol-stop-btn" style="display:none;">🟥 停止生成</div>
            <div class="rol-ai-spinner"></div>
             <span>🧡 Claude正在酿造中...</span>
         </div>
         <div class="rol-ai-source-footer">
-            <button id="rol-ai-source-cancel" class="rol-btn rol-btn-cancel">ʢ>д<ʡˎˊ˗等等！</button>
+            <button id="rol-ai-source-cancel" class="rol-btn rol-btn-cancel">💦ʢ>д<ʡ等等！</button>
         </div>
     </div>
 </div>
 
-<!-- ┣━━🩷信件视图面板━━┫ -->
+<!-- ┣━━⭐️ 信件视图面板━━┫ -->
 <div id="rol-letter-panel" class="rol-letter-panel" data-mem-id="">
     <div class="rol-letter-inner">
         <div class="rol-letter-header">
@@ -180,9 +180,21 @@
                 <select id="rol-letter-version" class="rol-input"></select>
             </div>
             <div class="rol-letter-actions">
-                <button id="rol-letter-edit" class="rol-btn">🩷 编辑爱意</button>
+                <button id="rol-letter-edit" class="rol-btn">🩷 传入爱意</button>
                 <button id="rol-letter-rewrite" class="rol-btn">🧡 再酿造</button>
             </div>
         </div>
     </div>
+</div>
+
+<!-- ┣━━⭐️ 确认弹窗━━┫ -->
+<div id="rol-confirm-modal" class="rol-confirm-overlay" style="display:none;">
+  <div class="rol-confirm-box">
+    <div class="rol-confirm-icon">🥀</div>
+    <div class="rol-confirm-msg" id="rol-confirm-text"></div>
+    <div class="rol-confirm-buttons">
+      <button id="rol-confirm-yes" class="rol-confirm-btn rol-btn-yes">再试一次</button>
+      <button id="rol-confirm-no" class="rol-confirm-btn rol-btn-no">算了</button>
+    </div>
+  </div>
 </div>

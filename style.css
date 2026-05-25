@@ -1,12 +1,12 @@
-/* ┣========== 🩷 Ring Our Luv 🩷 ==========┫ */
+/* ┣========== ▍🩷 Ring Our Luv 🩷 ▍==========┫ */
 @font-face {
   font-family: 'Clairine';
   src: url('./fonts/Clairine.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
 }
-/* ┏━━━━━━━ 🧈 面板动画 🧈 ━━━━━━━┓ */
-/* ╔════🧈入场════╗ */
+/* ➤━━━━━━━ ▍🧈面板动画🧈 ▍━━━━━━━┓ */
+/* ⬇️┅🧈入场┅┅╗ */
 @keyframes rol-bounce-in {
   0% {
     opacity: 0;
@@ -23,7 +23,7 @@
     transform: translate(-50%, -50%) scale(1);
   }
 }
-/* ╔════🧈退场════╗ */
+/* ⬇️┅🧈退场┅┅╗ */
 @keyframes rol-shrink-out {
   0% {
     opacity: 1;
@@ -34,11 +34,21 @@
     transform: translate(-50%, -50%) scale(0.6) rotate(2deg);
   }
 }
-/* ╔════🧈呼吸光效════╗ */
+/* ⬇️┅🧈呼吸光效┅┅╗ */
 @keyframes rol-glow-pulse {
   0%, 100% { box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
   50% { box-shadow: 0 12px 40px rgba(0,0,0,0.55),
                      0 0 60px rgba(255,180,200,0.08); }
+}
+
+@keyframes rol-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 179, 223, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(255, 179, 223, 0.6); }
+}
+
+@keyframes rol-pop {
+  0% { transform: scale(0.8); }
+  100% { transform: scale(1); }
 }
 
 .rol-editor-panel {
@@ -47,8 +57,13 @@
               box-shadow 0.5s ease,
               color 0.3s ease;
 }
+
 .rol-editor-panel.rol-active {
   animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.rol-editor-panel.rol-closing {
+  animation: rol-shrink-out 0.25s ease-in forwards;
 }
 
 .rol-light.rol-active {
@@ -56,12 +71,25 @@
              rol-glow-pulse 3s ease-in-out 0.4s infinite;
 }
 
-.rol-editor-panel.rol-closing {
-  animation: rol-shrink-out 0.25s ease-in forwards;
+.rol-stop-btn {
+  animation: rol-pop 0.2s ease-out;
 }
-/* ┗━━━━━━━ 🧈 面板动画 🧈 ━━━━━━━┛ */
 
-/* ┏━━━━━━━ ☀️ 主题切换按钮 🌙 ━━━━━━━┓ */
+.rol-toggle-slider {
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.rol-toggle-slider::before {
+  transition: transform 0.2s;
+}
+
+.rol-btn-drawer-open {
+  animation: rol-glow 2s ease-in-out infinite;
+}
+
+/* ┗━━━━━━ ▍🧈面板动画🧈 ▍━━━━━━┛ */
+
+/* ➤━━━━━━ ▍☀️主题变量🌙 ▍━━━━━━┓ */
 .rol-theme-toggle {
   position: absolute;
   top: 8px;
@@ -93,7 +121,7 @@
   background: rgba(0, 0, 0, 0.1);
 }
 
-/* ╔┅┅🧈主题过渡动画┅┅┅╗ */
+/* ⬇️┅🧈主题过渡动画/┅┅╗ */
 .rol-editor-panel,
 .rol-editor-inner,
 .rol-editor-inner textarea,
@@ -103,7 +131,7 @@
               border-color 0.4s ease;
 }
 
-/* ╔┅┅🌙默认：夜间模式变量┅┅┅╗ */
+/* ⬇️┅🌙默认：夜间模式变量/┅┅╗ */
 .rol-editor-panel {
   --rol-bg: rgb(30, 30, 35);
   --rol-card: rgb(45, 42, 50);
@@ -112,7 +140,7 @@
   --rol-input-bg: rgb(55, 50, 60);
 }
 
-/* ╔┅┅☀️日间模式变量┅┅┅╗ */
+/* ⬇️┅☀️日间模式变量/┅┅╗ */
 .rol-editor-panel.rol-light {
   --rol-bg: rgb(255, 245, 248);
   --rol-card: rgb(255, 228, 242);
@@ -126,10 +154,10 @@
     padding: 8px;
     max-width: 100%;
 }
-/* ┗━━━━━━━ ☀️ 主题变量 🌙 ━━━━━━━┛ */
+/* ┗━━━━━━ ▍☀️主题变量🌙 ▍━━━━━━┛ */
 
-/* ┏━━━━━━━ 🗄️ 侧边栏样式 🗄️ ━━━━━━━┓ */
-/* ╔┅┅⭕️侧边栏的打开按钮┅┅╗ */
+/* ➤━━━━━━ ▍🗄️侧边栏样式🗄️ ▍━━━━━━┓ */
+/* ⬇️┅⭕️侧边栏的打开按钮┅┅╗ */
 .rol-btn-drawer-open {
     width: 100%;
     padding: 12px;
@@ -144,7 +172,7 @@
 }
 .rol-btn-drawer-open:hover { opacity: 0.85; }
 
-/* ╔┅┅⭕️侧边栏遮罩层┅┅╗ */
+/* ⬇️┅⭕️侧边栏遮罩层┅┅╗ */
 .rol-drawer-overlay {
     display: none;
     position: fixed;
@@ -156,7 +184,7 @@
     display: block;
 }
 
-/* ╔┅┅⭕️侧边栏面板 - 从右侧滑出┅┅╗ */
+/* ⬇️┅⭕️侧边栏面板 - 从右侧滑出┅┅╗ */
 .rol-drawer-panel {
     position: fixed;
     top: 0;
@@ -176,7 +204,7 @@
     transform: translateX(0);
 }
 
-/* ╔┅┅⭕️侧边栏标题┅┅╗ */
+/* ⬇️┅⭕️侧边栏标题┅┅╗ */
 .rol-drawer-header {
     display: flex;
     justify-content: space-between;
@@ -199,7 +227,7 @@
     background: var(--SmartThemeBlurTintColor, #333) !important;
 }
 
-/* ╔┅┅⭕️侧边栏Tab┅┅╗ */
+/* ⬇️┅⭕️侧边栏Tab┅┅╗ */
 .rol-tabs {
     display: flex;
     gap: 4px;
@@ -227,7 +255,7 @@
 .rol-panel-section { display: none; }
 .rol-section-active { display: block; }
 
-/* ╔┅┅⭕️侧边栏 - 工具栏┅┅╗ */
+/* ⬇️┅⭕️侧边栏 - 工具栏┅┅╗ */
 .rol-toolbar {
     display: flex;
     gap: 8px;
@@ -235,7 +263,7 @@
     flex-wrap: wrap;
 }
 
-/* ╔┅┅⭕️侧边栏 - 输入框┅┅╗ */
+/* ⬇️┅⭕️侧边栏 - 输入框┅┅╗ */
 .rol-input {
     width: 100%;
     padding: 8px 10px;
@@ -258,7 +286,7 @@
 }
 .rol-textarea-lg { min-height: 150px; }
 
-/* ╔┅┅⭕️侧边栏按钮┅┅╗ */
+/* ⬇️┅⭕️侧边栏按钮┅┅╗ */
 .rol-btn {
     padding: 8px 14px;
     border: 1px solid var(--SmartThemeBorderColor, #555);
@@ -283,10 +311,10 @@
     font-weight: 600;
 }
 .rol-btn-save:hover { background: #d4899f; }
-/* ┗━━━━━━━ 🗄️ 侧边栏样式 🗄️ ━━━━━━━┛ */
+/* ┗━━━━━━ ▍🗄️侧边栏样式🗄️ ▍━━━━━━┛ */
 
-/* ┏━━━━━━━ 💌 卡片列表内容 💌 ━━━━━━━┓ */
-/* ╔┅┅🧡重写按钮（橙色次按钮）┅┅╗ */
+/* ➤━━━━━━━ ▍💌卡片列表内容💌 ▍━━━━━━━┓ */
+/* ⬇️┅🧡重写按钮（橙色次按钮）┅┅╗ */
 .rol-btn-rewrite {
     background: #e8a060;
     border-color: #e8a060;
@@ -315,7 +343,7 @@
     padding: 2px 6px;
 }
 
-/* ╔┅┅💌记忆列表┅┅╗ */
+/* ⬇️┅💌记忆卡片列表┅┅╗ */
 .rol-memory-list {
     display: flex;
     flex-direction: column;
@@ -393,7 +421,7 @@
     line-height: 1.5;
 }
 
-/* ╔┅┅💌toggle切换┅┅╗ */
+/* ⬇️┅💌toggle切换┅┅╗ */
 .rol-toggle-wrap {
     position: relative;
     width: 36px;
@@ -420,7 +448,7 @@
 .rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #D87757); }
 .rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
 
-/* ╔┅┅🏷️标签┅┅╗ */
+/* ⬇️┅🏷️标签┅┅╗ */
 .rol-card-triggers {
     display: flex;
     flex-wrap: wrap;
@@ -464,9 +492,9 @@
     border-radius: 8px;
     color: #f0c060;
 }
-/* ┗━━━━━━━ 💌 卡片列表内容 💌 ━━━━━━━┛ */
+/* ┗━━━━━━ ▍💌卡片列表内容💌 ▍━━━━━━┛ */
 
-/* ┏━━━━━━━ 🗄️ 编辑面板（遮罩层）🗄️ ━━━━━━━┓ */
+/* ➤━━━━━━ ▍🗄️编辑面板（遮罩层）🗄️ ▍━━━━━━┓ */
 .rol-editor-panel {
     display: none;
     position: fixed;
@@ -498,7 +526,7 @@
     overflow: hidden !important;
 }
 
-/* ╔┅┅🗄️编辑面板内部卡片┅┅╗ */
+/* ⬇️┅┅🗄️编辑面板内部卡片┅┅╗ */
 .rol-editor-inner {
     position: relative;
     background: rgba(22, 22, 26, 0.96);
@@ -512,10 +540,10 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
 }
-/* ┗━━━━━━━ 🗄️编辑面板（遮罩层）🗄️ ━━━━━━━┛ */
+/* ┗━━━━━━ ▍🗄️编辑面板（遮罩层）🗄️ ▍━━━━━━┛ */
 
-/* ┏━━━━━━━ ☀️ 主题样式 🌙 ━━━━━━━┓ */
-/* ┏┅┅ ☀️日间模式 ┅┅┓ */
+/* ➤━━━━━━━ ▍☀️主题样式🌙 ▍━━━━━━┓ */
+/* ⬇️┅☀️日间模式 ┅┅┓ */
 .rol-editor-panel.rol-light .rol-editor-inner {
     background:
         url('https://i.postimg.cc/SRmYmwFB/heart.png') center/cover no-repeat,
@@ -526,7 +554,7 @@
         0 2px 8px rgba(0, 0, 0, 0.06) !important;
 }
 
-/* ╔┅┅☀️日间模式字体颜色┅┅╗ */
+/* ⬇️┅☀️日间模式字体颜色┅┅╗ */
 .rol-editor-panel.rol-light .rol-editor-inner,
 .rol-editor-panel.rol-light .rol-editor-inner * {
     color: #d4627a !important;
@@ -545,7 +573,7 @@
     color: rgba(212, 98, 122, 0.45) !important;
 }
 
-/* ╔┅┅☀️日间模式滚动条┅┅╗ */
+/* ⬇️┅☀️日间模式滚动条┅┅╗ */
 .rol-editor-panel.rol-light .rol-editor-inner::-webkit-scrollbar-thumb {
     background: rgba(255, 150, 170, 0.3) !important;
 }
@@ -554,7 +582,7 @@
     background: rgba(255, 220, 230, 0.2) !important;
 }
 
-/* ╔┅┅🌙编辑面板滚动条美化（夜间）┅┅╗ */
+/* ⬇️┅🌙编辑面板滚动条美化（夜间）┅┅╗ */
 .rol-editor-inner::-webkit-scrollbar {
     width: 6px;
 }
@@ -565,9 +593,9 @@
 .rol-editor-inner::-webkit-scrollbar-track {
     background: transparent;
 }
-/* ┗━━━━━━━ ☀️ 主题样式 🌙 ━━━━━━━┛ */
+/* ┗━━━━━━ ▍☀️主题样式🌙 ▍━━━━━━┛ */
 
-/* ╔┅┅🍥手机端适配┅┅╗ */
+/* ➤┅┅🍥手机端适配┅┅╗ */
 @media (max-width: 480px) {
   .rol-editor-inner {
     max-width: 100%;
@@ -604,9 +632,9 @@
     gap: 10px;
     margin-top: 16px;
 }
-/* ╚┅┅═🍥手机端适配┅┅═╝ */
+/* ╚┅┅ ▍🍥手机端适配 ▍┅┅═╝ */
 
-/* ╔┅┅💌笔记正文展开查看面板┅┅╗ */
+/* ➤┅💌笔记正文展开查看面板┅┅╗ */
 .rol-letter-panel {
     display: none;
     position: fixed;
@@ -697,9 +725,9 @@
     font-size: 12px;
 }
 .rol-letter-actions .rol-btn:active { opacity: 0.7; }
-/* ╚┅┅═💌笔记正文展开查看面板┅┅═╝ */
+/* ╚┅┅ ▍💌笔记正文展开查看面板 ▍┅┅═╝ */
 
-/* ┏━━━━━━━ 🍰 设置组 🍰 ━━━━━━━┓ */
+/* ➤━━━━━━ ▍🍰设置组🍰 ▍━━━━━━┓ */
 .rol-config-group { margin-bottom: 14px; }
 .rol-config-group .rol-label {
     display: flex;
@@ -710,7 +738,7 @@
     color: var(--SmartThemeBodyColor, #ccc);
 }
 
-/* ╔┅┅❔️提示┅┅╗ */
+/* ⬇️┅❔️提示┅┅╗ */
 #rol-toast {
     position: fixed;
     bottom: 80px;
@@ -731,7 +759,7 @@
     transform: translateX(-50%) translateY(0);
 }
 
-/* ╔┅┅🏷️表单行（并排）┅┅╗ */
+/* ⬇️┅🏷️表单行（并排）┅┅╗ */
 .rol-form-row {
     display: flex;
     gap: 12px;
@@ -739,7 +767,7 @@
 }
 .rol-form-half { flex: 1; margin-bottom: 0; }
 
-/* ╔┅┅🧡AI 源面板┅┅╗ */
+/* ⬇️┅🧡AI 源面板┅┅╗ */
 .rol-ai-source-panel {
     display: none;
     position: fixed;
@@ -850,7 +878,7 @@
     font-size: 13px;
 }
 
-/* ╔┅┅🧡聊天楼层选择区域┅┅╗ */
+/* ⬇️┅🧡聊天楼层选择区域┅┅╗ */
 .rol-ai-chat-section {
     padding: 14px 16px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
@@ -884,7 +912,7 @@
     width: 100%;
     margin-top: 6px;
 }
-/* ╔┅┅🏷️复选框标签┅┅╗ */
+/* ⬇️┅🏷️复选框标签┅┅╗ */
 .rol-checkbox-label {
     display: flex;
     align-items: center;
@@ -898,9 +926,78 @@
     width: auto;
     margin: 0;
 }
-/* ┗━━━━━━━ 🍰 设置组 🍰 ━━━━━━━┛ */
+/* ➤┅💡确认弹窗┅┅╗ */
+.rol-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rol-fade-in 0.2s ease;
+}
 
-/* ┣========== 🍥 移动端样式 🍥 ==========┫ */
+@keyframes rol-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rol-confirm-box {
+  background: var(--rol-bg, rgb(255, 245, 248));
+  border: 1px solid rgba(219, 112, 147, 0.3);
+  border-radius: 16px;
+  padding: 28px 24px;
+  min-width: 260px;
+  max-width: 340px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(219, 112, 147, 0.15);
+  animation: rol-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rol-confirm-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.rol-confirm-msg {
+  color: var(--rol-text, rgb(80, 60, 70));
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.rol-confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.rol-confirm-btn {
+  padding: 8px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.rol-confirm-btn:hover { opacity: 0.8; }
+
+.rol-btn-yes {
+  background: linear-gradient(135deg, #ffb3df, #ffc2e2);
+  color: #8b3a62;
+}
+
+.rol-btn-no {
+  background: rgba(219, 112, 147, 0.1);
+  color: var(--rol-accent, rgb(219, 112, 147));
+}
+/* ╚┅┅ ▍💡确认弹窗 ▍┅┅═╝ */
+/* ┗━━━━━━ ▍🍰设置组🍰 ▍━━━━━━┛ */
+
+/* ┣========== ▍🍥移动端样式🍥 ▍==========┫ */
 @media (max-width: 768px) {
     .rol-container { padding: 4px; }
     .rol-toolbar { flex-direction: column; }
@@ -909,6 +1006,6 @@
     .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
     .rol-memory-list { max-height: 50vh; }
     .rol-card-actions { justify-content: flex-end; }
-    /* ╔┅┅🍥移动端侧边栏宽度┅┅╗ */
+    /* ⬇️┅🍥移动端侧边栏宽度┅┅╗ */
     .rol-drawer-panel { width: 80vw; }
 }

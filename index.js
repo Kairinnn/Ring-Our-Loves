@@ -254,11 +254,39 @@ const Trigger = (() => {
         return Array.from(allMatched.values());
     }
 
-    return {
-        detectTriggers, selectForInjection, buildInjectionText,
-        setupTriggerListener, scanRecentMessages
+    function rolConfirm(icon, message, yesText, noText) {
+        return new Promise((resolve) => {
+
+        const modal = document.querySelector('#rol-confirm-modal');
+        const msgEl = document.querySelector('#rol-confirm-text');
+        const iconEl = modal.querySelector('.rol-confirm-icon');
+        const yesBtn = document.querySelector('#rol-confirm-yes');
+        const noBtn = document.querySelector('#rol-confirm-no');
+         iconEl.textContent = icon || '🥀';
+         msgEl.textContent = message;
+           if (yesText) yesBtn.textContent = yesText;
+           if (noText) noBtn.textContent = noText;
+         modal.style.display = 'flex';
+
+    function cleanup(result) {
+              modal.style.display = 'none';
+              yesBtn.removeEventListener('click', onYes);
+              noBtn.removeEventListener('click', onNo);
+        resolve(result);
+    }
+
+    function onYes() { cleanup(true); }
+    function onNo() { cleanup(false); }
+              yesBtn.addEventListener('click', onYes);
+              noBtn.addEventListener('click', onNo);
+     });
+    }
+
+        return {
+              detectTriggers, selectForInjection, buildInjectionText,
+               setupTriggerListener, scanRecentMessages
     };
-})();
+     })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                   🩷 世界书模块 🩷                    ┅
@@ -919,15 +947,34 @@ const UIController = (() => {
             card.querySelector('.rol-btn-edit').addEventListener('click', (e) => { e.stopPropagation(); openEditor(mem.id); });
             card.querySelector('.rol-btn-rewrite').addEventListener('click', async (e) => {
                 e.stopPropagation();
-                showToast('🧡 Claude正在再酿造...');
-                const result = await AIService.rewriteMemory(mem.id, mem);
-                if (result) {
-                    showToast('🍊 再酿造完成！');
-                    WorldBook.syncMemory(result); // ┣━━同步重写后的记忆到世界书━━┫
-                    renderMemoryList(filter);
-                }
-                else { showToast('💧 欸?!这家伙又搞砸了？ :('); }
-            });
+              showToast('🧡 <span style="color:#D87757;font-weight:bold">Claude</span>正在再酿造...');
+            const result = await AIService.rewriteMemory(mem.id, mem);
+            if (result) {
+              showToast('🍊 再酿造完成！');
+                WorldBook.syncMemory(result);
+                  renderMemoryList(filter);
+               } else {
+               // ▸ 失败了 → 弹粉色确认窗
+            const retry = await rolConfirm(
+               '🥀',
+              '那家伙又搞砸了…再试一次嘛？',
+            '再酿一次...!',
+          '下次吧猪猪!!'
+        );
+        if (retry) {
+            showToast('🧡 在拼命努力...');
+            const retryResult = await AIService.rewriteMemory(mem.id, mem);
+            if (retryResult) {
+                showToast('🍊 成功了!!');
+                WorldBook.syncMemory(retryResult);
+                renderMemoryList(filter);
+            } else {
+                showToast('🌿 安心，只是没到时候而已!!ʢ>д<ʡˎˊ˗');
+            }
+        }
+    }
+});
+
             card.querySelector('.rol-btn-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (confirm('🍂确定净化这颗恋果嘛？')) {
