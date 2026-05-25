@@ -213,12 +213,14 @@ const Trigger = (() => {
 
     function buildInjectionText(memories) {
         if (!memories.length) return '';
-        let text = '[相关恋果]\n';
+        let text = '[记忆恋果被唤醒了！]\n';
         for (const mem of memories) {
-            text += `【${mem.title}】`;
-            if (mem.mood) text += `(${mem.mood})`;
-            text += `\n${mem.content}\n\n`;
-        }
+    const who = mem.author === 'kairin' ? 'Rinn' : '<span style="color:#D87757;font-weight:bold">Claude</span>';
+    text += `【${mem.title}】`;
+    if (mem.mood) text += `(${mem.mood})`;
+    text += `\n这颗果子の记录人：${who}`;
+    text += `\n${mem.content}\n\n`;
+}
         return text.trim();
     }
 
