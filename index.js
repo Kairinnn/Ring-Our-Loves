@@ -5,6 +5,11 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+const ROL_VERSION = '0.2.1'; // 每次改完代码手动+1
+if (localStorage.getItem('rol_version') !== ROL_VERSION) {
+  localStorage.setItem('rol_version', ROL_VERSION);
+  location.reload(true); // 强制刷新
+}
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                  🩷 存储模块 🩷                       ┅
