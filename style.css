@@ -51,6 +51,10 @@
   100% { transform: scale(1); }
 }
 
+.rol-container.rol-light .rol-editor-panel {
+  background: rgba(255, 245, 248, 1) !important;  /* 完全不透明 */
+}
+
 .rol-editor-panel {
   font-family: 'Clairine', sans-serif !important;
   transition: background 0.5s ease,
@@ -141,7 +145,7 @@
 }
 
 /* ⬇️┅☀️日间模式变量/┅┅╗ */
-.rol-editor-panel.rol-light {
+.rol-container.rol-light .rol-editor-panel {
   --rol-bg: rgb(255, 245, 248);
   --rol-card: rgb(255, 228, 242);
   --rol-text: rgb(80, 60, 70);
@@ -344,7 +348,7 @@
 }
 
 /* ⬇️┅💌记忆卡片列表┅┅╗ */
-.rol-memory-list {
+.rol-container.rol-light .rol-memory-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -352,7 +356,7 @@
     overflow-y: auto;
     padding-right: 4px;
 }
-.rol-memory-card {
+.rol-container.rol-light .rol-memory-card {
     padding: 12px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
     border-radius: 8px;
@@ -407,7 +411,7 @@
     font-size: 11px;
 }
 .rol-card-date {
-    color: var(--SmartThemeBodyColor, #888);
+    color: var(--SmartThemeBodyColor, #ffa8e1);
     opacity: 0.7;
 }
 .rol-card-mood {
@@ -416,7 +420,7 @@
 }
 .rol-card-summary {
     font-size: 12px;
-    color: var(--SmartThemeBodyColor, #999);
+    color: var(--SmartThemeBodyColor, #84ae20);
     margin-bottom: 8px;
     line-height: 1.5;
 }
@@ -432,7 +436,7 @@
 .rol-toggle-slider {
     position: absolute;
     inset: 0;
-    background: #555;
+    background: #ff9dd8;
     border-radius: 20px;
     cursor: pointer;
     transition: background 0.2s;
@@ -442,7 +446,7 @@
     position: absolute;
     width: 16px; height: 16px;
     left: 2px; top: 2px;
-    background: #fff;
+    background: #e3ff90;
     border-radius: 50%;
 }
 .rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #D87757); }
@@ -544,41 +548,38 @@
 
 /* ➤━━━━━━━ ▍☀️主题样式🌙 ▍━━━━━━┓ */
 /* ⬇️┅☀️日间模式 ┅┅┓ */
-.rol-editor-panel.rol-light .rol-editor-inner {
-    background:
-        url('https://i.postimg.cc/SRmYmwFB/heart.png') center/cover no-repeat,
-        rgba(255, 245, 248, 0.92) !important;
-    border: 1px solid rgba(255, 182, 193, 0.3) !important;
-    box-shadow:
-        0 8px 32px rgba(255, 150, 170, 0.15),
-        0 2px 8px rgba(0, 0, 0, 0.06) !important;
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner {
+  background-color: #ffffff;  /* 先垫一层纯白 */
+  background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png');
+  background-size: cover;
+  background-blend-mode: overlay;  /* 图片和白底混合，图就会变浅 */
 }
 
 /* ⬇️┅☀️日间模式字体颜色┅┅╗ */
-.rol-editor-panel.rol-light .rol-editor-inner,
-.rol-editor-panel.rol-light .rol-editor-inner * {
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner,
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner * {
     color: #d4627a !important;
 }
 
-.rol-editor-panel.rol-light .rol-editor-inner input,
-.rol-editor-panel.rol-light .rol-editor-inner textarea,
-.rol-editor-panel.rol-light .rol-editor-inner select {
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner input,
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner textarea,
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner select {
     color: #c75b73 !important;
     background: rgba(255, 240, 245, 0.7) !important;
     border-color: rgba(255, 150, 170, 0.3) !important;
 }
 
-.rol-editor-panel.rol-light .rol-editor-inner input::placeholder,
-.rol-editor-panel.rol-light .rol-editor-inner textarea::placeholder {
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner input::placeholder,
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner textarea::placeholder {
     color: rgba(212, 98, 122, 0.45) !important;
 }
 
 /* ⬇️┅☀️日间模式滚动条┅┅╗ */
-.rol-editor-panel.rol-light .rol-editor-inner::-webkit-scrollbar-thumb {
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-thumb {
     background: rgba(255, 150, 170, 0.3) !important;
 }
 
-.rol-editor-panel.rol-light .rol-editor-inner::-webkit-scrollbar-track {
+.rol-container.rol-light .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track {
     background: rgba(255, 220, 230, 0.2) !important;
 }
 
@@ -1004,7 +1005,7 @@
     .rol-toolbar .rol-input { width: 100%; }
     .rol-editor-inner { max-width: 100%; border-radius: 8px; padding: 16px; }
     .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
-    .rol-memory-list { max-height: 50vh; }
+    .rol-memory-list { max-height: 100vh; }
     .rol-card-actions { justify-content: flex-end; }
     /* ⬇️┅🍥移动端侧边栏宽度┅┅╗ */
     .rol-drawer-panel { width: 80vw; }

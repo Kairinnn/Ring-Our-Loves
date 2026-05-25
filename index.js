@@ -736,6 +736,7 @@ if (!raw) return null;
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
         const parsed = parseAIOutput(raw);
+        parsed.author = 'claude';  // 直接写
         parsed.autoDate = autoDate; // ┣━━附带自动日期━━┫
         return parsed;
     }
@@ -1103,9 +1104,13 @@ const UIController = (() => {
                 themeBtn.type = 'button';
                 themeBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    editorPanel.classList.toggle('rol-light');
-                    const isLight = editorPanel.classList.contains('rol-light');
-                    themeBtn.textContent = isLight ? '🌙' : '☀️';
+                   const rolRoot = document.querySelector('.rol-container') || editorPanel.closest('.rol-container');
+        if (rolRoot) {
+                rolRoot.classList.toggle('rol-light');
+            }
+          // editorPanel自己不用单独加了，因为它在rol-container里面，CSS用后代选择器就能覆盖到
+            const isLight = rolRoot.classList.contains('rol-light');
+                themeBtn.textContent = isLight ? '🌙' : '☀️';
                 });
                 inner.prepend(themeBtn);
             }
