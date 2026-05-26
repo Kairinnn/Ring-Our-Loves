@@ -6,7 +6,7 @@
   font-style: normal;
 }
 /* ➤━━━━━━━ ▍🧈面板动画🧈 ▍━━━━━━━┓ */
-/* ⬇️┅🧈入场┅┅╗ */
+/* ⬇️┅🧈入场/┅┅╗ */
 @keyframes rol-bounce-in {
   0% {
     opacity: 0;
@@ -23,7 +23,7 @@
     transform: translate(-50%, -50%) scale(1);
   }
 }
-/* ⬇️┅🧈退场┅┅╗ */
+/* ⬇️┅🧈退场/┅┅╗ */
 @keyframes rol-shrink-out {
   0% {
     opacity: 1;
@@ -34,7 +34,7 @@
     transform: translate(-50%, -50%) scale(0.6) rotate(2deg);
   }
 }
-/* ⬇️┅🧈呼吸光效┅┅╗ */
+/* ⬇️┅🧈呼吸光效/┅┅╗ */
 @keyframes rol-glow-pulse {
   0%, 100% { box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
   50% { box-shadow: 0 12px 40px rgba(0,0,0,0.55),
@@ -50,9 +50,9 @@
   0% { transform: scale(0.8); }
   100% { transform: scale(1); }
 }
-
+/* ⬇️┅☀️日间模式垫白底/┅┅╗ */
 body.rol-light-mode .rol-editor-panel {
-  background: rgba(255, 245, 248, 1) !important;  /* 完全不透明 */
+  background: rgba(255, 245, 248, 1) !important;
 }
 
 .rol-editor-panel {
@@ -91,7 +91,7 @@ body.rol-light-mode .rol-editor-panel {
   animation: rol-glow 2s ease-in-out infinite;
 }
 
-/* ┗━━━━━━ ▍🧈面板动画🧈 ▍━━━━━━┛ */
+/* ┗━━━━━━/ 🧈面板动画🧈 /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍☀️主题变量🌙 ▍━━━━━━┓ */
 .rol-theme-toggle {
@@ -158,10 +158,10 @@ body.rol-light-mode .rol-editor-panel {
     padding: 8px;
     max-width: 100%;
 }
-/* ┗━━━━━━ ▍☀️主题变量🌙 ▍━━━━━━┛ */
+/* ┗━━━━━━/ ☀️主题变量🌙 /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🗄️侧边栏样式🗄️ ▍━━━━━━┓ */
-/* ⬇️┅⭕️侧边栏的打开按钮┅┅╗ */
+/* ⬇️┅⭕️侧边栏的打开按钮/┅┅╗ */
 .rol-btn-drawer-open {
     width: 100%;
     padding: 12px;
@@ -176,7 +176,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-btn-drawer-open:hover { opacity: 0.85; }
 
-/* ⬇️┅⭕️侧边栏遮罩层┅┅╗ */
+/* ⬇️┅⭕️侧边栏遮罩层/┅┅╗ */
 .rol-drawer-overlay {
     display: none;
     position: fixed;
@@ -188,7 +188,7 @@ body.rol-light-mode .rol-editor-panel {
     display: block;
 }
 
-/* ⬇️┅⭕️侧边栏面板 - 从右侧滑出┅┅╗ */
+/* ⬇️┅⭕️侧边栏面板 - 从右侧滑出/┅┅╗ */
 .rol-drawer-panel {
     position: fixed;
     top: 0;
@@ -231,7 +231,7 @@ body.rol-light-mode .rol-editor-panel {
     background: var(--SmartThemeBlurTintColor, #333) !important;
 }
 
-/* ⬇️┅⭕️侧边栏Tab┅┅╗ */
+/* ⬇️┅⭕️侧边栏Tab/┅┅╗ */
 .rol-tabs {
     display: flex;
     gap: 4px;
@@ -259,7 +259,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-panel-section { display: none; }
 .rol-section-active { display: block; }
 
-/* ⬇️┅⭕️侧边栏 - 工具栏┅┅╗ */
+/* ⬇️┅⭕️侧边栏 - 工具栏/┅┅╗ */
 .rol-toolbar {
     display: flex;
     gap: 8px;
@@ -267,7 +267,7 @@ body.rol-light-mode .rol-editor-panel {
     flex-wrap: wrap;
 }
 
-/* ⬇️┅⭕️侧边栏 - 输入框┅┅╗ */
+/* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
 .rol-input {
     width: 100%;
     padding: 8px 10px;
@@ -290,7 +290,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-textarea-lg { min-height: 150px; }
 
-/* ⬇️┅⭕️侧边栏按钮┅┅╗ */
+/* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
 .rol-btn {
     padding: 8px 14px;
     border: 1px solid var(--SmartThemeBorderColor, #555);
@@ -315,7 +315,7 @@ body.rol-light-mode .rol-editor-panel {
     font-weight: 600;
 }
 .rol-btn-save:hover { background: #d4899f; }
-/* ┗━━━━━━ ▍🗄️侧边栏样式🗄️ ▍━━━━━━┛ */
+/* ┗━━━━━━/ 🗄️侧边栏样式🗄️ /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
 .rol-home {
@@ -388,7 +388,7 @@ body.rol-light-mode .rol-editor-panel {
   opacity: 0.5;
 }
 
-/* ⬇️┅🍎果篮┅┅╗ */
+/* ⬇️┅🍎果篮/┅┅╗ */
 .rol-fruit-garden {
   width: 100%;
   min-height: 200px;
@@ -406,7 +406,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-fruit-item:hover {
   transform: scale(1.3) !important;
 }
-/* ⬇️┅🍎果子落下动画┅┅╗ */
+/* ⬇️┅🍎果子落下动画/┅┅╗ */
 @keyframes rol-fruit-drop {
   0% {
     transform: translateY(-100px) rotate(0deg);
@@ -429,10 +429,10 @@ body.rol-light-mode .rol-editor-panel {
     transform: translateY(0) rotate(0deg);
   }
 }
-/* ┗━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┛ */
+/* ┗━━━━━━/ 🧡Our Nest🩷 /━━━━━━┛ */
 
 /* ➤━━━━━━━ ▍💌卡片列表内容💌 ▍━━━━━━━┓ */
-/* ⬇️┅🧡重写按钮（橙色次按钮）┅┅╗ */
+/* ⬇️┅🧡重写按钮（橙色次按钮）/┅┅╗ */
 .rol-btn-rewrite {
     background: #e8a060;
     border-color: #e8a060;
@@ -461,7 +461,7 @@ body.rol-light-mode .rol-editor-panel {
     padding: 2px 6px;
 }
 
-/* ⬇️┅💌记忆卡片列表┅┅╗ */
+/* ⬇️┅💌记忆卡片列表/┅┅╗ */
 .rol-memory-list {
     display: flex;
     flex-direction: column;
@@ -539,7 +539,7 @@ body.rol-light-mode .rol-editor-panel {
     line-height: 1.5;
 }
 
-/* ⬇️┅💌toggle切换┅┅╗ */
+/* ⬇️┅💌toggle切换/┅┅╗ */
 .rol-toggle-wrap {
     position: relative;
     width: 36px;
@@ -610,42 +610,27 @@ body.rol-light-mode .rol-editor-panel {
     border-radius: 8px;
     color: #f0c060;
 }
-/* ┗━━━━━━ ▍💌卡片列表内容💌 ▍━━━━━━┛ */
+/* ┗━━━━━━/ 💌卡片列表内容💌 /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🗄️编辑面板（遮罩层）🗄️ ▍━━━━━━┓ */
 .rol-editor-panel {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
     z-index: 9999;
+    background: rgba(0, 0, 0, 0.7);
     justify-content: center;
     align-items: center;
-    padding: 16px;
     margin: auto;
     width: fit-content;
     height: fit-content;
 }
+
 .rol-editor-panel.rol-active {
-    display: flex !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
-    justify-content: center !important;
-    align-items: center !important;
-    z-index: 9999 !important;
-    background: rgba(0, 0, 0, 0.7) !important;
-    overflow: hidden !important;
+    display: flex;
 }
 
-/* ⬇️┅┅🗄️编辑面板内部卡片┅┅╗ */
+/* ⬇️┅┅🗄️编辑面板内部卡片/┅┅╗ */
 .rol-editor-inner {
     position: relative;
     background: var(--SmartThemeChatTintColor, rgba(22, 22, 26, 0.96));
@@ -659,10 +644,10 @@ body.rol-light-mode .rol-editor-panel {
     border: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
 }
-/* ┗━━━━━━ ▍🗄️编辑面板（遮罩层）🗄️ ▍━━━━━━┛ */
+/* ┗━━━━━━/ 🗄️编辑面板（遮罩层）🗄️ /━━━━━━┛ */
 
 /* ➤━━━━━━━ ▍☀️主题样式🌙 ▍━━━━━━┓ */
-/* ⬇️┅☀️日间模式 ┅┅┓ */
+/* ⬇️┅☀️日间模式/┅┅┓ */
 body.rol-light-mode .rol-editor-inner::before {
   content: '';
   position: absolute;
@@ -674,13 +659,13 @@ body.rol-light-mode .rol-editor-inner::before {
 }
 
 body.rol-light-mode .rol-editor-panel .rol-editor-inner {
-  background-color: #ffffff;  /* 垫一层纯白 */
+  background-color: #ffffff;  /* ❂垫一层纯白 */
   background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png');
   background-size: cover;
-  background-blend-mode: overlay;  /* 图片和白底混合，图就会变浅 */
+  background-blend-mode: overlay;  /* ❂图片和白底混合，图就会变浅 */
 }
 
-/* ⬇️┅☀️日间模式字体颜色┅┅╗ */
+/* ⬇️┅☀️日间模式字体颜色/┅┅╗ */
 body.rol-light-mode .rol-editor-panel .rol-editor-inner,
 body.rol-light-mode .rol-editor-panel .rol-editor-inner * {
     color: #d4627a !important;
@@ -699,7 +684,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner textarea::placeholder {
     color: rgba(212, 98, 122, 0.45) !important;
 }
 
-/* ⬇️┅☀️日间模式滚动条┅┅╗ */
+/* ⬇️┅☀️日间模式滚动条/┅┅╗ */
 body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-thumb {
     background: rgba(255, 150, 170, 0.3) !important;
 }
@@ -708,7 +693,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     background: rgba(255, 220, 230, 0.2) !important;
 }
 
-/* ⬇️┅🌙编辑面板滚动条美化（夜间）┅┅╗ */
+/* ⬇️┅🌙编辑面板滚动条美化（夜间）/┅┅╗ */
 .rol-editor-inner::-webkit-scrollbar {
     width: 6px;
 }
@@ -719,7 +704,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
 .rol-editor-inner::-webkit-scrollbar-track {
     background: transparent;
 }
-/* ┗━━━━━━ ▍☀️主题样式🌙 ▍━━━━━━┛ */
+/* ┗━━━━━━/ ☀️主题样式🌙 /━━━━━━┛ */
 
 /* ➤┅┅🍥手机端适配┅┅╗ */
 @media (max-width: 480px) {
@@ -758,7 +743,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     gap: 10px;
     margin-top: 16px;
 }
-/* ╚┅┅ ▍🍥手机端适配 ▍┅┅═╝ */
+/* ╚┅┅/ 🍥手机端适配 /┅┅═╝ */
 
 /* ➤┅💌笔记正文展开查看面板┅┅╗ */
 .rol-letter-panel {
@@ -849,7 +834,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     font-size: 12px;
 }
 .rol-letter-actions .rol-btn:active { opacity: 0.7; }
-/* ╚┅┅ ▍💌笔记正文展开查看面板 ▍┅┅═╝ */
+/* ╚┅┅/ 💌笔记正文展开查看面板 /┅┅═╝ */
 
 /* ➤━━━━━━ ▍🍰设置组🍰 ▍━━━━━━┓ */
 .rol-config-group { margin-bottom: 14px; }
@@ -862,7 +847,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     color: var(--SmartThemeBodyColor, #ccc);
 }
 
-/* ⬇️┅❔️提示┅┅╗ */
+/* ⬇️┅❔️提示/┅┅╗ */
 #rol-toast {
     position: fixed;
     bottom: 80px;
@@ -883,7 +868,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     transform: translateX(-50%) translateY(0);
 }
 
-/* ⬇️┅🏷️表单行（并排）┅┅╗ */
+/* ⬇️┅🏷️表单行（并排）/┅┅╗ */
 .rol-form-row {
     display: flex;
     gap: 12px;
@@ -891,7 +876,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
 }
 .rol-form-half { flex: 1; margin-bottom: 0; }
 
-/* ⬇️┅🧡AI 源面板┅┅╗ */
+/* ⬇️┅🧡AI 源面板/┅┅╗ */
 .rol-ai-source-panel {
     display: none;
     position: fixed;
@@ -1000,7 +985,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     font-size: 13px;
 }
 
-/* ⬇️┅🧡聊天楼层选择区域┅┅╗ */
+/* ⬇️┅🧡聊天楼层选择区域/┅┅╗ */
 .rol-ai-chat-section {
     padding: 14px 16px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
@@ -1034,7 +1019,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     width: 100%;
     margin-top: 6px;
 }
-/* ⬇️┅🏷️复选框标签┅┅╗ */
+/* ⬇️┅🏷️复选框标签/┅┅╗ */
 .rol-checkbox-label {
     display: flex;
     align-items: center;
@@ -1048,7 +1033,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     width: auto;
     margin: 0;
 }
-/* ➤┅💡确认弹窗┅┅╗ */
+/* ➤┅💡确认弹窗/┅┅╗ */
 .rol-confirm-overlay {
   position: fixed;
   inset: 0;
@@ -1116,8 +1101,8 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
   background: rgba(219, 112, 147, 0.1);
   color: var(--rol-accent, rgb(219, 112, 147));
 }
-/* ╚┅┅ ▍💡确认弹窗 ▍┅┅═╝ */
-/* ┗━━━━━━ ▍🍰设置组🍰 ▍━━━━━━┛ */
+/* ╚┅┅/ 💡确认弹窗 /┅┅═╝ */
+/* ┗━━━━━━/ 🍰设置组 🍰 /━━━━━━┛ */
 
 /* ┣========== ▍🍥移动端样式🍥 ▍==========┫ */
 @media (max-width: 768px) {
@@ -1127,6 +1112,6 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
     .rol-memory-list { max-height: 100vh; }
     .rol-card-actions { justify-content: flex-end; }
-    /* ⬇️┅🍥移动端侧边栏宽度┅┅╗ */
+    /* ⬇️┅🍥移动端侧边栏宽度/┅┅╗ */
     .rol-drawer-panel { width: 80vw; }
 }
