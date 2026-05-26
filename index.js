@@ -800,7 +800,7 @@ function renderFruitGarden(fruits) {
 }
 // ┣━━ 🩷 天数计算 🩷 ━━┫
   function updateDayCounter() {
-  const startDate = new Date('2025-04-01'); // 起始日
+  const startDate = new Date('2026-04-14T00:17:00+08:00'); // 起始日
   const today = new Date();
   const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
   const counter = document.querySelector('.rol-day-number');
