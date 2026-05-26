@@ -317,6 +317,113 @@ body.rol-light-mode .rol-editor-panel {
 .rol-btn-save:hover { background: #d4899f; }
 /* ┗━━━━━━ ▍🗄️侧边栏样式🗄️ ▍━━━━━━┛ */
 
+/* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
+.rol-home {
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  min-height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.rol-home-avatars {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rol-avatar img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--rol-accent, #db7093);
+}
+
+.rol-avatar-name {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--rol-text);
+}
+
+.rol-home-heart {
+  font-size: 20px;
+  animation: rol-heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes rol-heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.rol-home-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rol-day-number {
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -2px;
+  color: var(--rol-accent);
+}
+
+.rol-day-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  opacity: 0.5;
+}
+
+/* ⬇️┅🍎果篮┅┅╗ */
+.rol-fruit-garden {
+  width: 100%;
+  min-height: 200px;
+  position: relative;
+}
+
+.rol-fruit-item {
+  position: absolute;
+  font-size: 24px;
+  cursor: pointer;
+  animation: rol-fruit-drop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.15s ease;
+}
+
+.rol-fruit-item:hover {
+  transform: scale(1.3) !important;
+}
+/* ⬇️┅🍎果子落下动画┅┅╗ */
+@keyframes rol-fruit-drop {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(0) rotate(10deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(-14px) rotate(-4deg);
+  }
+  75% {
+    transform: translateY(0) rotate(2deg);
+  }
+  85% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+/* ┗━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┛ */
+
 /* ➤━━━━━━━ ▍💌卡片列表内容💌 ▍━━━━━━━┓ */
 /* ⬇️┅🧡重写按钮（橙色次按钮）┅┅╗ */
 .rol-btn-rewrite {
