@@ -779,8 +779,35 @@ const UIController = (() => {
             });
         }
     }
+  // ┣━━ 🩷 果子物理 🩷 ━━┫
+function renderFruitGarden(fruits) {
+  const garden = document.querySelector('.rol-fruit-garden');
+  if (!garden) return;
+  garden.innerHTML = '';
 
-    // ┣━━🩷 设置面板 🩷 ━━┫
+  fruits.forEach((fruit, i) => {
+    const el = document.createElement('div');
+    el.className = 'rol-fruit-item';
+    el.textContent = fruit.emoji;
+    el.style.left = `${8 + Math.random() * 78}%`;
+    el.style.top = `${Math.random() * 80}%`;
+    el.style.animationDelay = `${i * 0.08 + Math.random() * 0.3}s`;
+    el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
+
+    el.addEventListener('click', () => showFruitDetail(fruit));
+    garden.appendChild(el);
+  });
+}
+// ┣━━ 🩷 天数计算 🩷 ━━┫
+  function updateDayCounter() {
+  const startDate = new Date('2025-04-01'); // 起始日
+  const today = new Date();
+  const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+  const counter = document.querySelector('.rol-day-number');
+  if (counter) counter.textContent = diff;
+}
+
+    // ┣━━ 🩷 设置面板 🩷 ━━┫
     function bindConfigPanel() {
         const autoInjectToggle = document.getElementById('rol-auto-inject');
         const maxCountInput = document.getElementById('rol-max-inject');
