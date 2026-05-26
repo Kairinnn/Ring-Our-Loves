@@ -622,6 +622,9 @@ body.rol-light-mode .rol-editor-panel {
     justify-content: center;
     align-items: center;
     padding: 16px;
+    margin: auto;
+    width: fit-content;
+    height: fit-content;
 }
 .rol-editor-panel.rol-active {
     display: flex !important;
