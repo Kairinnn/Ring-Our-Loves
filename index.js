@@ -723,7 +723,7 @@ if (!raw) return null;
     return {
         getAvailablePresets, getCurrentPresetName,
         generateWithPreset, rewriteMemory, generateMemoryFromContext,
-        parseAIOutput, parseEntryBlock
+        parseAIOutput, parseEntryBlock,
         DEFAULT_MEMORY_PROMPT
     };
 })();
