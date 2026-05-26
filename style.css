@@ -51,7 +51,7 @@
   100% { transform: scale(1); }
 }
 
-.rol-container.rol-light .rol-editor-panel {
+body.rol-light-mode .rol-editor-panel {
   background: rgba(255, 245, 248, 1) !important;  /* 完全不透明 */
 }
 
@@ -145,7 +145,7 @@
 }
 
 /* ⬇️┅☀️日间模式变量/┅┅╗ */
-.rol-container.rol-light .rol-editor-panel {
+body.rol-light-mode .rol-editor-panel {
   --rol-bg: rgb(255, 245, 248);
   --rol-card: rgb(255, 228, 242);
   --rol-text: rgb(80, 60, 70);
@@ -521,8 +521,6 @@
     max-width: none !important;
     max-height: none !important;
     margin: 0 !important;
-    transform: none !important;
-    opacity: 1 !important;
     justify-content: center !important;
     align-items: center !important;
     z-index: 9999 !important;
@@ -533,7 +531,7 @@
 /* ⬇️┅┅🗄️编辑面板内部卡片┅┅╗ */
 .rol-editor-inner {
     position: relative;
-    background: rgba(22, 22, 26, 0.96);
+    background: var(--SmartThemeChatTintColor, rgba(22, 22, 26, 0.96));
     border-radius: 14px;
     padding: 24px;
     width: 100%;
@@ -548,38 +546,48 @@
 
 /* ➤━━━━━━━ ▍☀️主题样式🌙 ▍━━━━━━┓ */
 /* ⬇️┅☀️日间模式 ┅┅┓ */
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner {
-  background-color: #ffffff;  /* 先垫一层纯白 */
+body.rol-light-mode .rol-editor-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.rol-light-mode .rol-editor-panel .rol-editor-inner {
+  background-color: #ffffff;  /* 垫一层纯白 */
   background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png');
   background-size: cover;
   background-blend-mode: overlay;  /* 图片和白底混合，图就会变浅 */
 }
 
 /* ⬇️┅☀️日间模式字体颜色┅┅╗ */
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner,
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner * {
+body.rol-light-mode .rol-editor-panel .rol-editor-inner,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner * {
     color: #d4627a !important;
 }
 
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner input,
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner textarea,
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner select {
+body.rol-light-mode .rol-editor-panel .rol-editor-inner input,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner textarea,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner select {
     color: #c75b73 !important;
     background: rgba(255, 240, 245, 0.7) !important;
     border-color: rgba(255, 150, 170, 0.3) !important;
 }
 
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner input::placeholder,
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner textarea::placeholder {
+body.rol-light-mode .rol-editor-panel .rol-editor-inner input::placeholder,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner textarea::placeholder {
     color: rgba(212, 98, 122, 0.45) !important;
 }
 
 /* ⬇️┅☀️日间模式滚动条┅┅╗ */
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-thumb {
+body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-thumb {
     background: rgba(255, 150, 170, 0.3) !important;
 }
 
-.rol-container.rol-light .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track {
+body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track {
     background: rgba(255, 220, 230, 0.2) !important;
 }
 
@@ -658,8 +666,6 @@
     max-width: none !important;
     max-height: none !important;
     margin: 0 !important;
-    transform: none !important;
-    opacity: 1 !important;
     justify-content: center !important;
     align-items: center !important;
     z-index: 9998 !important;
@@ -791,8 +797,6 @@
     max-width: none !important;
     max-height: none !important;
     margin: 0 !important;
-    transform: none !important;
-    opacity: 1 !important;
     justify-content: center !important;
     align-items: center !important;
     z-index: 9999 !important;
@@ -1000,7 +1004,6 @@
 
 /* ┣========== ▍🍥移动端样式🍥 ▍==========┫ */
 @media (max-width: 768px) {
-    .rol-container { padding: 4px; }
     .rol-toolbar { flex-direction: column; }
     .rol-toolbar .rol-input { width: 100%; }
     .rol-editor-inner { max-width: 100%; border-radius: 8px; padding: 16px; }
