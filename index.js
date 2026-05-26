@@ -406,21 +406,19 @@ function buildWiEntry(uid, memory, existingEntry = null) {
             const existingUid = mapping[memory.id];
 
             let uid;
-            if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
-            uid = existingUid;
-            const updatedEntry = buildWiEntry(uid, memory, data.entries[existingUid]);  // ← 传入已有条目
-            data.entries[uid] = updatedEntry;
+if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
+    uid = existingUid;
+    const updatedEntry = buildWiEntry(uid, memory, data.entries[existingUid]);
+    data.entries[uid] = updatedEntry;
+    console.log(`[RingOurLuv][WorldBook] 更新恋果 uid=${uid}, title="${memory.title}"`);
+} else {
+    uid = getNextUid(data.entries);
+    const newEntry = buildWiEntry(uid, memory);
+    data.entries[uid] = newEntry;
+    mapping[memory.id] = uid;
+    saveMapping(mapping);
+    console.log(`[RingOurLuv][WorldBook] 放入恋果 uid=${uid}, title="${memory.title}"`);
 }
-                console.log(`[RingOurLuv][WorldBook] 更新恋果 uid=${uid}, title="${memory.title}"`);
-            } else {
-                // ┣━━创建新条目━━┫
-                uid = getNextUid(data.entries);
-                const newEntry = buildWiEntry(uid, memory);
-                data.entries[uid] = newEntry;
-                mapping[memory.id] = uid;
-                saveMapping(mapping);
-                console.log(`[RingOurLuv][WorldBook] 放入恋果 uid=${uid}, title="${memory.title}"`);
-            }
 
             const saved = await saveWorldData(data);
             if (saved) {
@@ -713,8 +711,7 @@ if (!raw) return null;
         }).join('\n');
 
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || DEFAULT_MEMORY_PROMPT)
-            .replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
         const parsed = parseAIOutput(raw);
@@ -727,6 +724,7 @@ if (!raw) return null;
         getAvailablePresets, getCurrentPresetName,
         generateWithPreset, rewriteMemory, generateMemoryFromContext,
         parseAIOutput, parseEntryBlock
+        DEFAULT_MEMORY_PROMPT
     };
 })();
 
@@ -1392,7 +1390,7 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
         if (loading) loading.style.display = 'flex';
 
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
@@ -1434,7 +1432,7 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
 
         if (loading) loading.style.display = 'flex';
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
