@@ -341,6 +341,13 @@ body.rol-light-mode .rol-editor-panel {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--rol-accent, #db7093);
+  box-shadow: 0 4px 12px rgba(219, 112, 147, 0.25);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.rol-avatar img:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 18px rgba(219, 112, 147, 0.35);
 }
 
 .rol-avatar-name {
