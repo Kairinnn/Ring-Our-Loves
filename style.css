@@ -155,7 +155,8 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-container {
     font-family: inherit;
-    padding: 8px;
+    background-color: #ffffff;
+    padding: 6.5px;
     max-width: 100%;
 }
 /* ┗━━━━━━/ ☀️主题变量🌙 /━━━━━━┛ */
@@ -219,15 +220,20 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-drawer-title {
     font-size: 15px;
-    font-weight: 600;
-    color: var(--SmartThemeQuoteColor, #eee);
+    font-weight: bold;
+    color: rgb(255 135 206 / 78%);
+    background-color: #ffffff;
+    border-radius: 7px;
+    border: 2px solid #b4e71952;
+    padding: 4px;
+    padding-right: 74px;
 }
 .rol-drawer-close-btn {
     font-size: 12px !important;
-    color: #aaa !important;
-    padding: 4px 10px !important;
-    border: 1px solid var(--SmartThemeBorderColor, #555) !important;
-    border-radius: 6px !important;
+    color: #a6cc06c7 !important;
+    padding: 5px 10px !important;
+    border: 2px solid rgb(255 215 238 / 80%) !important;
+    border-radius: 7px !important;
     background: var(--SmartThemeBlurTintColor, #333) !important;
 }
 
@@ -260,25 +266,25 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-tab {
     flex: 1;
-    padding: 8px 12px;
+    padding: 9px 10px;
     border: none;
-    background: transparent;
-    color: var(--SmartThemeBodyColor, #ccc);
-    font-size: 14px;
+    background: #ffeaf48a;
+    color: rgb(168 208 19);
+    font-size: 15px;
+    font-weight: bold;
     cursor: pointer;
-    border-radius: 6px 6px 0 0;
+    border-radius: 13px 13px 0 0;
+    border: 1.8px solid #c1e219cc;
     transition: background 0.2s;
-    position: relative;
-    z-index: 1;
 }
 .rol-tab-active {
-    background: var(--SmartThemeBlurTintColor, #333);
-    color: var(--SmartThemeQuoteColor, #fff);
+    background: rgb(239 255 200);
+    color: #ff98c9;
     font-weight: 600;
 }
 
 .rol-panel-section { display: none; }
-.rol-section-active { display: block; }
+.rol-section-active {display: block;background: #f9ffe4a3;}
 
 /* ⬇️┅⭕️侧边栏 - 工具栏/┅┅╗ */
 .rol-toolbar {
@@ -291,19 +297,20 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
 .rol-input {
     width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
+    padding: 9px 10px;
+    border: 1.8px solid rgb(165 208 48 / 54%);
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, #ffc9e4);
-    color: var(--SmartThemeBodyColor, #eee);
-    font-size: 13px;
+    background: rgb(255 247 252);
+    color: rgb(137 195 0);
+    font-size: 14px;
+    font-weight: bold;
     box-sizing: border-box;
 }
 .rol-input:focus {
     outline: none;
     border-color: var(--SmartThemeQuoteColor, #D87757);
 }
-.rol-input-sm { width: 70px; }
+.rol-input-sm {width: 57px;}
 .rol-textarea {
     resize: vertical;
     min-height: 80px;
@@ -313,13 +320,14 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
 .rol-btn {
-    padding: 8px 14px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
-    border-radius: 6px;
+    padding: 9px 12px;
+    border: 2px solid rgb(255 216 239);
+    border-radius: 11px;
     background: var(--SmartThemeBlurTintColor, #333);
-    color: var(--SmartThemeBodyColor, #eee);
+    color: rgb(255 255 255);
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: bold;
     white-space: nowrap;
     transition: opacity 0.2s;
 }
@@ -328,6 +336,8 @@ body.rol-light-mode .rol-editor-panel {
     background: var(--SmartThemeQuoteColor, #D87757);
     border-color: var(--SmartThemeQuoteColor, #D87757);
     color: #fff;
+    border: 2px solid;
+    border-color: #b1da129c;
 }
 .rol-btn-save {
     background: #e8a0b4;
@@ -340,12 +350,13 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
 .rol-home {
-  padding: 24px 16px;
+  padding: 20px 12px;
   display: flex;
   flex-direction: column;
+  background-color: #fff0fa;
   align-items: center;
-  gap: 24px;
-  min-height: 100%;
+  gap: 19px;
+  min-height: 121px;
   position: relative;
   overflow: hidden;
 }
@@ -353,8 +364,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-home-avatars {
   display: flex;
   align-items: center;
-  gap: 16px;
-  position: relative;
+  gap: 20px;
 }
 
 .rol-home-avatars::after {
@@ -385,8 +395,8 @@ body.rol-light-mode .rol-editor-panel {
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--rol-accent, #db7093);
-  box-shadow: 0 4px 12px rgba(219, 112, 147, 0.25);
+  border: 2px solid #d4ff2f61;
+  box-shadow: 0 4px 11px rgba(219, 112, 147, 0.25);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -397,15 +407,19 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-avatar-name {
   display: block;
+  padding: 3px;
   text-align: center;
-  font-size: 12px;
+  font-size: 15.6px;
+  font-weight: bold;
+  background-color: #ffffff;
+  border-radius: 9px;
   margin-top: 4px;
-  color: var(--rol-text);
+  color: rgb(255 151 215 / 72%);
 }
 
 .rol-home-heart {
-  font-size: 20px;
-  animation: rol-heartbeat 2s ease-in-out infinite;
+  font-size: 25px;
+  animation: rol-heartbeat 1.7s ease-in-out infinite;
 }
 
 @keyframes rol-heartbeat {
@@ -427,7 +441,9 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-day-label {
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #a4ce09;
   text-transform: uppercase;
   letter-spacing: 3px;
   opacity: 0.5;
@@ -436,7 +452,7 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅🍎果篮/┅┅╗ */
 .rol-fruit-garden {
   width: 100%;
-  min-height: 200px;
+  min-height: 157px;
   position: relative;
 }
 
@@ -493,9 +509,10 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-btn-cancel:hover { color: #ccc; }
 .rol-btn-ai {
-    background: linear-gradient(135deg, #ffb3df, #D87757);
-    border-color: #ffb3df;
-    color: #fff;
+    background-color: rgb(255 168 139);
+    color: #fffcf8;
+    border: 2px solid;
+    border-color: #fffef1;
 }
 .rol-btn-icon {
     background: transparent;
@@ -516,9 +533,9 @@ body.rol-light-mode .rol-editor-panel {
     padding-right: 4px;
 }
 .rol-memory-card {
-    padding: 12px;
-    border: 1px solid var(--SmartThemeBorderColor, #444);
-    border-radius: 8px;
+    padding: 9px;
+    border: 1.9px solid rgb(255 214 240 / 68%);
+    border-radius: 12px;
     background: var(--SmartThemeBlurTintColor, #2a2a2a);
     position: relative;
     transition: opacity 0.2s;
@@ -530,7 +547,7 @@ body.rol-light-mode .rol-editor-panel {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 .rol-card-title-row {
     display: flex;
@@ -540,9 +557,10 @@ body.rol-light-mode .rol-editor-panel {
     min-width: 0;
 }
 .rol-card-title {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--SmartThemeQuoteColor, #ddd);
+    font-weight: bold;
+    font-size: 16px;
+    padding-left: 5px;
+    color: rgb(255 165 208);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -550,12 +568,12 @@ body.rol-light-mode .rol-editor-panel {
 .rol-author-badge {
     font-size: 10px;
     padding: 1px 6px;
-    border-radius: 8px;
+    border-radius: 10px;
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: bold;
 }
 .rol-author-claude {
-    background: rgba(255, 160, 60, 0.2);
+    background: rgb(250 249 245);
     color: #D87757;
 }
 .rol-author-kairin {
@@ -564,30 +582,34 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-card-meta {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
-    font-size: 11px;
+    gap: 4px;
+    margin-bottom: 14px;
+    font-size: 11.8px;
+    font-weight: bold;
+    align-items: flex-start;
 }
 .rol-card-date {
-    color: var(--SmartThemeBodyColor, #ffa8e1);
+    color: rgb(255 189 221);
+    font-weight: 530;
     opacity: 0.7;
 }
 .rol-card-mood {
-    color: #f0c060;
+    color: #ffcc7f;
+    font-weight: 570;
     font-style: italic;
 }
 .rol-card-summary {
     font-size: 12px;
-    color: var(--SmartThemeBodyColor, #84ae20);
-    margin-bottom: 8px;
-    line-height: 1.5;
+    font-weight: 580;
+    color: rgb(157 189 0);
+    margin-bottom: 7px;
+    line-height: 1.8;
 }
 
 /* ⬇️┅💌toggle切换/┅┅╗ */
 .rol-toggle-wrap {
     position: relative;
-    width: 36px;
+    width: 35px;
     height: 20px;
     flex-shrink: 0;
 }
@@ -595,7 +617,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-toggle-slider {
     position: absolute;
     inset: 0;
-    background: #ff9dd8;
+    background: #ffc0e6;
     border-radius: 20px;
     cursor: pointer;
     transition: background 0.2s;
@@ -633,7 +655,8 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-card-actions {
     display: flex;
-    gap: 8px;
+    gap: 11.6px;
+    background-color: #fcffea;
 }
 .rol-card-actions button {
     padding: 4px 8px;
@@ -887,9 +910,11 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
-    margin-bottom: 6px;
-    color: var(--SmartThemeBodyColor, #ccc);
+    font-size: 14.3px;
+    font-weight: bold;
+    margin-bottom: 11px;
+    color: rgb(255 135 211);
+    flex-wrap: wrap;
 }
 
 /* ⬇️┅❔️提示/┅┅╗ */
