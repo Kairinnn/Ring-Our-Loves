@@ -234,7 +234,7 @@ function buildInjectionText(memories) {
             if (!config.autoInject) return;
             const chat = context.chat;
             if (!chat || !chat[msgIndex]) return;
-            const matched = detectTriggers(chat[msgIndex].mes);
+            const matched = detectTriggers(chat[msgIndex].mes, msgIndex);
             if (matched.length > 0) {
                 const selected = selectForInjection(matched);
                 const injectionText = buildInjectionText(selected);
@@ -353,15 +353,11 @@ const WorldBook = (() => {
     }
 
     // ┣━━创建一个世界书条目对象━━┫
-    function buildWiEntry(uid, memory) {
-        // ┣━━key = tags + triggers 合并去重━━┫
-        const keys = [...new Set(
-    memory.triggers || []
-)].filter(Boolean);
-
-        return {
-            uid: uid,
-            key: keys,
+function buildWiEntry(uid, memory, existingEntry = null) {
+    const keys = [...new Set(memory.triggers || [])].filter(Boolean);
+    return {
+        uid: uid,
+        key: keys,
             keysecondary: [],
             content: memory.summary || '',           // ┣🩷摘要 → 注入上下文┫
             comment: memory.letter || memory.content || '',  // ┣🩷完整正文 → 仅管理界面可见┫
@@ -370,14 +366,14 @@ const WorldBook = (() => {
             selectiveLogic: 0,
             addMemo: true,
             order: 100,
-            position: 0,
+            position: existingEntry?.position ?? 0,
             disable: !memory.enabled,
             excludeRecursion: false,
             preventRecursion: false,
             delayUntilRecursion: false,
-            probability: 100,
+            probability: existingEntry?.probability ?? 100,
             useProbability: true,
-            depth: 4,
+            depth: existingEntry?.depth ?? 4,
             group: '',
             groupOverride: false,
             groupWeight: 100,
@@ -412,10 +408,10 @@ const WorldBook = (() => {
 
             let uid;
             if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
-                // ┣━━━更新已有条目━━┫
-                uid = existingUid;
-                const updatedEntry = buildWiEntry(uid, memory);
-                data.entries[uid] = updatedEntry;
+            uid = existingUid;
+            const updatedEntry = buildWiEntry(uid, memory, data.entries[existingUid]);  // ← 传入已有条目
+            data.entries[uid] = updatedEntry;
+}
                 console.log(`[RingOurLuv][WorldBook] 更新恋果 uid=${uid}, title="${memory.title}"`);
             } else {
                 // ┣━━创建新条目━━┫
