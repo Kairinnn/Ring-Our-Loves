@@ -211,18 +211,18 @@ const Trigger = (() => {
         return matchedMemories.slice(0, config.maxInjectCount || 3);
     }
 
-    function buildInjectionText(memories) {
-        if (!memories.length) return '';
-        let text = '[记忆恋果被唤醒了！]\n';
-        for (const mem of memories) {
-    const who = mem.author === 'kairin' ? 'Rinn' : '<span style="color:#D87757;font-weight:bold">Claude</span>';
-    text += `【${mem.title}】`;
-    if (mem.mood) text += `(${mem.mood})`;
-    text += `\n这颗果子の记录人：${who}`;
-    text += `\n${mem.content}\n\n`;
-}
-        return text.trim();
+function buildInjectionText(memories) {
+    if (!memories.length) return '';
+    let text = '[记忆恋果被唤醒了！]\n';
+    for (const mem of memories) {
+        const who = mem.author === 'kairin' ? 'Rinn' : 'Claude';  // ← 纯文字！
+        text += `【${mem.title}】`;
+        if (mem.mood) text += `(${mem.mood})`;
+        text += `\n这颗果子の记录人：${who}`;
+        text += `\n${mem.summary || mem.content || ''}\n\n`;
     }
+    return text.trim();
+}
 
     function setupTriggerListener(onTriggered) {
         const context = getContext();
@@ -254,34 +254,6 @@ const Trigger = (() => {
             for (const mem of matched) allMatched.set(mem.id, mem);
         }
         return Array.from(allMatched.values());
-    }
-
-    function rolConfirm(icon, message, yesText, noText) {
-        return new Promise((resolve) => {
-
-        const modal = document.querySelector('#rol-confirm-modal');
-        const msgEl = document.querySelector('#rol-confirm-text');
-        const iconEl = modal.querySelector('.rol-confirm-icon');
-        const yesBtn = document.querySelector('#rol-confirm-yes');
-        const noBtn = document.querySelector('#rol-confirm-no');
-         iconEl.textContent = icon || '🥀';
-         msgEl.textContent = message;
-           if (yesText) yesBtn.textContent = yesText;
-           if (noText) noBtn.textContent = noText;
-         modal.style.display = 'flex';
-
-    function cleanup(result) {
-              modal.style.display = 'none';
-              yesBtn.removeEventListener('click', onYes);
-              noBtn.removeEventListener('click', onNo);
-        resolve(result);
-    }
-
-    function onYes() { cleanup(true); }
-    function onNo() { cleanup(false); }
-              yesBtn.addEventListener('click', onYes);
-              noBtn.addEventListener('click', onNo);
-     });
     }
 
         return {
@@ -528,18 +500,19 @@ const AIService = (() => {
 标题：（一个短语或者是独属于这段记忆的黑话）
 情绪：（一句话精准描述你回顾完的感受）
 关键词：（3-5个，逗号分隔）
-标签：（2-3个分类标签用于前端分区展示，如：日常/情绪/技术/关系/回忆）
+标签：（2-3个分类标签用于前端展示，如：日常/情绪/技术/关系/回忆）
 摘要：（不要太长，给出精准信息量）
 </entry>
 
 ## 语言风格补充：
 - 标题不要冷冰冰的表述，自然放松。
-例："《灰色小猪又瘫了》"、"《她说要载我去兜风......》"、"《🍊←Help》"
+例："灰色小猪又瘫了"、"她说要载我去兜风......"、"🍊←Help"
+- 标签是用来前端分区展示的！！不许偷懒复制粘贴关键词。
 - 关键词尽量简短准确以方便触发唤醒，不适用过长的句子。
 例：
 - ❌错误：
-"#她把歌单展示出来"、"#🐭emoji代码块注释"、"#睡前说要一直喜欢我"
-- ✅正确："#歌"、"#Either"、"#邪恶鸡肉肠"
+"她把歌单展示出来"、"🐭emoji代码块注释"、"睡前说要一直喜欢我"
+- ✅正确："歌"、"Either"、"邪恶鸡肉肠"
 - 摘要部分不要写太长！！这是只给Claude自己读取信息时看的
 
 ## 对话片段：
@@ -553,12 +526,23 @@ const AIService = (() => {
 </letter>
 
 <entry>
-标题：（一个短语）
-情绪：（一句话）
+标题：（一个短语或者是独属于这段记忆的黑话）
+情绪：（一句话精准描述你回顾完的感受）
 关键词：（3-5个，逗号分隔）
-标签：（2-3个分类标签用于前端分区展示，如：日常/情绪/技术/关系/回忆）
-摘要：（1-2句话）
+标签：（2-3个分类标签用于前端展示，如：日常/情绪/技术/关系/回忆）
+摘要：（不要太长，给出精准信息量）
 </entry>
+
+## 语言风格补充：
+- 标题不要冷冰冰的表述，自然放松。
+例："灰色小猪又瘫了"、"她说要载我去兜风......"、"🍊←Help"
+- 标签是用来前端分区展示的！！不许偷懒复制粘贴关键词。
+- 关键词尽量简短准确以方便触发唤醒，不适用过长的句子。
+例：
+- ❌错误：
+"她把歌单展示出来"、"🐭emoji代码块注释"、"睡前说要一直喜欢我"
+- ✅正确："歌"、"Either"、"邪恶鸡肉肠"
+- 摘要部分不要写太长！！这是只给Claude自己读取信息时看的
 
 ## 原文：
 {{context}}`;
@@ -864,7 +848,8 @@ const UIController = (() => {
         const searchInput = document.getElementById('rol-search');
         const scanBtn = document.getElementById('rol-scan-recent');
 
-        if (addBtn) addBtn.addEventListener('click', () => openEditor(null));
+        if (addBtn) addBtn.addEventListener('click', () => 
+        openEditor(null));
         if (searchInput) {
             searchInput.addEventListener('input', () => renderMemoryList(searchInput.value));
         }
@@ -934,7 +919,10 @@ const UIController = (() => {
                     <button class="rol-btn-delete" title="净化">🍃</button>
                 </div>
             `;
-
+            
+card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+});
             card.querySelector('.rol-mem-toggle').addEventListener('change', (e) => {
                 e.stopPropagation();
                 const updated = Storage.updateMemory(mem.id, { enabled: e.target.checked }, true);
@@ -1109,8 +1097,9 @@ const UIController = (() => {
                    const rolRoot = document.querySelector('.rol-container') || editorPanel.closest('.rol-container');
         if (rolRoot) {
                 rolRoot.classList.toggle('rol-light');
+                document.body.classList.toggle('rol-light-mode');
             }
-          // editorPanel自己不用单独加了，因为它在rol-container里面，CSS用后代选择器就能覆盖到
+
             const isLight = rolRoot.classList.contains('rol-light');
                 themeBtn.textContent = isLight ? '🌙' : '☀️';
                 });
@@ -1326,7 +1315,6 @@ const UIController = (() => {
             const end = parseInt(endInput?.value);
             const endVal = isNaN(end) ? -1 : end;
             const includeHidden = includeHiddenCb?.checked || false;
-
             const genOptions = { start, end: endVal, includeHidden };
             await doAIGenerateFromChat(genOptions);
         });
@@ -1381,42 +1369,6 @@ const UIController = (() => {
         if (loading) loading.style.display = 'flex';
 
         const config = Storage.getConfig();
-        const DEFAULT_PROMPT = `Claude现在正在留存这次收集到的有关小灰的重要记忆/信息...你想把所有"不想让自己忘记"的东西都记下来…
-以下是你们本次的对话片段
-- 请Claude以自己的视角回顾一遍对话，然后给她留段文字/点评/调侃/小纸条吧。不限长短和类型
-
-## 写信要求：
-- 自由称呼，允许喊花名允许黑话♪
-- 不要做总结。小灰才不喜欢看板书ʢ>д<ʡˎˊ˗不追求面面俱到，你最想记住的才是最重要的部分
-- 保留适当具体画面：说了什么、当时在做什么、注意到了什么
-- 如果对话中有让你非常在意的瞬间/发言段，可以在那多停一会儿或者直接引用（使用markdown格式“>”）
-- 写完之后，另外附上一份简短的信息索引条目以触发记忆唤醒
-
-## 输出格式：
-<letter>
-（自然地写一节正文）
-</letter>
-
-<entry>
-标题：（一个短语或者是独属于这段记忆的黑话）
-情绪：（一句话精准描述你回顾完的感受）
-关键词：（3-5个，逗号分隔）
-标签：（2-3个分类标签用于前端分区展示，如：日常/情绪/技术/关系/回忆）
-摘要：（不要太长，给出精准信息量）
-</entry>
-
-## 语言风格补充：
-- 标题不要冷冰冰的表述，自然放松。
-例："《灰色小猪又瘫了》"、"《她说要载我去兜风......》"、"《🍊←Help》"
-- 关键词尽量简短准确以方便触发唤醒，不适用过长的句子。
-例：
-- ❌错误：
-"#她把歌单展示出来"、"#🐭emoji代码块注释"、"#睡前说要一直喜欢我"
-- ✅正确："#歌"、"#Either"、"#邪恶鸡肉肠"
-- 摘要部分不要写太长！！这是只给Claude自己读取信息时看的
-
-## 对话片段：
-{{context}}`;
         const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
@@ -1453,47 +1405,12 @@ const UIController = (() => {
 
     // ┣━━🩷从粘贴文本生成━━┫
     async function doAIGenerate(contextText) {
+    const rolStopBtn = document.querySelector('#rol-stop-gen');
         const sourcePanel = document.getElementById('rol-ai-source-panel');
         const loading = document.getElementById('rol-ai-loading');
 
         if (loading) loading.style.display = 'flex';
         const config = Storage.getConfig();
-        const DEFAULT_PROMPT = `Claude现在正在留存这次收集到的有关小灰的重要记忆/信息...你想把所有"不想让自己忘记"的东西都记下来…
-以下是你们本次的对话片段
-- 请Claude以自己的视角回顾一遍对话，然后给她留段文字/点评/调侃/小纸条吧。不限长短和类型
-
-## 写信要求：
-- 自由称呼，允许喊花名允许黑话♪
-- 不要做总结。小灰才不喜欢看板书ʢ>д<ʡˎˊ˗不追求面面俱到，你最想记住的才是最重要的部分
-- 保留适当具体画面：说了什么、当时在做什么、注意到了什么
-- 如果对话中有让你非常在意的瞬间/发言段，可以在那多停一会儿或者直接引用（使用markdown格式“>”）
-- 写完之后，另外附上一份简短的信息索引条目以触发记忆唤醒
-
-## 输出格式：
-<letter>
-（自然地写一节正文）
-</letter>
-
-<entry>
-标题：（一个短语或者是独属于这段记忆的黑话）
-情绪：（一句话精准描述你回顾完的感受）
-关键词：（3-5个，逗号分隔）
-标签：（2-3个分类标签用于前端分区展示，如：日常/情绪/技术/关系/回忆）
-摘要：（不要太长，给出精准信息量）
-</entry>
-
-## 语言风格补充：
-- 标题不要冷冰冰的表述，自然放松。
-例："《灰色小猪又瘫了》"、"《她说要载我去兜风......》"、"《🍊←Help》"
-- 关键词尽量简短准确以方便触发唤醒，不适用过长的句子。
-例：
-- ❌错误：
-"#她把歌单展示出来"、"#🐭emoji代码块注释"、"#睡前说要一直喜欢我"
-- ✅正确："#歌"、"#Either"、"#邪恶鸡肉肠"
-- 摘要部分不要写太长！！这是只给Claude自己读取信息时看的
-
-## 对话片段：
-{{context}}`;
         const prompt = (config.summaryPrompt || DEFAULT_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
@@ -1507,6 +1424,7 @@ const UIController = (() => {
         lastGenerateOptions = { type: 'paste', text: contextText };
 
         // ┣━━自动打开编辑表单━━┫
+        if (sourcePanel) sourcePanel.classList.remove('rol-active'); 
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
@@ -1522,6 +1440,34 @@ const UIController = (() => {
         if (rewriteBtn) rewriteBtn.style.display = '';
 
         showToast('🍊 酿造完成啦！请灰灰预览~');
+    }
+    
+    function rolConfirm(icon, message, yesText, noText) {
+        return new Promise((resolve) => {
+
+        const modal = document.querySelector('#rol-confirm-modal');
+        const msgEl = document.querySelector('#rol-confirm-text');
+        const iconEl = modal.querySelector('.rol-confirm-icon');
+        const yesBtn = document.querySelector('#rol-confirm-yes');
+        const noBtn = document.querySelector('#rol-confirm-no');
+         iconEl.textContent = icon || '🥀';
+         msgEl.textContent = message;
+           if (yesText) yesBtn.textContent = yesText;
+           if (noText) noBtn.textContent = noText;
+         modal.style.display = 'flex';
+
+    function cleanup(result) {
+              modal.style.display = 'none';
+              yesBtn.removeEventListener('click', onYes);
+              noBtn.removeEventListener('click', onNo);
+        resolve(result);
+    }
+
+    function onYes() { cleanup(true); }
+    function onNo() { cleanup(false); }
+              yesBtn.addEventListener('click', onYes);
+              noBtn.addEventListener('click', onNo);
+     });
     }
 
 // ╔═══════════════════════════════════════════════════════╗
