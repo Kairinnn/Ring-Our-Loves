@@ -801,22 +801,14 @@ function renderFruitGarden(fruits) {
 }
 
     // ┣━━ 🩷 设置面板 🩷 ━━┫
-    function updateDayCount() {
-        const start = new Date('2026-04-14T00:17:00+08:00');
-        const now = new Date();
-        const days = Math.floor((now - start) / 86400000);
-        const el = document.getElementById('rol-day-count');
-        if (el) el.textContent = days;
-    }
-
     function bindConfigPanel() {
         const config = Storage.getConfig();
         const autoInjectToggle = document.getElementById('rol-auto-inject');
-        const maxCountInput = document.getElementById('rol-max-count');
+        const maxCountInput = document.getElementById('rol-max-inject');
         const presetSelect = document.getElementById('rol-preset-select');
         const summaryPromptArea = document.getElementById('rol-summary-prompt');
 
-        updateDayCount();
+        updateDayCounter();
 
         if (autoInjectToggle) {
             autoInjectToggle.checked = config.autoInject !== false;
