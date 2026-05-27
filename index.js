@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders, generateQuietPrompt } from '../../../../script.js';
+import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders } from '../../../../script.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { getPresetManager } from '../../../preset-manager.js';
 import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
@@ -618,32 +618,34 @@ const AIService = (() => {
         }
     }
 
-async function generateWithPreset(prompt) {
-    const config = Storage.getConfig();
-    const targetPreset = config.presetName;
-    let originalPreset = '';
+    async function generateWithPreset(prompt) {
+        const config = Storage.getConfig();
+        const targetPreset = config.presetName;
+        let originalPreset = '';
 
-    try {
-        if (targetPreset) {
-            originalPreset = getCurrentPresetName();
-            console.log(`[RingOurLuv] 🍰 切换配方: ${originalPreset} → ${targetPreset}`);
-            await switchPreset(targetPreset);
-        }
+        try {
+            if (targetPreset) {
+                originalPreset = getCurrentPresetName();
+                console.log(`[RingOurLuv] 🍰 切换配方: ${originalPreset} → ${targetPreset}`);
+                await switchPreset(targetPreset);
+            }
 
-        const result = await generateQuietPrompt(prompt);
-        console.log('[RingOurLuv] 🩷 quiet prompt 返回长度:', result?.length || 0);
-        return result || '';
+            const result = await executeSlashCommandsWithOptions('/gen ' + prompt, {
+                handleExecutionErrors: true,
+                handleParserErrors: true
+            });
 
-    } catch (e) {
-        console.error('[RingOurLuv] 🥀 酿造失败...:', e);
-        return '';
-    } finally {
-        if (originalPreset && targetPreset) {
-            console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
-            await switchPreset(originalPreset);
+            return result?.pipe || '';
+        } catch (e) {
+            console.error('[RingOurLuv] 🥀 酿造失败...:', e);
+            return '';
+        } finally {
+            if (originalPreset && targetPreset) {
+                console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
+                await switchPreset(originalPreset);
+            }
         }
     }
-}
 
     async function rewriteMemory(memoryId, memory) {
         const source = memory.letter || memory.content;
@@ -796,16 +798,25 @@ function renderFruitGarden(fruits) {
   const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
   const counter = document.querySelector('.rol-day-number');
   if (counter) counter.textContent = diff;
+}
 
     // ┣━━ 🩷 设置面板 🩷 ━━┫
+    function updateDayCount() {
+        const start = new Date('2026-04-14T00:17:00+08:00');
+        const now = new Date();
+        const days = Math.floor((now - start) / 86400000);
+        const el = document.getElementById('rol-day-count');
+        if (el) el.textContent = days;
+    }
+
     function bindConfigPanel() {
         const config = Storage.getConfig();
         const autoInjectToggle = document.getElementById('rol-auto-inject');
-        const maxCountInput = document.getElementById('rol-max-inject');
+        const maxCountInput = document.getElementById('rol-max-count');
         const presetSelect = document.getElementById('rol-preset-select');
         const summaryPromptArea = document.getElementById('rol-summary-prompt');
 
-        updateDayCounter();
+        updateDayCount();
 
         if (autoInjectToggle) {
             autoInjectToggle.checked = config.autoInject !== false;
