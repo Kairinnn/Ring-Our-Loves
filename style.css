@@ -815,17 +815,13 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
 /* ➤┅┅🍥手机端适配┅┅╗ */
 @media (max-width: 480px) {
   .rol-editor-inner {
-    max-width: 100%;
+    max-width: 320px;
     padding: 12px;
     border-radius: 8px;
     max-height: 70vh;
     overflow-y: auto;
   }
-@media (max-width: 768px) {
-    .rol-drawer-panel {
-        width: 85vw;
-        max-width: 320px;
-        overflow-x: hidden;  /* 防止内部元素撑出去 */
+
     }
 
     /* 面板内所有内容区域 */
@@ -861,7 +857,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     font-size: 14px;
     height: 36px;
   }
-}
+
 .rol-editor-heading {
     margin: 0 0 16px;
     font-size: 16px;
@@ -1253,4 +1249,3 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     /* ⬇️┅🍥移动端侧边栏宽度/┅┅╗ */
     .rol-drawer-panel { width: 80vw; }
  }
-}
