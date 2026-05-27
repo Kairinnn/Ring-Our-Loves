@@ -216,7 +216,6 @@ body.rol-light-mode .rol-editor-panel {
     z-index: 1;
 }
 
-}
 .rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
     transform: translateX(0);
 }
