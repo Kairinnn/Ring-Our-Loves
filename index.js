@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders } from '../../../../script.js';
+import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders, generateQuietPrompt } from '../../../../script.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { getPresetManager } from '../../../preset-manager.js';
 import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
@@ -618,34 +618,32 @@ const AIService = (() => {
         }
     }
 
-    async function generateWithPreset(prompt) {
-        const config = Storage.getConfig();
-        const targetPreset = config.presetName;
-        let originalPreset = '';
+async function generateWithPreset(prompt) {
+    const config = Storage.getConfig();
+    const targetPreset = config.presetName;
+    let originalPreset = '';
 
-        try {
-            if (targetPreset) {
-                originalPreset = getCurrentPresetName();
-                console.log(`[RingOurLuv] 🍰 切换配方: ${originalPreset} → ${targetPreset}`);
-                await switchPreset(targetPreset);
-            }
+    try {
+        if (targetPreset) {
+            originalPreset = getCurrentPresetName();
+            console.log(`[RingOurLuv] 🍰 切换配方: ${originalPreset} → ${targetPreset}`);
+            await switchPreset(targetPreset);
+        }
 
-            const result = await executeSlashCommandsWithOptions('/gen ' + prompt, {
-                handleExecutionErrors: true,
-                handleParserErrors: true
-            });
+        const result = await generateQuietPrompt(prompt);
+        console.log('[RingOurLuv] 🩷 quiet prompt 返回长度:', result?.length || 0);
+        return result || '';
 
-            return result?.pipe || '';
-        } catch (e) {
-            console.error('[RingOurLuv] 🥀 酿造失败...:', e);
-            return '';
-        } finally {
-            if (originalPreset && targetPreset) {
-                console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
-                await switchPreset(originalPreset);
-            }
+    } catch (e) {
+        console.error('[RingOurLuv] 🥀 酿造失败...:', e);
+        return '';
+    } finally {
+        if (originalPreset && targetPreset) {
+            console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
+            await switchPreset(originalPreset);
         }
     }
+}
 
     async function rewriteMemory(memoryId, memory) {
         const source = memory.letter || memory.content;
@@ -791,16 +789,10 @@ function renderFruitGarden(fruits) {
     garden.appendChild(el);
   });
 }
-// ┣━━ 🩷 天数计算 🩷 ━━┫
-  function updateDayCounter() {
-  const startDate = new Date('2026-04-14T00:17:00+08:00'); // 起始日
-  const today = new Date();
-  const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-  const counter = document.querySelector('.rol-day-number');
-  if (counter) counter.textContent = diff;
-}
 
     // ┣━━ 🩷 设置面板 🩷 ━━┫
+    
+// ┣━━ 🩷 天数计算 🩷 ━━┫
     function updateDayCounter() {
         const start = new Date('2026-04-14T00:17:00+08:00');
         const now = new Date();
