@@ -191,30 +191,19 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ⬇️┅⭕️侧边栏面板 - 从右侧滑出/┅┅╗ */
 .rol-drawer-panel {
-    /* 干掉主题变量，自己硬写 */
-    background-color: #ffffff !important;
-    background-image: url('./bg.png');  /* ←换成你的图 */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    /* 如果图太浓想让它淡一点，加这层伪元素盖一下 */
-}
-
-/* 图片减淡层（可选） */
-.rol-drawer-panel::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.55);
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* 确保内容在伪元素上面 */
-.rol-drawer-panel > * {
-    position: relative;
-    z-index: 1;
-}
+  position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    background: var(--SmartThemeChatTintColor, #1a1a2e);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+    z-index: 9991;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 200ms ease;
+    display: flex;
+    flex-direction: column;
 
 .rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
     transform: translateX(0);
@@ -364,11 +353,22 @@ body.rol-light-mode .rol-editor-panel {
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
 /* 去掉 .rol-home 的 overflow: hidden */
 .rol-home {
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff0fa;
+    align-items: center;
+    gap: 19px;
+    min-height: 121px;
+    position: relative;
     overflow: visible;  /* ← 改这个！不然伪元素出不去 */
 }
 
 /* 头像区域的光晕 */
 .rol-home-avatars {
+    display: flex;
+    align-items: center;
+    gap: 20px;
     position: relative;
 }
 
@@ -376,6 +376,9 @@ body.rol-light-mode .rol-editor-panel {
     content: '';
     position: absolute;
     left: 50%;
+    bottom: -13px;
+    width: 150px;
+    height: 34px;
     top: 50%;                /* ← 改成居中扩散而不是贴底 */
     transform: translate(-50%, -50%);
     width: 180px;
@@ -402,6 +405,11 @@ body.rol-light-mode .rol-editor-panel {
     left: 50%;
     bottom: -8px;           /* 别太远 */
     transform: translateX(-50%);
+    background: radial-gradient(ellipse at center,
+    rgba(255, 179, 223, 0.38) 0%,
+    rgba(255, 179, 223, 0.2) 42%,
+    rgba(255, 179, 223, 0) 74%);
+    filter: blur(5px);
     width: 90%;
     height: 20px;
     background: radial-gradient(
@@ -1244,4 +1252,5 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     .rol-card-actions { justify-content: flex-end; }
     /* ⬇️┅🍥移动端侧边栏宽度/┅┅╗ */
     .rol-drawer-panel { width: 80vw; }
+ }
 }
