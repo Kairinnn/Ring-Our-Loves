@@ -155,7 +155,8 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-container {
     font-family: inherit;
-    padding: 8px;
+    background-color: #ffffff;
+    padding: 6.5px;
     max-width: 100%;
 }
 /* ┗━━━━━━/ ☀️主题变量🌙 /━━━━━━┛ */
@@ -190,19 +191,31 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ⬇️┅⭕️侧边栏面板 - 从右侧滑出/┅┅╗ */
 .rol-drawer-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 100vh;
-    background: var(--SmartThemeChatTintColor, #1a1a2e);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
-    z-index: 9991;
-    overflow-y: auto;
-    transform: translateX(100%);
-    transition: transform 200ms ease;
-    display: flex;
-    flex-direction: column;
+    /* 干掉主题变量，自己硬写 */
+    background-color: #ffffff !important;
+    background-image: url('./bg.png');  /* ←换成你的图 */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* 如果图太浓想让它淡一点，加这层伪元素盖一下 */
+}
+
+/* 图片减淡层（可选） */
+.rol-drawer-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* 确保内容在伪元素上面 */
+.rol-drawer-panel > * {
+    position: relative;
+    z-index: 1;
+}
+
 }
 .rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
     transform: translateX(0);
@@ -219,15 +232,20 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-drawer-title {
     font-size: 15px;
-    font-weight: 600;
-    color: var(--SmartThemeQuoteColor, #eee);
+    font-weight: bold;
+    color: rgb(255 135 206 / 78%);
+    background-color: #ffffff;
+    border-radius: 7px;
+    border: 2px solid #b4e71952;
+    padding: 4px;
+    padding-right: 74px;
 }
 .rol-drawer-close-btn {
     font-size: 12px !important;
-    color: #aaa !important;
-    padding: 4px 10px !important;
-    border: 1px solid var(--SmartThemeBorderColor, #555) !important;
-    border-radius: 6px !important;
+    color: #a6cc06c7 !important;
+    padding: 5px 10px !important;
+    border: 2px solid rgb(255 215 238 / 80%) !important;
+    border-radius: 7px !important;
     background: var(--SmartThemeBlurTintColor, #333) !important;
 }
 
@@ -260,25 +278,27 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-tab {
     flex: 1;
-    padding: 8px 12px;
+    padding: 9px 10px;
     border: none;
-    background: transparent;
-    color: var(--SmartThemeBodyColor, #ccc);
-    font-size: 14px;
+    background: #ffeaf48a;
+    color: rgb(168 208 19);
+    font-size: 15px;
+    font-weight: bold;
     cursor: pointer;
-    border-radius: 6px 6px 0 0;
+    border-radius: 13px 13px 0 0;
+    border: 1.8px solid #c1e219cc;
     transition: background 0.2s;
-    position: relative;
-    z-index: 1;
 }
 .rol-tab-active {
-    background: var(--SmartThemeBlurTintColor, #333);
-    color: var(--SmartThemeQuoteColor, #fff);
+    background: rgb(239 255 200);
+    color: #ff98c9;
     font-weight: 600;
 }
 
 .rol-panel-section { display: none; }
-.rol-section-active { display: block; }
+.rol-section-active {
+    background: rgba(255, 240, 248, 0.85) !important;  /* 半透明粉白 */
+}
 
 /* ⬇️┅⭕️侧边栏 - 工具栏/┅┅╗ */
 .rol-toolbar {
@@ -291,19 +311,20 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
 .rol-input {
     width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
+    padding: 9px 10px;
+    border: 1.8px solid rgb(165 208 48 / 54%);
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, #ffc9e4);
-    color: var(--SmartThemeBodyColor, #eee);
-    font-size: 13px;
+    background: rgb(255 247 252);
+    color: rgb(137 195 0);
+    font-size: 14px;
+    font-weight: bold;
     box-sizing: border-box;
 }
 .rol-input:focus {
     outline: none;
     border-color: var(--SmartThemeQuoteColor, #D87757);
 }
-.rol-input-sm { width: 70px; }
+.rol-input-sm {width: 57px;}
 .rol-textarea {
     resize: vertical;
     min-height: 80px;
@@ -313,13 +334,14 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
 .rol-btn {
-    padding: 8px 14px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
-    border-radius: 6px;
+    padding: 9px 12px;
+    border: 2px solid rgb(255 216 239);
+    border-radius: 11px;
     background: var(--SmartThemeBlurTintColor, #333);
-    color: var(--SmartThemeBodyColor, #eee);
+    color: rgb(255 255 255);
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: bold;
     white-space: nowrap;
     transition: opacity 0.2s;
 }
@@ -328,6 +350,8 @@ body.rol-light-mode .rol-editor-panel {
     background: var(--SmartThemeQuoteColor, #D87757);
     border-color: var(--SmartThemeQuoteColor, #D87757);
     color: #fff;
+    border: 2px solid;
+    border-color: #b1da129c;
 }
 .rol-btn-save {
     background: #e8a0b4;
@@ -339,39 +363,56 @@ body.rol-light-mode .rol-editor-panel {
 /* ┗━━━━━━/ 🗄️侧边栏样式🗄️ /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
+/* 去掉 .rol-home 的 overflow: hidden */
 .rol-home {
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  min-height: 100%;
-  position: relative;
-  overflow: hidden;
+    overflow: visible;  /* ← 改这个！不然伪元素出不去 */
 }
 
+/* 头像区域的光晕 */
 .rol-home-avatars {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: relative;
+    position: relative;
 }
 
 .rol-home-avatars::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -13px;
-  width: 150px;
-  height: 34px;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at center,
-    rgba(255, 179, 223, 0.38) 0%,
-    rgba(255, 179, 223, 0.2) 42%,
-    rgba(255, 179, 223, 0) 74%);
-  filter: blur(5px);
-  pointer-events: none;
-  z-index: 0;
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;                /* ← 改成居中扩散而不是贴底 */
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(
+        circle at center,
+        rgba(255, 179, 223, 0.35) 0%,
+        rgba(255, 179, 223, 0.12) 45%,
+        transparent 70%
+    );
+    filter: blur(8px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Tab栏的光晕 */
+.rol-tabs {
+    position: relative;
+}
+
+.rol-tabs::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -8px;           /* 别太远 */
+    transform: translateX(-50%);
+    width: 90%;
+    height: 20px;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(255, 179, 223, 0.3) 0%,
+        transparent 70%
+    );
+    filter: blur(6px);
+    pointer-events: none;
+    z-index: 0;
 }
 
 .rol-avatar,
@@ -385,8 +426,8 @@ body.rol-light-mode .rol-editor-panel {
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--rol-accent, #db7093);
-  box-shadow: 0 4px 12px rgba(219, 112, 147, 0.25);
+  border: 2px solid #d4ff2f61;
+  box-shadow: 0 4px 11px rgba(219, 112, 147, 0.25);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -397,15 +438,19 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-avatar-name {
   display: block;
+  padding: 3px;
   text-align: center;
-  font-size: 12px;
+  font-size: 15.6px;
+  font-weight: bold;
+  background-color: #ffffff;
+  border-radius: 9px;
   margin-top: 4px;
-  color: var(--rol-text);
+  color: rgb(255 151 215 / 72%);
 }
 
 .rol-home-heart {
-  font-size: 20px;
-  animation: rol-heartbeat 2s ease-in-out infinite;
+  font-size: 25px;
+  animation: rol-heartbeat 1.7s ease-in-out infinite;
 }
 
 @keyframes rol-heartbeat {
@@ -427,7 +472,9 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-day-label {
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #a4ce09;
   text-transform: uppercase;
   letter-spacing: 3px;
   opacity: 0.5;
@@ -436,7 +483,7 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅🍎果篮/┅┅╗ */
 .rol-fruit-garden {
   width: 100%;
-  min-height: 200px;
+  min-height: 157px;
   position: relative;
 }
 
@@ -493,9 +540,10 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-btn-cancel:hover { color: #ccc; }
 .rol-btn-ai {
-    background: linear-gradient(135deg, #ffb3df, #D87757);
-    border-color: #ffb3df;
-    color: #fff;
+    background-color: rgb(255 168 139);
+    color: #fffcf8;
+    border: 2px solid;
+    border-color: #fffef1;
 }
 .rol-btn-icon {
     background: transparent;
@@ -516,9 +564,9 @@ body.rol-light-mode .rol-editor-panel {
     padding-right: 4px;
 }
 .rol-memory-card {
-    padding: 12px;
-    border: 1px solid var(--SmartThemeBorderColor, #444);
-    border-radius: 8px;
+    padding: 9px;
+    border: 1.9px solid rgb(255 214 240 / 68%);
+    border-radius: 12px;
     background: var(--SmartThemeBlurTintColor, #2a2a2a);
     position: relative;
     transition: opacity 0.2s;
@@ -530,7 +578,7 @@ body.rol-light-mode .rol-editor-panel {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 .rol-card-title-row {
     display: flex;
@@ -540,9 +588,10 @@ body.rol-light-mode .rol-editor-panel {
     min-width: 0;
 }
 .rol-card-title {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--SmartThemeQuoteColor, #ddd);
+    font-weight: bold;
+    font-size: 16px;
+    padding-left: 5px;
+    color: rgb(255 165 208);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -550,12 +599,12 @@ body.rol-light-mode .rol-editor-panel {
 .rol-author-badge {
     font-size: 10px;
     padding: 1px 6px;
-    border-radius: 8px;
+    border-radius: 10px;
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: bold;
 }
 .rol-author-claude {
-    background: rgba(255, 160, 60, 0.2);
+    background: rgb(250 249 245);
     color: #D87757;
 }
 .rol-author-kairin {
@@ -564,30 +613,34 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-card-meta {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
-    font-size: 11px;
+    gap: 4px;
+    margin-bottom: 14px;
+    font-size: 11.8px;
+    font-weight: bold;
+    align-items: flex-start;
 }
 .rol-card-date {
-    color: var(--SmartThemeBodyColor, #ffa8e1);
+    color: rgb(255 189 221);
+    font-weight: 530;
     opacity: 0.7;
 }
 .rol-card-mood {
-    color: #f0c060;
+    color: #ffcc7f;
+    font-weight: 570;
     font-style: italic;
 }
 .rol-card-summary {
     font-size: 12px;
-    color: var(--SmartThemeBodyColor, #84ae20);
-    margin-bottom: 8px;
-    line-height: 1.5;
+    font-weight: 580;
+    color: rgb(157 189 0);
+    margin-bottom: 7px;
+    line-height: 1.8;
 }
 
 /* ⬇️┅💌toggle切换/┅┅╗ */
 .rol-toggle-wrap {
     position: relative;
-    width: 36px;
+    width: 35px;
     height: 20px;
     flex-shrink: 0;
 }
@@ -595,7 +648,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-toggle-slider {
     position: absolute;
     inset: 0;
-    background: #ff9dd8;
+    background: #ffc0e6;
     border-radius: 20px;
     cursor: pointer;
     transition: background 0.2s;
@@ -633,7 +686,8 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-card-actions {
     display: flex;
-    gap: 8px;
+    gap: 11.6px;
+    background-color: #fcffea;
 }
 .rol-card-actions button {
     padding: 4px 8px;
@@ -760,6 +814,36 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     max-height: 70vh;
     overflow-y: auto;
   }
+@media (max-width: 768px) {
+    .rol-drawer-panel {
+        width: 85vw;
+        max-width: 320px;
+        overflow-x: hidden;  /* 防止内部元素撑出去 */
+    }
+
+    /* 面板内所有内容区域 */
+    .rol-drawer-panel .rol-panel-section {
+        padding: 10px;
+        overflow-x: hidden;
+        word-break: break-word;
+    }
+
+    /* 卡片标题太长截断 */
+    .rol-card-title {
+        max-width: 140px;
+    }
+
+    /* home区域别让它太高 */
+    .rol-home {
+        padding: 14px 10px;
+        min-height: auto;
+    }
+
+    .rol-avatar img {
+        width: 46px;
+        height: 46px;
+    }
+}
 
   .rol-editor-inner textarea {
     font-size: 14px;
@@ -887,9 +971,11 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
-    margin-bottom: 6px;
-    color: var(--SmartThemeBodyColor, #ccc);
+    font-size: 14.3px;
+    font-weight: bold;
+    margin-bottom: 11px;
+    color: rgb(255 135 211);
+    flex-wrap: wrap;
 }
 
 /* ⬇️┅❔️提示/┅┅╗ */
