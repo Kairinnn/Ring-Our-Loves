@@ -191,19 +191,31 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ⬇️┅⭕️侧边栏面板 - 从右侧滑出/┅┅╗ */
 .rol-drawer-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 100vh;
-    background: var(--SmartThemeChatTintColor, #1a1a2e);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
-    z-index: 9991;
-    overflow-y: auto;
-    transform: translateX(100%);
-    transition: transform 200ms ease;
-    display: flex;
-    flex-direction: column;
+    /* 干掉主题变量，自己硬写 */
+    background-color: #ffffff !important;
+    background-image: url('./bg.png');  /* ←换成你的图 */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* 如果图太浓想让它淡一点，加这层伪元素盖一下 */
+}
+
+/* 图片减淡层（可选） */
+.rol-drawer-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* 确保内容在伪元素上面 */
+.rol-drawer-panel > * {
+    position: relative;
+    z-index: 1;
+}
+
 }
 .rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
     transform: translateX(0);
@@ -284,7 +296,9 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-panel-section { display: none; }
-.rol-section-active {display: block;background: #f9ffe4a3;}
+.rol-section-active {
+    background: rgba(255, 240, 248, 0.85) !important;  /* 半透明粉白 */
+}
 
 /* ⬇️┅⭕️侧边栏 - 工具栏/┅┅╗ */
 .rol-toolbar {
@@ -349,39 +363,56 @@ body.rol-light-mode .rol-editor-panel {
 /* ┗━━━━━━/ 🗄️侧边栏样式🗄️ /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
+/* 去掉 .rol-home 的 overflow: hidden */
 .rol-home {
-  padding: 20px 12px;
-  display: flex;
-  flex-direction: column;
-  background-color: #fff0fa;
-  align-items: center;
-  gap: 19px;
-  min-height: 121px;
-  position: relative;
-  overflow: hidden;
+    overflow: visible;  /* ← 改这个！不然伪元素出不去 */
 }
 
+/* 头像区域的光晕 */
 .rol-home-avatars {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+    position: relative;
 }
 
 .rol-home-avatars::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -13px;
-  width: 150px;
-  height: 34px;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at center,
-    rgba(255, 179, 223, 0.38) 0%,
-    rgba(255, 179, 223, 0.2) 42%,
-    rgba(255, 179, 223, 0) 74%);
-  filter: blur(5px);
-  pointer-events: none;
-  z-index: 0;
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;                /* ← 改成居中扩散而不是贴底 */
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(
+        circle at center,
+        rgba(255, 179, 223, 0.35) 0%,
+        rgba(255, 179, 223, 0.12) 45%,
+        transparent 70%
+    );
+    filter: blur(8px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Tab栏的光晕 */
+.rol-tabs {
+    position: relative;
+}
+
+.rol-tabs::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -8px;           /* 别太远 */
+    transform: translateX(-50%);
+    width: 90%;
+    height: 20px;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(255, 179, 223, 0.3) 0%,
+        transparent 70%
+    );
+    filter: blur(6px);
+    pointer-events: none;
+    z-index: 0;
 }
 
 .rol-avatar,
@@ -783,6 +814,36 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     max-height: 70vh;
     overflow-y: auto;
   }
+@media (max-width: 768px) {
+    .rol-drawer-panel {
+        width: 85vw;
+        max-width: 320px;
+        overflow-x: hidden;  /* 防止内部元素撑出去 */
+    }
+
+    /* 面板内所有内容区域 */
+    .rol-drawer-panel .rol-panel-section {
+        padding: 10px;
+        overflow-x: hidden;
+        word-break: break-word;
+    }
+
+    /* 卡片标题太长截断 */
+    .rol-card-title {
+        max-width: 140px;
+    }
+
+    /* home区域别让它太高 */
+    .rol-home {
+        padding: 14px 10px;
+        min-height: auto;
+    }
+
+    .rol-avatar img {
+        width: 46px;
+        height: 46px;
+    }
+}
 
   .rol-editor-inner textarea {
     font-size: 14px;
