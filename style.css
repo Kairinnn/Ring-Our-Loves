@@ -238,6 +238,7 @@ body.rol-light-mode .rol-editor-panel {
     margin-bottom: 12px;
     border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
     padding-bottom: 8px;
+    position: relative;
 }
 .rol-tab {
     flex: 1;
@@ -249,6 +250,8 @@ body.rol-light-mode .rol-editor-panel {
     cursor: pointer;
     border-radius: 6px 6px 0 0;
     transition: background 0.2s;
+    position: relative;
+    z-index: 1;
 }
 .rol-tab-active {
     background: var(--SmartThemeBlurTintColor, #333);
@@ -273,7 +276,7 @@ body.rol-light-mode .rol-editor-panel {
     padding: 8px 10px;
     border: 1px solid var(--SmartThemeBorderColor, #555);
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, #222);
+    background: var(--SmartThemeBlurTintColor, #ffc9e4);
     color: var(--SmartThemeBodyColor, #eee);
     font-size: 13px;
     box-sizing: border-box;
@@ -333,6 +336,7 @@ body.rol-light-mode .rol-editor-panel {
   display: flex;
   align-items: center;
   gap: 16px;
+  position: relative;
 }
 
 .rol-avatar img {
