@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.2.2'; // 每次改完代码手动+1
+const ROL_VERSION = '0.3.0'; // 每次改完代码手动+1
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
   location.reload(true); // 强制刷新
@@ -746,6 +746,7 @@ const UIController = (() => {
         renderMemoryList();
         renderPresetOptions();
         updateDayCounter();  // ┣━━🩷 天数注入！━━┫
+        injectToolbarButtons(); // ┣━━🩷 劫持工具栏添加快捷入口━━┫
     }
 
     // ┣━━ 🩷 侧边栏 🩷 ━━┫
@@ -764,14 +765,7 @@ const UIController = (() => {
                 if (overlay) overlay.classList.remove('rol-drawer-open');
             });
         }
-        if (overlay) {
-            overlay.addEventListener('click', (e) => {
-                // ┣━━🩷点击遮罩层（面板之外）关闭━━┫
-                if (e.target === overlay) {
-                    overlay.classList.remove('rol-drawer-open');
-                }
-            });
-        }
+        // ┣━━🩷已禁用点击遮罩关闭，只能通过关闭按钮收起━━┫
     }
   // ┣━━ 🩷 果子物理 🩷 ━━┫
 function renderFruitGarden(fruits) {
@@ -952,7 +946,7 @@ function renderFruitGarden(fruits) {
                 </div>
             `;
             
-card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
+card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
     e.stopPropagation();
 });
             card.querySelector('.rol-mem-toggle').addEventListener('change', (e) => {
@@ -1039,8 +1033,8 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
                 if (!memId || isNaN(idx)) return;
                 const mem = Storage.getMemories().find(m => m.id === memId);
                 if (mem && mem.versions[idx]) {
-                    document.getElementById('rol-letter-body').textContent =
-                        mem.versions[idx].letter || '（❔️ 此恋果好像没有被注入欸~）';
+                    document.getElementById('rol-letter-body').innerHTML =
+                        renderLetterHtml(mem.versions[idx].letter || '（❔️ 此恋果好像没有被注入欸~）');
                     document.getElementById('rol-letter-title').textContent =
                         mem.versions[idx].title || mem.title;
                     const moodEl = document.getElementById('rol-letter-mood');
@@ -1083,7 +1077,7 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
         panel.classList.add('rol-active');
 
         document.getElementById('rol-letter-title').textContent = mem.title;
-        document.getElementById('rol-letter-body').textContent = mem.letter || mem.content || '（无内容）';
+        document.getElementById('rol-letter-body').innerHTML = renderLetterHtml(mem.letter || mem.content || '（无内容）');
         const moodEl = document.getElementById('rol-letter-mood');
         if (moodEl) moodEl.textContent = mem.mood || '';
 
@@ -1405,7 +1399,7 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
-        // ┣━━if (sourcePanel) sourcePanel.classList.remove('rol-active');
+        if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
@@ -1447,7 +1441,7 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
-        // ┣━━if (sourcePanel) sourcePanel.classList.remove('rol-active');
+        if (sourcePanel) sourcePanel.classList.remove('rol-active');
 
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
@@ -1456,7 +1450,6 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
         lastGenerateOptions = { type: 'paste', text: contextText };
 
         // ┣━━自动打开编辑表单━━┫
-        if (sourcePanel) sourcePanel.classList.remove('rol-active'); 
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
@@ -1537,10 +1530,65 @@ card.querySelector('.rol-mem-toggle').addEventListener('click', (e) => {
         '<blockquote class="rol-quote">$1</blockquote>'
       );
     }
+    // ┣━━🩷 信件正文渲染：支持 > 引用块 + 安全转义━━┫
+    function renderLetterHtml(text) {
+        return text.split('\n').map(line => {
+            const qMatch = line.match(/^(?:>|＞)\s?(.+)$/);
+            if (qMatch) {
+                return `<blockquote class="rol-quote">${escapeHtml(qMatch[1])}</blockquote>`;
+            }
+            return escapeHtml(line);
+        }).join('<br>');
+    }
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    }
+
+    // ┣━━ 🩷 劫持ST工具栏：添加温室快捷入口 🩷 ━━┫
+    function injectToolbarButtons() {
+        // ┣━━🩷 楼层工具栏：每条消息加入口━━┫
+        _injectMesButtons();
+        const chatEl = document.getElementById('chat');
+        if (chatEl) {
+            new MutationObserver(() => _injectMesButtons())
+                .observe(chatEl, { childList: true, subtree: false });
+        }
+        // ┣━━🩷 输入栏扩展按钮旁━━┫
+        _injectInputBtn();
+    }
+
+    function _injectMesButtons() {
+        document.querySelectorAll('.mes_buttons').forEach(toolbar => {
+            if (toolbar.querySelector('.rol-mes-btn')) return;
+            const btn = document.createElement('div');
+            btn.className = 'mes_button rol-mes-btn';
+            btn.title = '恋果温室';
+            btn.textContent = '🌳';
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
+            });
+            toolbar.prepend(btn);
+        });
+    }
+
+    function _injectInputBtn() {
+        const anchor = document.getElementById('extensionsMenuButton');
+        if (!anchor || document.getElementById('rol-input-btn')) return;
+        const btn = document.createElement('div');
+        btn.id = 'rol-input-btn';
+        btn.className = 'list-group-item flex-container flexGap5';
+        btn.title = '恋果温室';
+        btn.textContent = '🌳';
+        btn.style.cssText = 'cursor:pointer;font-size:17px;padding:2px 5px;';
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
+        });
+        anchor.parentElement?.insertBefore(btn, anchor.nextSibling);
     }
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
@@ -1588,6 +1636,10 @@ jQuery(async () => {
         if (editorPanel) document.body.appendChild(editorPanel);
         if (aiSourcePanel) document.body.appendChild(aiSourcePanel);
         if (letterPanel) document.body.appendChild(letterPanel);
+
+        // ┣━━🩷确认弹窗也挂到body━━┫
+        const confirmModal = temp.querySelector('#rol-confirm-modal');
+        if (confirmModal) document.body.appendChild(confirmModal);
     }
 
     UIController.initUI();
