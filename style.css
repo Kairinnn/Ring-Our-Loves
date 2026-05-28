@@ -157,30 +157,10 @@ body.rol-light-mode .rol-editor-panel {
     font-family: inherit;
     padding: 8px;
     max-width: 100%;
+    /* ❂ E4d: 半透明白底 */
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 12px;
 }
-
-/* ⬇️┅✨标题阴影变量（每区域独立控制blur）/┅┅╗ */
-:root {
-  --rol-drawer-title-shadow-blur: 4px;
-  --rol-card-title-shadow-blur: 4px;
-  --rol-editor-title-shadow-blur: 4px;
-  --rol-letter-title-shadow-blur: 4px;
-  --rol-title-shadow-color: rgba(219, 112, 147, 0.45);
-
-  /* ⬇️┅🎨小灰的色板/┅┅╗ */
-  --rol-pink: rgb(255, 173, 209);
-  --rol-pink-light: #ffeaf6;
-  --rol-pink-dark: #ff94cb;
-  --rol-green: #c7f495;
-  --rol-green-light: #e1ffd5;
-  --rol-green-dark: #a6d547;
-  --rol-bg-soft: #fff5f9;
-  --rol-card-soft: #fff5f9;
-  --rol-text-green: #83b148;
-  --rol-text-pink: #ff86b8;
-  --rol-border-soft: #fff5f9;
-}
-
 /* ┗━━━━━━/ ☀️主题变量🌙 /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🗄️侧边栏样式🗄️ ▍━━━━━━┓ */
@@ -219,18 +199,17 @@ body.rol-light-mode .rol-editor-panel {
     width: 300px;
     height: 100vh;
     /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
-    /* ❂ !important 对抗ST主题覆盖，换主题也不会变透明 */
-    background-color: #2e271a !important;
+    background-color: #ffffff85;
     background-image:
         linear-gradient(
             var(--SmartThemeChatTintColor, transparent),
             var(--SmartThemeChatTintColor, transparent)
         ),
-        url('https://i.postimg.cc/SRmYmwFB/heart.png') !important;
-    background-size: auto, cover !important;
-    background-position: center, center !important;
-    background-blend-mode: normal, overlay !important;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.5) !important;
+        url('https://i.postimg.cc/SRmYmwFB/heart.png');
+    background-size: auto, cover;
+    background-position: center, center;
+    background-blend-mode: normal, overlay;
+    box-shadow: -4px 0 20px 8px rgb(255 166 216 / 30%);
     z-index: 9991;
     overflow-y: auto;
     transform: translateX(100%);
@@ -247,15 +226,20 @@ body.rol-light-mode .rol-editor-panel {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
+    padding: 6px 9px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #eeeb96);
     flex-shrink: 0;
 }
 .rol-drawer-title {
     font-size: 15px;
     font-weight: 600;
-    color: var(--SmartThemeQuoteColor, #eee);
-    text-shadow: 0px 0px var(--rol-drawer-title-shadow-blur) var(--rol-title-shadow-color);
+    color: rgb(255 252 174);
+    text-shadow: 0 0 8px #ff4ab3 !important;
+    background-color: #ffffff;
+    padding: 8px;
+    padding-bottom: 10px;
+    padding-inline-end: 30px;
+    border-radius: 13px;
 }
 .rol-drawer-close-btn {
     font-size: 12px !important;
@@ -279,8 +263,10 @@ body.rol-light-mode .rol-editor-panel {
     flex: 1;
     padding: 8px 12px;
     border: none;
-    background: transparent;
-    color: var(--SmartThemeBodyColor, #ccc);
+    /* ❂ E4d: 未选中tab给个可见底色 */
+    background: rgba(255, 255, 255, 0.4);
+    color: #9a6080;
+    box-shadow: 0 0 8px #ffaedd;
     font-size: 14px;
     cursor: pointer;
     border-radius: 6px 6px 0 0;
@@ -289,9 +275,10 @@ body.rol-light-mode .rol-editor-panel {
     z-index: 1;
 }
 .rol-tab-active {
-    background: var(--SmartThemeBlurTintColor, #333);
+    background: rgb(255 255 255);
     color: var(--SmartThemeQuoteColor, #fff);
     font-weight: 600;
+    text-shadow: none !important;
 }
 
 .rol-panel-section { display: none; }
@@ -303,6 +290,10 @@ body.rol-light-mode .rol-editor-panel {
     gap: 8px;
     margin-bottom: 12px;
     flex-wrap: wrap;
+    /* ❂ E4b: 粉色光晕 */
+    box-shadow: 0 2px 12px #ffaedf80;
+    padding: 8px;
+    border-radius: 10px;
 }
 
 /* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
@@ -358,18 +349,26 @@ body.rol-light-mode .rol-editor-panel {
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
 .rol-home {
   padding: 20px 14px 16px;
+  margin: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   position: relative;
   overflow: visible;
+  /* ❂ E4a: 磨砂白框 + 粉色光晕 */
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 12px #ffaedf80;
 }
 
 .rol-home-avatars {
   display: flex;
   align-items: center;
   gap: 16px;
+  padding-top: 15px;
   position: relative;
 }
 
@@ -380,10 +379,7 @@ body.rol-light-mode .rol-editor-panel {
   object-fit: cover;
   border: none;
   /* ❂ 中心扩散粉色光晕 + 外圈淡白渐变环 */
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.35),
-    0 0 12px 4px rgba(255, 179, 223, 0.4),
-    0 0 24px 8px rgba(219, 112, 147, 0.15);
+  box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.35), 0 0 13px 4px rgba(255, 179, 223, 0.4), 0 0 24px 6px rgb(255 141 178 / 15%);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -395,16 +391,35 @@ body.rol-light-mode .rol-editor-panel {
     0 0 30px 10px rgba(219, 112, 147, 0.2);
 }
 
+.rol-avatar {
+  /* ❂ E4c: flex列布局让名字居中对齐头像 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .rol-avatar-name {
   display: block;
   text-align: center;
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: bold;
   margin-top: 4px;
-  color: var(--rol-text);
+  text-shadow: 0 0 5px #ff66c4 !important;
+}
+
+/* ❂ E4c: Claude = 暖橘黄 */
+.rol-avatar-left .rol-avatar-name {
+  color: #ffcc66;
+}
+
+/* ❂ E4c: Rinn = 粉色 */
+.rol-avatar-right .rol-avatar-name {
+  color: #ffb3df;
 }
 
 .rol-home-heart {
   font-size: 20px;
+  top: 10px;
   animation: rol-heartbeat 2s ease-in-out infinite;
 }
 
@@ -421,16 +436,20 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-day-number {
   font-size: 36px;
-  font-weight: 300;
-  letter-spacing: -1px;
-  color: var(--rol-accent);
+  font-weight: 400;
+  letter-spacing: 1px;
+  color: #fff888;
+  text-shadow: 0 0 5px #ff64ba !important;
 }
 
 .rol-day-label {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  padding-right: inherit;
+  text-shadow: 0 0 3px #ff68c1 !important;
   text-transform: uppercase;
-  letter-spacing: 3px;
-  opacity: 0.5;
+  letter-spacing: 4px;
 }
 
 /* ⬇️┅🍎果篮/┅┅╗ */
@@ -525,6 +544,8 @@ body.rol-light-mode .rol-editor-panel {
     position: relative;
     transition: opacity 0.2s;
     cursor: pointer;
+    /* ❂ E4b: 粉色光晕 */
+    box-shadow: 0 2px 12px #ffaedf80;
 }
 .rol-memory-card:active { opacity: 0.85; }
 .rol-memory-card.rol-disabled { opacity: 0.5; }
@@ -533,6 +554,7 @@ body.rol-light-mode .rol-editor-panel {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
+    text-shadow: 0 0 2px #ff97d1 !important;
 }
 .rol-card-title-row {
     display: flex;
@@ -548,7 +570,6 @@ body.rol-light-mode .rol-editor-panel {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-shadow: 0px 0px var(--rol-card-title-shadow-blur) var(--rol-title-shadow-color);
 }
 .rol-author-badge {
     font-size: 10px;
@@ -574,14 +595,17 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-card-date {
     color: var(--SmartThemeBodyColor, #ffa8e1);
+    text-shadow: none !important;
     opacity: 0.7;
 }
 .rol-card-mood {
     color: #f0c060;
     font-style: italic;
+    text-shadow: none !important;
 }
 .rol-card-summary {
     font-size: 12px;
+    text-shadow: none !important;
     color: var(--SmartThemeBodyColor, #84ae20);
     margin-bottom: 8px;
     line-height: 1.5;
@@ -606,12 +630,14 @@ body.rol-light-mode .rol-editor-panel {
 .rol-toggle-slider::before {
     content: '';
     position: absolute;
-    width: 16px; height: 16px;
-    left: 2px; top: 2px;
-    background: #e3ff90;
+    width: 16px;
+    height: 16px;
+    left: 2px;
+    top: 2px;
+    background: #feffb1;
     border-radius: 50%;
 }
-.rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #D87757); }
+.rol-toggle-wrap input:checked + .rol-toggle-slider {background: rgb(255 207 232);}
 .rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
 
 /* ⬇️┅🏷️标签┅┅╗ */
@@ -682,12 +708,11 @@ body.rol-light-mode .rol-editor-panel {
 .rol-editor-inner {
     position: relative;
     /* ❂ 实色兜底 + ST色叠加，确保不透明 */
-    /* ❂ !important 对抗ST主题覆盖，换主题也不会变透明 */
-    background-color: #16161a !important;
+    background-color: #16161a;
     background-image: linear-gradient(
         var(--SmartThemeChatTintColor, transparent),
         var(--SmartThemeChatTintColor, transparent)
-    ) !important;
+    );
     border-radius: 14px;
     padding: 24px;
     width: 100%;
@@ -712,10 +737,10 @@ body.rol-light-mode .rol-editor-inner::before {
 }
 
 body.rol-light-mode .rol-editor-panel .rol-editor-inner {
-  background-color: #ffffff !important;  /* ❂垫一层纯白 */
-  background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png') !important;
-  background-size: cover !important;
-  background-blend-mode: overlay !important;  /* ❂图片和白底混合，图就会变浅 */
+  background-color: #ffffff;  /* ❂垫一层纯白 */
+  background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png');
+  background-size: cover;
+  background-blend-mode: overlay;  /* ❂图片和白底混合，图就会变浅 */
 }
 
 /* ⬇️┅☀️日间模式字体颜色/┅┅╗ */
@@ -759,18 +784,17 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
 }
 /* ⬇️┅☀️日间模式侧边栏/┅┅╗ */
 body.rol-light-mode .rol-drawer-panel {
-  /* ❂ !important 对抗ST主题覆盖 */
-  background-color: #ffffff !important;
+  background-color: #ffffff;
   background-image:
     linear-gradient(
       rgba(255, 220, 240, 0.4),
       rgba(255, 220, 240, 0.4)
     ),
-    url('https://i.postimg.cc/SRmYmwFB/heart.png') !important;
-  background-size: auto, cover !important;
-  background-position: center, center !important;
-  background-blend-mode: normal, overlay !important;
-  box-shadow: -4px 0 20px rgba(219, 112, 147, 0.15) !important;
+    url('https://i.postimg.cc/SRmYmwFB/heart.png');
+  background-size: auto, cover;
+  background-position: center, center;
+  background-blend-mode: normal, overlay;
+  box-shadow: -4px 0 20px rgba(219, 112, 147, 0.15);
 }
 
 body.rol-light-mode .rol-drawer-panel,
@@ -793,9 +817,8 @@ body.rol-light-mode .rol-tab-active {
 
 /* ⬇️┅☀️日间模式AI源面板/┅┅╗ */
 body.rol-light-mode .rol-ai-source-inner {
-  /* ❂ !important 对抗ST主题覆盖 */
-  background-color: #fff5f8 !important;
-  background-image: none !important;
+  background-color: #fff5f8;
+  background-image: none;
 }
 
 body.rol-light-mode .rol-ai-source-inner,
@@ -819,7 +842,8 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 @media (max-width: 480px) {
   /* ⬇️┅🍥Home区域紧凑化/┅┅╗ */
   .rol-home {
-    padding: 12px 10px;
+    padding: 12px 11px;
+    height: 207px;
     gap: 10px;
   }
 
@@ -872,7 +896,6 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     margin: 0 0 16px;
     font-size: 16px;
     color: var(--SmartThemeQuoteColor, #eee);
-    text-shadow: 0px 0px var(--rol-editor-title-shadow-blur) var(--rol-title-shadow-color);
 }
 .rol-form-group { margin-bottom: 12px; }
 .rol-form-group label {
@@ -926,7 +949,6 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     color: #4a4035;
     font-weight: 600;
     line-height: 1.4;
-    text-shadow: 0px 0px var(--rol-letter-title-shadow-blur) var(--rol-title-shadow-color);
 }
 .rol-letter-mood {
     font-size: 12px;
@@ -1027,12 +1049,11 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 }
 .rol-ai-source-inner {
     /* ❂ 实色兜底 + ST色叠加，确保不透明 */
-    /* ❂ !important 对抗ST主题覆盖，换主题也不会变透明 */
-    background-color: #1a1a2e !important;
+    background-color: #1a1a2e;
     background-image: linear-gradient(
         var(--SmartThemeChatTintColor, transparent),
         var(--SmartThemeChatTintColor, transparent)
-    ) !important;
+    );
     border-radius: 12px;
     padding: 24px;
     width: 100%;
@@ -1229,122 +1250,6 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 }
 /* ╚┅┅/ 💡确认弹窗 /┅┅═╝ */
 /* ┗━━━━━━/ 🍰设置组 🍰 /━━━━━━┛ */
-
-/* ➤━━━━━━ ▍🎨色板装饰样式🎨 ▍━━━━━━┓ */
-
-/* ⬇️┅🎨侧边栏渐变滚动条/┅┅╗ */
-.rol-drawer-panel::-webkit-scrollbar {
-  width: 6px;
-}
-.rol-drawer-panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-.rol-drawer-panel::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--rol-pink) 0%,
-    var(--rol-pink-dark) 50%,
-    var(--rol-green) 100%
-  );
-  border-radius: 3px;
-}
-.rol-drawer-panel::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--rol-pink-dark) 0%,
-    #ff7ab8 50%,
-    var(--rol-green-dark) 100%
-  );
-}
-
-/* ⬇️┅🎨记忆列表渐变滚动条/┅┅╗ */
-.rol-memory-list::-webkit-scrollbar {
-  width: 5px;
-}
-.rol-memory-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-.rol-memory-list::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--rol-pink-light) 0%,
-    var(--rol-pink) 50%,
-    var(--rol-green-light) 100%
-  );
-  border-radius: 3px;
-}
-
-/* ⬇️┅🎨编辑面板渐变滚动条（覆盖原有纯色）/┅┅╗ */
-.rol-editor-inner::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 173, 209, 0.4) 0%,
-    rgba(199, 244, 149, 0.3) 100%
-  );
-  border-radius: 3px;
-}
-body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--rol-pink) 0%,
-    var(--rol-green-light) 100%
-  ) !important;
-}
-
-/* ⬇️┅🎨点点分割线（大圆点版）/┅┅╗ */
-.rol-dotted-divider {
-  border: none;
-  height: 2px;
-  background: transparent;
-  background-image: radial-gradient(
-    circle,
-    var(--rol-pink) 2.5px,
-    transparent 2.5px
-  );
-  background-size: 12px 2px;
-  background-repeat: repeat-x;
-  background-position: center;
-  margin: 14px 0;
-  opacity: 0.7;
-}
-
-/* ⬇️┅🎨Blockquote 粉色阴影/┅┅╗ */
-.rol-letter-body blockquote,
-.rol-card-summary blockquote,
-.rol-editor-inner blockquote {
-  border-left: 3px solid var(--rol-pink);
-  margin: 10px 0;
-  padding: 8px 14px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 173, 209, 0.08) 0%,
-    rgba(255, 234, 246, 0.12) 100%
-  );
-  border-radius: 0 10px 10px 0;
-  box-shadow:
-    0 2px 12px rgba(255, 148, 203, 0.15),
-    inset 0 0 20px rgba(255, 173, 209, 0.05);
-  font-style: italic;
-  color: inherit;
-}
-
-/* ⬇️┅🎨日间模式 blockquote 更突出/┅┅╗ */
-body.rol-light-mode .rol-letter-body blockquote,
-body.rol-light-mode .rol-card-summary blockquote,
-body.rol-light-mode .rol-editor-inner blockquote {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 173, 209, 0.15) 0%,
-    rgba(255, 234, 246, 0.25) 100%
-  );
-  box-shadow:
-    0 3px 16px rgba(255, 148, 203, 0.2),
-    0 1px 4px rgba(255, 134, 184, 0.1),
-    inset 0 0 24px rgba(255, 173, 209, 0.08);
-  border-left-color: var(--rol-pink-dark);
-}
-
-/* ┗━━━━━━/ 🎨色板装饰样式🎨 /━━━━━━┛ */
 
 /* ┣========== ▍🍥移动端样式🍥 ▍==========┫ */
 @media (max-width: 768px) {
