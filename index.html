@@ -51,6 +51,7 @@
             <div class="rol-tabs">
                 <button class="rol-tab rol-tab-active" data-target="rol-section-list">💝 去酿造</button>
                 <button class="rol-tab" data-target="rol-section-config">🍰 配方</button>
+                <button class="rol-tab" data-target="rol-section-garden" id="rol-tab-garden">🍎 果园<span id="rol-garden-badge" class="rol-garden-badge" style="display:none;"></span></button>
             </div>
 
             <!-- ┣━━⭐️ 记忆列表━━┫ -->
@@ -62,6 +63,17 @@
                     <button id="rol-scan-recent" class="rol-btn" title="挖掘最近聊天">🐾</button>
                 </div>
                 <div id="rol-memory-list" class="rol-memory-list"></div>
+            </div>
+
+            <!-- ┣━━⭐️ 果园━━┫ -->
+            <div id="rol-section-garden" class="rol-panel-section">
+                <div class="rol-garden-header">
+                    <span class="rol-garden-title">🍎 我们的果园</span>
+                    <button id="rol-throw-fruit-btn" class="rol-btn rol-btn-primary rol-throw-btn">🌟 丢果子</button>
+                </div>
+                <div id="rol-garden-canvas" class="rol-garden-canvas">
+                    <!-- ┣━━果子由JS动态填入━━┫ -->
+                </div>
             </div>
 
             <!-- ┣━━⭐️ 设置━━┫ -->
@@ -211,6 +223,51 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- ┣━━⭐️ 果子选择面板（丢果子浮层）━━┫ -->
+<div id="rol-fruit-picker-panel" class="rol-fruit-picker-panel" style="display:none;">
+  <div class="rol-fruit-picker-inner">
+    <div class="rol-fruit-picker-header">
+      <span class="rol-fruit-picker-title">🍎 丢个果子</span>
+      <button id="rol-fruit-picker-close" class="rol-btn rol-btn-icon">✕</button>
+    </div>
+    <!-- ┣━━横向滑动选果区━━┫ -->
+    <div class="rol-fruit-picker-scroll-wrap">
+      <div id="rol-fruit-picker-track" class="rol-fruit-picker-track">
+        <div class="rol-fruit-option" data-emoji="🍎">🍎</div>
+        <div class="rol-fruit-option" data-emoji="🍊">🍊</div>
+        <div class="rol-fruit-option" data-emoji="🍋">🍋</div>
+        <div class="rol-fruit-option" data-emoji="🍇">🍇</div>
+        <div class="rol-fruit-option" data-emoji="🍓">🍓</div>
+        <div class="rol-fruit-option" data-emoji="🍑">🍑</div>
+        <div class="rol-fruit-option" data-emoji="🍒">🍒</div>
+        <div class="rol-fruit-option" data-emoji="🥝">🥝</div>
+        <div class="rol-fruit-option" data-emoji="🍈">🍈</div>
+        <div class="rol-fruit-option" data-emoji="🫐">🫐</div>
+        <div class="rol-fruit-option" data-emoji="🍌">🍌</div>
+        <div class="rol-fruit-option" data-emoji="🍉">🍉</div>
+      </div>
+    </div>
+    <!-- ┣━━纸条输入区━━┫ -->
+    <textarea id="rol-fruit-note" class="rol-input rol-textarea" rows="3" placeholder="附张纸条？（可以空着）"></textarea>
+    <!-- ┣━━操作按钮━━┫ -->
+    <div class="rol-fruit-picker-actions">
+      <button id="rol-fruit-throw-btn" class="rol-btn rol-btn-primary">我丢！</button>
+      <button id="rol-fruit-cancel-btn" class="rol-btn rol-btn-cancel">算了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ┣━━⭐️ 果子详情弹窗━━┫ -->
+<div id="rol-fruit-detail-popup" class="rol-fruit-detail-popup" style="display:none;">
+  <div class="rol-fruit-detail-inner">
+    <button id="rol-fruit-detail-close" class="rol-btn rol-btn-icon rol-fruit-detail-close">✕</button>
+    <div id="rol-fruit-detail-emoji" class="rol-fruit-detail-emoji"></div>
+    <div id="rol-fruit-detail-from" class="rol-fruit-detail-from"></div>
+    <div id="rol-fruit-detail-note" class="rol-fruit-detail-note"></div>
+    <div id="rol-fruit-detail-time" class="rol-fruit-detail-time"></div>
+  </div>
 </div>
 
 <!-- ┣━━⭐️ 确认弹窗━━┫ -->
