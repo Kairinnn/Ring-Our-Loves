@@ -236,7 +236,7 @@ body.rol-light-mode .rol-editor-panel {
     font-weight: 600;
     color: rgb(255 252 174);
     text-shadow: 0px 1.2px 4px #ff7cc8 !important;
-    background-color: #ffffff;
+    background-color: #ffffff !important;
     box-shadow: 0px 1px 4px 2.6px #ffcbe3;
     padding: 8px;
     padding-bottom: 10px;
@@ -246,7 +246,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-drawer-close-btn {
     font-size: 12px !important;
     font-weight: 500;
-    text-shadow: 0px 0px 2.1px #ff62d3eb;
+    text-shadow: 0px 0px 2.1px #ff62d3eb !important;
     color: #ffffff !important;
     padding: 4px 10px !important;
     border: 1.6px solid var(--SmartThemeBorderColor, #ffffff) !important;
@@ -274,7 +274,7 @@ body.rol-light-mode .rol-editor-panel {
     border: 1.9px solid #ffd0e8ba;
     font-size: 14px;
     font-weight: bold;
-    text-shadow: 0 0 3px #ff56a9;
+    text-shadow: 0 0 3px #ff56a9 !important;
     cursor: pointer;
     border-radius: 6px 6px 0 0;
     transition: background 0.2s;
@@ -331,7 +331,7 @@ body.rol-light-mode .rol-editor-panel {
     border-radius: 6px;
     background: rgb(255 250 243);
     color: #ff93c5;
-    text-shadow: 0 0 2.7px #fff1f1;
+    text-shadow: 0 0 2.7px #fff1f1 !important;
     cursor: pointer;
     font-size: 13.2px;
     font-weight: bold;
@@ -342,7 +342,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-btn-primary {
     background: linear-gradient(rgb(234 255 169), #ffc9e7);
     border-color: rgb(255 204 233);
-    text-shadow: 0 0 3px #ffffff;
+    text-shadow: 0 0 3px #ffffff !important;
 }
 .rol-btn-save {
     background: #e8a0b4;
