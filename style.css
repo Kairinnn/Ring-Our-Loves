@@ -196,7 +196,7 @@ body.rol-light-mode .rol-editor-panel {
     width: 300px;
     height: 100vh;
     /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
-    background-color: #1a1a2e;
+    background-color: #2e271a;
     background-image:
         linear-gradient(
             var(--SmartThemeChatTintColor, transparent),
@@ -353,14 +353,21 @@ body.rol-light-mode .rol-editor-panel {
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--rol-accent, #db7093);
-  box-shadow: 0 4px 12px rgba(219, 112, 147, 0.25);
+  border: none;
+  /* ❂ 中心扩散粉色光晕 + 外圈淡白渐变环 */
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.35),
+    0 0 12px 4px rgba(255, 179, 223, 0.4),
+    0 0 24px 8px rgba(219, 112, 147, 0.15);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .rol-avatar img:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 6px 18px rgba(219, 112, 147, 0.35);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.5),
+    0 0 16px 6px rgba(255, 179, 223, 0.55),
+    0 0 30px 10px rgba(219, 112, 147, 0.2);
 }
 
 .rol-avatar-name {

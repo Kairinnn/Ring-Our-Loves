@@ -745,6 +745,7 @@ const UIController = (() => {
         bindMobileNav();
         renderMemoryList();
         renderPresetOptions();
+        updateDayCounter();  // ┣━━🩷 天数注入！━━┫
     }
 
     // ┣━━ 🩷 侧边栏 🩷 ━━┫
