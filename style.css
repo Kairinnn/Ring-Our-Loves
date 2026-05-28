@@ -209,7 +209,7 @@ body.rol-light-mode .rol-editor-panel {
     background-size: auto, cover;
     background-position: center, center;
     background-blend-mode: normal, overlay;
-    box-shadow: -4px 0 20px 8px rgb(255 166 216 / 30%);
+    box-shadow: -4px 0 20px 7px rgb(255 166 216 / 30%);
     z-index: 9991;
     overflow-y: auto;
     transform: translateX(100%);
@@ -227,6 +227,7 @@ body.rol-light-mode .rol-editor-panel {
     justify-content: space-between;
     align-items: center;
     padding: 6px 9px;
+    background-color: #fffad742;
     border-bottom: 1px solid var(--SmartThemeBorderColor, #eeeb96);
     flex-shrink: 0;
 }
@@ -234,8 +235,9 @@ body.rol-light-mode .rol-editor-panel {
     font-size: 15px;
     font-weight: 600;
     color: rgb(255 252 174);
-    text-shadow: 0 0 8px #ff4ab3 !important;
+    text-shadow: 0px 1.2px 4px #ff7cc8 !important;
     background-color: #ffffff;
+    box-shadow: 0px 1px 4px 2.6px #ffcbe3;
     padding: 8px;
     padding-bottom: 10px;
     padding-inline-end: 30px;
@@ -243,11 +245,13 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-drawer-close-btn {
     font-size: 12px !important;
-    color: #aaa !important;
+    font-weight: 500;
+    text-shadow: 0px 0px 2.1px #ff62d3eb;
+    color: #ffffff !important;
     padding: 4px 10px !important;
-    border: 1px solid var(--SmartThemeBorderColor, #555) !important;
-    border-radius: 6px !important;
-    background: var(--SmartThemeBlurTintColor, #333) !important;
+    border: 1.6px solid var(--SmartThemeBorderColor, #ffffff) !important;
+    border-radius: 8px !important;
+    background: var(--SmartThemeBlurTintColor, #444444) !important;
 }
 
 /* ⬇️┅⭕️侧边栏Tab/┅┅╗ */
@@ -264,10 +268,13 @@ body.rol-light-mode .rol-editor-panel {
     padding: 8px 12px;
     border: none;
     /* ❂ E4d: 未选中tab给个可见底色 */
-    background: rgba(255, 255, 255, 0.4);
-    color: #9a6080;
-    box-shadow: 0 0 8px #ffaedd;
+    background: rgb(225 255 133 / 40%);
+    color: rgb(255 249 195);
+    box-shadow: 0px 0px 5px 0px #ffbbe2;
+    border: 1.9px solid #ffd0e8ba;
     font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 0 3px #ff56a9;
     cursor: pointer;
     border-radius: 6px 6px 0 0;
     transition: background 0.2s;
@@ -275,10 +282,7 @@ body.rol-light-mode .rol-editor-panel {
     z-index: 1;
 }
 .rol-tab-active {
-    background: rgb(255 255 255);
-    color: var(--SmartThemeQuoteColor, #fff);
-    font-weight: 600;
-    text-shadow: none !important;
+    background: rgb(255 230 243);
 }
 
 .rol-panel-section { display: none; }
@@ -299,12 +303,13 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
 .rol-input {
     width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
+    padding: 6.4px 10px;
+    border: 1.6px solid rgb(255 199 230 / 99%);
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, #ffc9e4);
-    color: var(--SmartThemeBodyColor, #eee);
+    background: rgb(255 253 234);
+    color: rgb(145 207 10);
     font-size: 13px;
+    font-weight: 450;
     box-sizing: border-box;
 }
 .rol-input:focus {
@@ -322,20 +327,22 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
 .rol-btn {
     padding: 8px 14px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border: 1.6px solid var(--SmartThemeBorderColor, #ffc0e3);
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, #333);
-    color: var(--SmartThemeBodyColor, #eee);
+    background: rgb(255 250 243);
+    color: #ff93c5;
+    text-shadow: 0 0 2.7px #fff1f1;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 13.2px;
+    font-weight: bold;
     white-space: nowrap;
     transition: opacity 0.2s;
 }
 .rol-btn:active { opacity: 0.7; }
 .rol-btn-primary {
-    background: var(--SmartThemeQuoteColor, #D87757);
-    border-color: var(--SmartThemeQuoteColor, #D87757);
-    color: #fff;
+    background: linear-gradient(rgb(234 255 169), #ffc9e7);
+    border-color: rgb(255 204 233);
+    text-shadow: 0 0 3px #ffffff;
 }
 .rol-btn-save {
     background: #e8a0b4;
@@ -359,9 +366,9 @@ body.rol-light-mode .rol-editor-panel {
   /* ❂ E4a: 磨砂白框 + 粉色光晕 */
   background: rgba(255, 255, 255, 0.5);
   border-radius: 16px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(4px);
-  box-shadow: 0 2px 12px #ffaedf80;
+  box-shadow: 0 2px 7.5px 0.4px #ffafdf80;
 }
 
 .rol-home-avatars {
@@ -379,7 +386,7 @@ body.rol-light-mode .rol-editor-panel {
   object-fit: cover;
   border: none;
   /* ❂ 中心扩散粉色光晕 + 外圈淡白渐变环 */
-  box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.35), 0 0 13px 4px rgba(255, 179, 223, 0.4), 0 0 24px 6px rgb(255 141 178 / 15%);
+  box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.35), 0 0 11px 4px rgba(255, 179, 223, 0.4), 0 0 15px 0px rgb(255 173 199 / 15%);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -404,7 +411,7 @@ body.rol-light-mode .rol-editor-panel {
   font-size: 15px;
   font-weight: bold;
   margin-top: 4px;
-  text-shadow: 0 0 5px #ff66c4 !important;
+  text-shadow: 0 0 5px #fff191 !important;
 }
 
 /* ❂ E4c: Claude = 暖橘黄 */
@@ -436,10 +443,10 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-day-number {
   font-size: 36px;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: 1px;
   color: #fff888;
-  text-shadow: 0 0 5px #ff64ba !important;
+  text-shadow: 0 0 3px #ff64ba !important;
 }
 
 .rol-day-label {
@@ -514,9 +521,9 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-btn-cancel:hover { color: #ccc; }
 .rol-btn-ai {
-    background: linear-gradient(135deg, #ffb3df, #D87757);
-    border-color: #ffb3df;
-    color: #fff;
+    background: rgb(255 166 137);
+    border-color: #ffb785;
+    color: #faf9f5;
 }
 .rol-btn-icon {
     background: transparent;
@@ -537,15 +544,15 @@ body.rol-light-mode .rol-editor-panel {
     padding-right: 4px;
 }
 .rol-memory-card {
-    padding: 12px;
-    border: 1px solid var(--SmartThemeBorderColor, #444);
-    border-radius: 8px;
-    background: var(--SmartThemeBlurTintColor, #2a2a2a);
+    padding: 11px;
+    border: 2px solid rgb(255 191 231 / 55%);
+    border-radius: 10px;
+    background: rgb(255 254 250);
     position: relative;
     transition: opacity 0.2s;
     cursor: pointer;
     /* ❂ E4b: 粉色光晕 */
-    box-shadow: 0 2px 12px #ffaedf80;
+    box-shadow: 3px 3px 1px 1px #ffb3dc40;
 }
 .rol-memory-card:active { opacity: 0.85; }
 .rol-memory-card.rol-disabled { opacity: 0.5; }
@@ -564,11 +571,13 @@ body.rol-light-mode .rol-editor-panel {
     min-width: 0;
 }
 .rol-card-title {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--SmartThemeQuoteColor, #ddd);
+    font-weight: 750;
+    font-size: 15px;
+    color: rgb(147 205 23);
+    background-color: white;
     white-space: nowrap;
     overflow: hidden;
+    text-shadow: 0 0 1px #ff60b6 !important;
     text-overflow: ellipsis;
 }
 .rol-author-badge {
@@ -576,11 +585,12 @@ body.rol-light-mode .rol-editor-panel {
     padding: 1px 6px;
     border-radius: 8px;
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: bold;
 }
 .rol-author-claude {
-    background: rgba(255, 160, 60, 0.2);
+    background: #faf9f5;
     color: #D87757;
+    text-shadow: none !important;
 }
 .rol-author-kairin {
     background: rgba(255, 130, 170, 0.2);
@@ -594,21 +604,28 @@ body.rol-light-mode .rol-editor-panel {
     font-size: 11px;
 }
 .rol-card-date {
-    color: var(--SmartThemeBodyColor, #ffa8e1);
+    color: rgb(255 151 183);
     text-shadow: none !important;
-    opacity: 0.7;
+    opacity: 0.8;
 }
 .rol-card-mood {
-    color: #f0c060;
-    font-style: italic;
+    color: #d87757;
+    background-color: #fff0f8;
+    text-emphasis-position: unset;
+    text-emphasis-color: #ff9ad3;
+    font-size: 10.6px;
+    font-weight: 430;
     text-shadow: none !important;
 }
 .rol-card-summary {
     font-size: 12px;
+    font-weight: 500;
     text-shadow: none !important;
     color: var(--SmartThemeBodyColor, #84ae20);
     margin-bottom: 8px;
-    line-height: 1.5;
+    line-height: 1.7;
+    text-decoration-line: underline;
+    text-decoration-color: #cceb10e8;
 }
 
 /* ⬇️┅💌toggle切换/┅┅╗ */
@@ -663,6 +680,9 @@ body.rol-light-mode .rol-editor-panel {
 .rol-card-actions {
     display: flex;
     gap: 8px;
+    background-color: white;
+    border-radius: 9px;
+    text-shadow: none !important;
 }
 .rol-card-actions button {
     padding: 4px 8px;
@@ -997,6 +1017,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     justify-content: space-between;
     align-items: center;
     font-size: 13px;
+    font-weight: bold;
     margin-bottom: 6px;
     color: var(--SmartThemeBodyColor, #ccc);
 }
