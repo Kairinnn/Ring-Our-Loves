@@ -10,28 +10,28 @@
 @keyframes rol-bounce-in {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.3);
+    transform: scale(0.3);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: scale(1.05);
   }
   70% {
-    transform: translate(-50%, -50%) scale(0.95);
+    transform: scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 /* ⬇️┅🧈退场/┅┅╗ */
 @keyframes rol-shrink-out {
   0% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.6) rotate(2deg);
+    transform: scale(0.6) rotate(2deg);
   }
 }
 /* ⬇️┅🧈呼吸光效/┅┅╗ */
@@ -607,11 +607,19 @@ body.rol-light-mode .rol-editor-panel {
     color: rgb(255 151 183);
     text-shadow: none !important;
     opacity: 0.8;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .rol-card-mood {
     color: #d87757;
+    /* ❂ E4f: 行内圆角底色，换行后每段独立圆角 */
     background-color: #fff0f8;
-    text-emphasis-position: unset;
+    padding: 1px 6px;
+    border-radius: 6px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    line-height: 1.8;
+    text-emphasis-position: under;
     text-emphasis-color: #ff9ad3;
     font-size: 10.6px;
     font-weight: 430;
