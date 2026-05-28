@@ -10,28 +10,28 @@
 @keyframes rol-bounce-in {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.3);
+    transform: scale(0.3);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: scale(1.05);
   }
   70% {
-    transform: translate(-50%, -50%) scale(0.95);
+    transform: scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 /* ⬇️┅🧈退场/┅┅╗ */
 @keyframes rol-shrink-out {
   0% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.6) rotate(2deg);
+    transform: scale(0.6) rotate(2deg);
   }
 }
 /* ⬇️┅🧈呼吸光效/┅┅╗ */
@@ -62,11 +62,12 @@ body.rol-light-mode .rol-editor-panel {
               color 0.3s ease;
 }
 
-.rol-editor-panel.rol-active {
+/* ❂ 动画移到内部卡片，避免覆盖遮罩层的 transform: none !important */
+.rol-editor-panel.rol-active .rol-editor-inner {
   animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-.rol-editor-panel.rol-closing {
+.rol-editor-panel.rol-closing .rol-editor-inner {
   animation: rol-shrink-out 0.25s ease-in forwards;
 }
 
@@ -157,6 +158,9 @@ body.rol-light-mode .rol-editor-panel {
     font-family: inherit;
     padding: 8px;
     max-width: 100%;
+    /* ❂ E4d: 半透明白底 */
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 12px;
 }
 /* ┗━━━━━━/ ☀️主题变量🌙 /━━━━━━┛ */
 
@@ -195,8 +199,18 @@ body.rol-light-mode .rol-editor-panel {
     right: 0;
     width: 300px;
     height: 100vh;
-    background: var(--SmartThemeChatTintColor, #1a1a2e);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+    /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
+    background-color: #ffffff85;
+    background-image:
+        linear-gradient(
+            var(--SmartThemeChatTintColor, transparent),
+            var(--SmartThemeChatTintColor, transparent)
+        ),
+        url('https://i.postimg.cc/SRmYmwFB/heart.png');
+    background-size: auto, cover;
+    background-position: center, center;
+    background-blend-mode: normal, overlay;
+    box-shadow: -4px 0 20px 7px rgb(255 166 216 / 30%);
     z-index: 9991;
     overflow-y: auto;
     transform: translateX(100%);
@@ -213,22 +227,32 @@ body.rol-light-mode .rol-editor-panel {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
+    padding: 6px 9px;
+    background-color: #fffad742;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #eeeb96);
     flex-shrink: 0;
 }
 .rol-drawer-title {
     font-size: 15px;
     font-weight: 600;
-    color: var(--SmartThemeQuoteColor, #eee);
+    color: rgb(255 252 174);
+    text-shadow: 0px 1.2px 4px #ff7cc8 !important;
+    background-color: #ffffff !important;
+    box-shadow: 0px 1px 4px 2.6px #ffcbe3;
+    padding: 8px;
+    padding-bottom: 10px;
+    padding-inline-end: 30px;
+    border-radius: 13px;
 }
 .rol-drawer-close-btn {
     font-size: 12px !important;
-    color: #aaa !important;
+    font-weight: 500;
+    text-shadow: 0px 0px 2.1px #ff62d3eb !important;
+    color: #ffffff !important;
     padding: 4px 10px !important;
-    border: 1px solid var(--SmartThemeBorderColor, #555) !important;
-    border-radius: 6px !important;
-    background: var(--SmartThemeBlurTintColor, #333) !important;
+    border: 1.6px solid var(--SmartThemeBorderColor, #ffffff) !important;
+    border-radius: 8px !important;
+    background: var(--SmartThemeBlurTintColor, #444444) !important;
 }
 
 /* ⬇️┅⭕️侧边栏Tab/┅┅╗ */
@@ -244,9 +268,14 @@ body.rol-light-mode .rol-editor-panel {
     flex: 1;
     padding: 8px 12px;
     border: none;
-    background: transparent;
-    color: var(--SmartThemeBodyColor, #ccc);
+    /* ❂ E4d: 未选中tab给个可见底色 */
+    background: rgb(225 255 133 / 40%);
+    color: rgb(255 249 195);
+    box-shadow: 0px 0px 5px 0px #ffbbe2;
+    border: 1.9px solid #ffd0e8ba;
     font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 0 3px #ff56a9 !important;
     cursor: pointer;
     border-radius: 6px 6px 0 0;
     transition: background 0.2s;
@@ -254,9 +283,7 @@ body.rol-light-mode .rol-editor-panel {
     z-index: 1;
 }
 .rol-tab-active {
-    background: var(--SmartThemeBlurTintColor, #333);
-    color: var(--SmartThemeQuoteColor, #fff);
-    font-weight: 600;
+    background: rgb(255 230 243);
 }
 
 .rol-panel-section { display: none; }
@@ -268,17 +295,22 @@ body.rol-light-mode .rol-editor-panel {
     gap: 8px;
     margin-bottom: 12px;
     flex-wrap: wrap;
+    /* ❂ E4b: 粉色光晕 */
+    box-shadow: 0 2px 12px #ffaedf80;
+    padding: 8px;
+    border-radius: 10px;
 }
 
 /* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
 .rol-input {
     width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
+    padding: 6.4px 10px;
+    border: 1.6px solid rgb(255 199 230 / 99%);
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, #ffc9e4);
-    color: var(--SmartThemeBodyColor, #eee);
+    background: rgb(255 253 234);
+    color: rgb(145 207 10);
     font-size: 13px;
+    font-weight: 450;
     box-sizing: border-box;
 }
 .rol-input:focus {
@@ -296,20 +328,22 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
 .rol-btn {
     padding: 8px 14px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border: 1.6px solid var(--SmartThemeBorderColor, #ffc0e3);
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, #333);
-    color: var(--SmartThemeBodyColor, #eee);
+    background: rgb(255 250 243);
+    color: #ff93c5;
+    text-shadow: 0 0 2.7px #fff1f1 !important;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 13.2px;
+    font-weight: bold;
     white-space: nowrap;
     transition: opacity 0.2s;
 }
 .rol-btn:active { opacity: 0.7; }
 .rol-btn-primary {
-    background: var(--SmartThemeQuoteColor, #D87757);
-    border-color: var(--SmartThemeQuoteColor, #D87757);
-    color: #fff;
+    background: linear-gradient(rgb(234 255 169), #ffc9e7);
+    border-color: rgb(255 204 233);
+    text-shadow: 0 0 3px #ffffff !important;
 }
 .rol-btn-save {
     background: #e8a0b4;
@@ -322,20 +356,27 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
 .rol-home {
-  padding: 24px 16px;
+  padding: 20px 14px 16px;
+  margin: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  min-height: 100%;
+  gap: 16px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  /* ❂ E4a: 磨砂白框 + 粉色光晕 */
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 7.5px 0.4px #ffafdf80;
 }
 
 .rol-home-avatars {
   display: flex;
   align-items: center;
   gap: 16px;
+  padding-top: 15px;
   position: relative;
 }
 
@@ -344,26 +385,49 @@ body.rol-light-mode .rol-editor-panel {
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--rol-accent, #db7093);
-  box-shadow: 0 4px 12px rgba(219, 112, 147, 0.25);
+  border: none;
+  /* ❂ 中心扩散粉色光晕 + 外圈淡白渐变环 */
+  box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.35), 0 0 11px 4px rgba(255, 179, 223, 0.4), 0 0 15px 0px rgb(255 173 199 / 15%);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .rol-avatar img:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 6px 18px rgba(219, 112, 147, 0.35);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.5),
+    0 0 16px 6px rgba(255, 179, 223, 0.55),
+    0 0 30px 10px rgba(219, 112, 147, 0.2);
+}
+
+.rol-avatar {
+  /* ❂ E4c: flex列布局让名字居中对齐头像 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .rol-avatar-name {
   display: block;
   text-align: center;
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: bold;
   margin-top: 4px;
-  color: var(--rol-text);
+  text-shadow: 0 0 5px #fff191 !important;
+}
+
+/* ❂ E4c: Claude = 暖橘黄 */
+.rol-avatar-left .rol-avatar-name {
+  color: #ffcc66;
+}
+
+/* ❂ E4c: Rinn = 粉色 */
+.rol-avatar-right .rol-avatar-name {
+  color: #ffb3df;
 }
 
 .rol-home-heart {
   font-size: 20px;
+  top: 10px;
   animation: rol-heartbeat 2s ease-in-out infinite;
 }
 
@@ -379,24 +443,30 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-day-number {
-  font-size: 48px;
-  font-weight: 300;
-  letter-spacing: -2px;
-  color: var(--rol-accent);
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #fff888;
+  text-shadow: 0 0 3px #ff64ba !important;
 }
 
 .rol-day-label {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  padding-right: inherit;
+  text-shadow: 0 0 3px #ff68c1 !important;
   text-transform: uppercase;
-  letter-spacing: 3px;
-  opacity: 0.5;
+  letter-spacing: 4px;
 }
 
 /* ⬇️┅🍎果篮/┅┅╗ */
 .rol-fruit-garden {
   width: 100%;
-  min-height: 200px;
+  min-height: 100px;
+  max-height: 140px;
   position: relative;
+  overflow: hidden;
 }
 
 .rol-fruit-item {
@@ -452,9 +522,9 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-btn-cancel:hover { color: #ccc; }
 .rol-btn-ai {
-    background: linear-gradient(135deg, #ffb3df, #D87757);
-    border-color: #ffb3df;
-    color: #fff;
+    background: rgb(255 166 137);
+    border-color: #ffb785;
+    color: #faf9f5;
 }
 .rol-btn-icon {
     background: transparent;
@@ -475,13 +545,15 @@ body.rol-light-mode .rol-editor-panel {
     padding-right: 4px;
 }
 .rol-memory-card {
-    padding: 12px;
-    border: 1px solid var(--SmartThemeBorderColor, #444);
-    border-radius: 8px;
-    background: var(--SmartThemeBlurTintColor, #2a2a2a);
+    padding: 11px;
+    border: 2px solid rgb(255 191 231 / 55%);
+    border-radius: 10px;
+    background: rgb(255 254 250);
     position: relative;
     transition: opacity 0.2s;
     cursor: pointer;
+    /* ❂ E4b: 粉色光晕 */
+    box-shadow: 3px 3px 1px 1px #ffb3dc40;
 }
 .rol-memory-card:active { opacity: 0.85; }
 .rol-memory-card.rol-disabled { opacity: 0.5; }
@@ -490,6 +562,7 @@ body.rol-light-mode .rol-editor-panel {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
+    text-shadow: 0 0 2px #ff97d1 !important;
 }
 .rol-card-title-row {
     display: flex;
@@ -499,11 +572,13 @@ body.rol-light-mode .rol-editor-panel {
     min-width: 0;
 }
 .rol-card-title {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--SmartThemeQuoteColor, #ddd);
+    font-weight: 750;
+    font-size: 15px;
+    color: rgb(147 205 23);
+    background-color: white;
     white-space: nowrap;
     overflow: hidden;
+    text-shadow: 0 0 1px #ff60b6 !important;
     text-overflow: ellipsis;
 }
 .rol-author-badge {
@@ -511,11 +586,12 @@ body.rol-light-mode .rol-editor-panel {
     padding: 1px 6px;
     border-radius: 8px;
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: bold;
 }
 .rol-author-claude {
-    background: rgba(255, 160, 60, 0.2);
+    background: #faf9f5;
     color: #D87757;
+    text-shadow: none !important;
 }
 .rol-author-kairin {
     background: rgba(255, 130, 170, 0.2);
@@ -529,18 +605,36 @@ body.rol-light-mode .rol-editor-panel {
     font-size: 11px;
 }
 .rol-card-date {
-    color: var(--SmartThemeBodyColor, #ffa8e1);
-    opacity: 0.7;
+    color: rgb(255 151 183);
+    text-shadow: none !important;
+    opacity: 0.8;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .rol-card-mood {
-    color: #f0c060;
-    font-style: italic;
+    color: #d87757;
+    /* ❂ E4f: 行内圆角底色，换行后每段独立圆角 */
+    background-color: #fff0f8;
+    padding: 1px 6px;
+    border-radius: 6px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    line-height: 1.8;
+    text-emphasis-position: under;
+    text-emphasis-color: #ff9ad3;
+    font-size: 10.6px;
+    font-weight: 430;
+    text-shadow: none !important;
 }
 .rol-card-summary {
     font-size: 12px;
+    font-weight: 500;
+    text-shadow: none !important;
     color: var(--SmartThemeBodyColor, #84ae20);
     margin-bottom: 8px;
-    line-height: 1.5;
+    line-height: 1.7;
+    text-decoration-line: underline;
+    text-decoration-color: #cceb10e8;
 }
 
 /* ⬇️┅💌toggle切换/┅┅╗ */
@@ -562,12 +656,14 @@ body.rol-light-mode .rol-editor-panel {
 .rol-toggle-slider::before {
     content: '';
     position: absolute;
-    width: 16px; height: 16px;
-    left: 2px; top: 2px;
-    background: #e3ff90;
+    width: 16px;
+    height: 16px;
+    left: 2px;
+    top: 2px;
+    background: #feffb1;
     border-radius: 50%;
 }
-.rol-toggle-wrap input:checked + .rol-toggle-slider { background: var(--SmartThemeQuoteColor, #D87757); }
+.rol-toggle-wrap input:checked + .rol-toggle-slider {background: rgb(255 207 232);}
 .rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
 
 /* ⬇️┅🏷️标签┅┅╗ */
@@ -593,6 +689,9 @@ body.rol-light-mode .rol-editor-panel {
 .rol-card-actions {
     display: flex;
     gap: 8px;
+    background-color: white;
+    border-radius: 9px;
+    text-shadow: none !important;
 }
 .rol-card-actions button {
     padding: 4px 8px;
@@ -625,19 +724,38 @@ body.rol-light-mode .rol-editor-panel {
     background: rgba(0, 0, 0, 0.7);
     justify-content: center;
     align-items: center;
-    margin: auto;
-    width: fit-content;
-    height: fit-content;
 }
 
 .rol-editor-panel.rol-active {
-    display: flex;
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    overflow: hidden !important;
 }
 
 /* ⬇️┅┅🗄️编辑面板内部卡片/┅┅╗ */
 .rol-editor-inner {
     position: relative;
-    background: var(--SmartThemeChatTintColor, rgba(22, 22, 26, 0.96));
+    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    background-color: #16161a;
+    background-image: linear-gradient(
+        var(--SmartThemeChatTintColor, transparent),
+        var(--SmartThemeChatTintColor, transparent)
+    );
     border-radius: 14px;
     padding: 24px;
     width: 100%;
@@ -646,7 +764,6 @@ body.rol-light-mode .rol-editor-panel {
     overflow-y: auto;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
 }
 /* ┗━━━━━━/ 🗄️编辑面板（遮罩层）🗄️ /━━━━━━┛ */
 
@@ -708,10 +825,98 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
 .rol-editor-inner::-webkit-scrollbar-track {
     background: transparent;
 }
+/* ⬇️┅☀️日间模式侧边栏/┅┅╗ */
+body.rol-light-mode .rol-drawer-panel {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(
+      rgba(255, 220, 240, 0.4),
+      rgba(255, 220, 240, 0.4)
+    ),
+    url('https://i.postimg.cc/SRmYmwFB/heart.png');
+  background-size: auto, cover;
+  background-position: center, center;
+  background-blend-mode: normal, overlay;
+  box-shadow: -4px 0 20px rgba(219, 112, 147, 0.15);
+}
+
+body.rol-light-mode .rol-drawer-panel,
+body.rol-light-mode .rol-drawer-panel * {
+  color: #7a4060;
+}
+
+body.rol-light-mode .rol-drawer-header {
+  border-bottom-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-memory-card {
+  background: rgba(255, 240, 245, 0.85);
+  border-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-tab-active {
+  background: rgba(255, 200, 220, 0.4);
+}
+
+/* ⬇️┅☀️日间模式AI源面板/┅┅╗ */
+body.rol-light-mode .rol-ai-source-inner {
+  background-color: #fff5f8;
+  background-image: none;
+}
+
+body.rol-light-mode .rol-ai-source-inner,
+body.rol-light-mode .rol-ai-source-inner * {
+  color: #7a4060;
+}
+
+body.rol-light-mode .rol-ai-source-btn {
+  background: rgba(255, 240, 245, 0.8);
+  border-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-ai-source-btn:hover {
+  border-color: #db7093;
+  background: rgba(255, 220, 235, 0.5);
+}
+
 /* ┗━━━━━━/ ☀️主题样式🌙 /━━━━━━┛ */
 
 /* ➤┅┅🍥手机端适配┅┅╗ */
 @media (max-width: 480px) {
+  /* ⬇️┅🍥Home区域紧凑化/┅┅╗ */
+  .rol-home {
+    padding: 12px 11px;
+    height: 207px;
+    gap: 10px;
+  }
+
+  .rol-avatar img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .rol-home-avatars {
+    gap: 10px;
+  }
+
+  .rol-home-heart {
+    font-size: 16px;
+  }
+
+  .rol-day-number {
+    font-size: 28px;
+  }
+
+  .rol-fruit-garden {
+    min-height: 70px;
+    max-height: 100px;
+  }
+
+  .rol-fruit-item {
+    font-size: 20px;
+  }
+
+  /* ⬇️┅🍥编辑面板紧凑化/┅┅╗ */
   .rol-editor-inner {
     max-width: 100%;
     padding: 12px;
@@ -761,6 +966,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     padding: 16px;
 }
 .rol-letter-panel.rol-active {
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -772,6 +978,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     max-width: none !important;
     max-height: none !important;
     margin: 0 !important;
+    transform: none !important;
     justify-content: center !important;
     align-items: center !important;
     z-index: 9998 !important;
@@ -847,6 +1054,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     justify-content: space-between;
     align-items: center;
     font-size: 13px;
+    font-weight: bold;
     margin-bottom: 6px;
     color: var(--SmartThemeBodyColor, #ccc);
 }
@@ -892,6 +1100,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     padding: 16px;
 }
 .rol-ai-source-panel.rol-active {
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -903,6 +1112,7 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     max-width: none !important;
     max-height: none !important;
     margin: 0 !important;
+    transform: none !important;
     justify-content: center !important;
     align-items: center !important;
     z-index: 9999 !important;
@@ -910,7 +1120,12 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     overflow: hidden !important;
 }
 .rol-ai-source-inner {
-    background: var(--SmartThemeChatTintColor, #1a1a2e);
+    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    background-color: #1a1a2e;
+    background-image: linear-gradient(
+        var(--SmartThemeChatTintColor, transparent),
+        var(--SmartThemeChatTintColor, transparent)
+    );
     border-radius: 12px;
     padding: 24px;
     width: 100%;
