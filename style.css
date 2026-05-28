@@ -187,18 +187,18 @@ body.rol-light-mode .rol-editor-panel {
     inset: 0;
     z-index: 9990;
     background: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
 }
 .rol-drawer-overlay.rol-drawer-open {
-    display: block;
+    display: flex;
 }
 
-/* ⬇️┅⭕️侧边栏面板 - 从右侧滑出/┅┅╗ */
+/* ⬇️┅⭕️侧边栏面板 - 居中悬浮/┅┅╗ */
 .rol-drawer-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 100vh;
+    position: relative;
+    width: 320px;
+    max-height: 82vh;
     /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
     background-color: #ffffff85;
     background-image:
@@ -210,16 +210,16 @@ body.rol-light-mode .rol-editor-panel {
     background-size: auto, cover;
     background-position: center, center;
     background-blend-mode: normal, overlay;
-    box-shadow: -4px 0 20px 7px rgb(255 166 216 / 30%);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(255, 166, 216, 0.35);
     z-index: 9991;
     overflow-y: auto;
-    transform: translateX(100%);
-    transition: transform 200ms ease;
     display: flex;
     flex-direction: column;
 }
 .rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
-    transform: translateX(0);
+    animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+               rol-glow-pulse 3s ease-in-out 0.4s infinite;
 }
 
 /* ⬇️┅⭕️侧边栏标题┅┅╗ */
@@ -1045,6 +1045,20 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     font-size: 12px;
 }
 .rol-letter-actions .rol-btn:active { opacity: 0.7; }
+
+/* ⬇️┅💌信件引用块/┅┅╗ */
+.rol-quote {
+    display: block;
+    margin: 4px 0;
+    padding: 4px 10px;
+    border-left: 3px solid #ffb3df;
+    background: rgba(255, 179, 223, 0.12);
+    border-radius: 0 6px 6px 0;
+    color: #9a6878;
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.7;
+}
 /* ╚┅┅/ 💌笔记正文展开查看面板 /┅┅═╝ */
 
 /* ➤━━━━━━ ▍🍰设置组🍰 ▍━━━━━━┓ */
@@ -1331,6 +1345,6 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
     .rol-memory-list { max-height: 100vh; }
     .rol-card-actions { justify-content: flex-end; }
-    /* ⬇️┅🍥移动端侧边栏宽度/┅┅╗ */
-    .rol-drawer-panel { width: 80vw; }
+    /* ⬇️┅🍥移动端浮窗宽度/┅┅╗ */
+    .rol-drawer-panel { width: 92vw; max-width: 92vw; }
 }
