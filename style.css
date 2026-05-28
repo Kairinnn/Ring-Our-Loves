@@ -195,7 +195,17 @@ body.rol-light-mode .rol-editor-panel {
     right: 0;
     width: 300px;
     height: 100vh;
-    background: var(--SmartThemeChatTintColor, #1a1a2e);
+    /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
+    background-color: #1a1a2e;
+    background-image:
+        linear-gradient(
+            var(--SmartThemeChatTintColor, transparent),
+            var(--SmartThemeChatTintColor, transparent)
+        ),
+        url('https://i.postimg.cc/SRmYmwFB/heart.png');
+    background-size: auto, cover;
+    background-position: center, center;
+    background-blend-mode: normal, overlay;
     box-shadow: -4px 0 20px rgba(0,0,0,0.5);
     z-index: 9991;
     overflow-y: auto;
@@ -322,12 +332,11 @@ body.rol-light-mode .rol-editor-panel {
 
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
 .rol-home {
-  padding: 24px 16px;
+  padding: 16px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  min-height: 100%;
+  gap: 16px;
   position: relative;
   overflow: hidden;
 }
@@ -379,9 +388,9 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-day-number {
-  font-size: 48px;
+  font-size: 36px;
   font-weight: 300;
-  letter-spacing: -2px;
+  letter-spacing: -1px;
   color: var(--rol-accent);
 }
 
@@ -395,8 +404,10 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅🍎果篮/┅┅╗ */
 .rol-fruit-garden {
   width: 100%;
-  min-height: 200px;
+  min-height: 100px;
+  max-height: 140px;
   position: relative;
+  overflow: hidden;
 }
 
 .rol-fruit-item {
@@ -637,7 +648,12 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅┅🗄️编辑面板内部卡片/┅┅╗ */
 .rol-editor-inner {
     position: relative;
-    background: var(--SmartThemeChatTintColor, rgba(22, 22, 26, 0.96));
+    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    background-color: #16161a;
+    background-image: linear-gradient(
+        var(--SmartThemeChatTintColor, transparent),
+        var(--SmartThemeChatTintColor, transparent)
+    );
     border-radius: 14px;
     padding: 24px;
     width: 100%;
@@ -646,7 +662,6 @@ body.rol-light-mode .rol-editor-panel {
     overflow-y: auto;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
 }
 /* ┗━━━━━━/ 🗄️编辑面板（遮罩层）🗄️ /━━━━━━┛ */
 
@@ -708,10 +723,97 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
 .rol-editor-inner::-webkit-scrollbar-track {
     background: transparent;
 }
+/* ⬇️┅☀️日间模式侧边栏/┅┅╗ */
+body.rol-light-mode .rol-drawer-panel {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(
+      rgba(255, 220, 240, 0.4),
+      rgba(255, 220, 240, 0.4)
+    ),
+    url('https://i.postimg.cc/SRmYmwFB/heart.png');
+  background-size: auto, cover;
+  background-position: center, center;
+  background-blend-mode: normal, overlay;
+  box-shadow: -4px 0 20px rgba(219, 112, 147, 0.15);
+}
+
+body.rol-light-mode .rol-drawer-panel,
+body.rol-light-mode .rol-drawer-panel * {
+  color: #7a4060;
+}
+
+body.rol-light-mode .rol-drawer-header {
+  border-bottom-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-memory-card {
+  background: rgba(255, 240, 245, 0.85);
+  border-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-tab-active {
+  background: rgba(255, 200, 220, 0.4);
+}
+
+/* ⬇️┅☀️日间模式AI源面板/┅┅╗ */
+body.rol-light-mode .rol-ai-source-inner {
+  background-color: #fff5f8;
+  background-image: none;
+}
+
+body.rol-light-mode .rol-ai-source-inner,
+body.rol-light-mode .rol-ai-source-inner * {
+  color: #7a4060;
+}
+
+body.rol-light-mode .rol-ai-source-btn {
+  background: rgba(255, 240, 245, 0.8);
+  border-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-ai-source-btn:hover {
+  border-color: #db7093;
+  background: rgba(255, 220, 235, 0.5);
+}
+
 /* ┗━━━━━━/ ☀️主题样式🌙 /━━━━━━┛ */
 
 /* ➤┅┅🍥手机端适配┅┅╗ */
 @media (max-width: 480px) {
+  /* ⬇️┅🍥Home区域紧凑化/┅┅╗ */
+  .rol-home {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .rol-avatar img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .rol-home-avatars {
+    gap: 10px;
+  }
+
+  .rol-home-heart {
+    font-size: 16px;
+  }
+
+  .rol-day-number {
+    font-size: 28px;
+  }
+
+  .rol-fruit-garden {
+    min-height: 70px;
+    max-height: 100px;
+  }
+
+  .rol-fruit-item {
+    font-size: 20px;
+  }
+
+  /* ⬇️┅🍥编辑面板紧凑化/┅┅╗ */
   .rol-editor-inner {
     max-width: 100%;
     padding: 12px;
@@ -761,22 +863,10 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     padding: 16px;
 }
 .rol-letter-panel.rol-active {
+    /* ❂ 只保留必要的 !important 来对抗ST覆盖 */
     display: flex !important;
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
-    justify-content: center !important;
-    align-items: center !important;
     z-index: 9998 !important;
-    background: rgba(0, 0, 0, 0.75) !important;
-    overflow: hidden !important;
 }
 .rol-letter-inner {
     background: #faf6f0;
@@ -892,25 +982,18 @@ body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track
     padding: 16px;
 }
 .rol-ai-source-panel.rol-active {
+    /* ❂ 只保留必要的 !important 来对抗ST覆盖 */
     display: flex !important;
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
-    justify-content: center !important;
-    align-items: center !important;
     z-index: 9999 !important;
-    background: rgba(0, 0, 0, 0.7) !important;
-    overflow: hidden !important;
 }
 .rol-ai-source-inner {
-    background: var(--SmartThemeChatTintColor, #1a1a2e);
+    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    background-color: #1a1a2e;
+    background-image: linear-gradient(
+        var(--SmartThemeChatTintColor, transparent),
+        var(--SmartThemeChatTintColor, transparent)
+    );
     border-radius: 12px;
     padding: 24px;
     width: 100%;
