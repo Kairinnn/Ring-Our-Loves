@@ -593,7 +593,7 @@ body.rol-light-mode .rol-editor-panel {
     color: #D87757;
     text-shadow: none !important;
 }
-.rol-author-kairin {
+.rol-authorrin {
     background: rgba(255, 130, 170, 0.2);
     color: #ff82aa;
 }
@@ -1393,8 +1393,10 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 
 .rol-garden-canvas {
     position: relative;
-    flex: 1;
-    min-height: 280px;
+    /* ❂ flex:1 在动态父容器里高度不固定 → 换成明确高度才能让 overflow:hidden 生效 */
+    width: 100%;
+    height: 280px;
+    flex-shrink: 0;
     overflow: hidden;
     border-radius: 16px;
     background: linear-gradient(160deg, rgba(255, 220, 235, 0.45) 0%, rgba(255, 240, 248, 0.3) 100%);

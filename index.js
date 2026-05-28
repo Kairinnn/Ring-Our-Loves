@@ -233,7 +233,10 @@ function buildInjectionText(memories) {
             if (!config.autoInject) return;
             const chat = context.chat;
             if (!chat || !chat[msgIndex]) return;
-            const matched = detectTriggers(chat[msgIndex].mes, msgIndex);
+            const msg = chat[msgIndex];
+            // ▸ 只扫描 user 和 assistant 消息，跳过系统注入内容
+            if (msg.is_system) return;
+            const matched = detectTriggers(msg.mes, msgIndex);
             if (matched.length > 0) {
                 const selected = selectForInjection(matched);
                 const injectionText = buildInjectionText(selected);
@@ -250,6 +253,8 @@ function buildInjectionText(memories) {
         const recent = chat.slice(-count);
         const allMatched = new Map();
         for (const msg of recent) {
+            // ▸ 只扫描 user 和 assistant 消息，跳过系统注入内容
+            if (msg.is_system) continue;
             const matched = detectTriggers(msg.mes || '');
             for (const mem of matched) allMatched.set(mem.id, mem);
         }
