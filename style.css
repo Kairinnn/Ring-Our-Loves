@@ -191,7 +191,24 @@ body.rol-light-mode .rol-editor-panel {
     align-items: center;
 }
 .rol-drawer-overlay.rol-drawer-open {
-    display: flex;
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9990 !important;
+    background: rgba(0,0,0,0.4) !important;
+    overflow: hidden !important;
 }
 
 /* ⬇️┅⭕️侧边栏面板 - 居中悬浮/┅┅╗ */
