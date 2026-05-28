@@ -1,0 +1,1350 @@
+/* ┣========== ▍🩷 Ring Our Luv 🩷 ▍==========┫ */
+@font-face {
+  font-family: 'Clairine';
+  src: url('./fonts/Clairine.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+/* ➤━━━━━━━ ▍🧈面板动画🧈 ▍━━━━━━━┓ */
+/* ⬇️┅🧈入场/┅┅╗ */
+@keyframes rol-bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* ⬇️┅🧈退场/┅┅╗ */
+@keyframes rol-shrink-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6) rotate(2deg);
+  }
+}
+/* ⬇️┅🧈呼吸光效/┅┅╗ */
+@keyframes rol-glow-pulse {
+  0%, 100% { box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
+  50% { box-shadow: 0 12px 40px rgba(0,0,0,0.55),
+                     0 0 60px rgba(255,180,200,0.08); }
+}
+
+@keyframes rol-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 179, 223, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(255, 179, 223, 0.6); }
+}
+
+@keyframes rol-pop {
+  0% { transform: scale(0.8); }
+  100% { transform: scale(1); }
+}
+/* ⬇️┅☀️日间模式垫白底/┅┅╗ */
+body.rol-light-mode .rol-editor-panel {
+  background: rgba(255, 245, 248, 1) !important;
+}
+
+.rol-editor-panel {
+  font-family: 'Clairine', sans-serif !important;
+  transition: background 0.5s ease,
+              box-shadow 0.5s ease,
+              color 0.3s ease;
+}
+
+/* ❂ 动画移到内部卡片，避免覆盖遮罩层的 transform: none !important */
+.rol-editor-panel.rol-active .rol-editor-inner {
+  animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.rol-editor-panel.rol-closing .rol-editor-inner {
+  animation: rol-shrink-out 0.25s ease-in forwards;
+}
+
+.rol-light.rol-active {
+  animation: rol-bounce-in 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards,
+             rol-glow-pulse 3s ease-in-out 0.4s infinite;
+}
+
+.rol-stop-btn {
+  animation: rol-pop 0.2s ease-out;
+}
+
+.rol-toggle-slider {
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.rol-toggle-slider::before {
+  transition: transform 0.2s;
+}
+
+.rol-btn-drawer-open {
+  animation: rol-glow 2s ease-in-out infinite;
+}
+
+/* ┗━━━━━━/ 🧈面板动画🧈 /━━━━━━┛ */
+
+/* ➤━━━━━━ ▍☀️主题变量🌙 ▍━━━━━━┓ */
+.rol-theme-toggle {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rol-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.1);
+}
+
+.rol-light .rol-theme-toggle {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.rol-light .rol-theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ⬇️┅🧈主题过渡动画/┅┅╗ */
+.rol-editor-panel,
+.rol-editor-inner,
+.rol-editor-inner textarea,
+.rol-editor-inner input {
+  transition: background-color 0.4s ease,
+              color 0.4s ease,
+              border-color 0.4s ease;
+}
+
+/* ⬇️┅🌙默认：夜间模式变量/┅┅╗ */
+.rol-editor-panel {
+  --rol-bg: rgb(30, 30, 35);
+  --rol-card: rgb(45, 42, 50);
+  --rol-text: rgb(230, 220, 235);
+  --rol-accent: rgb(255, 168, 195);
+  --rol-input-bg: rgb(55, 50, 60);
+}
+
+/* ⬇️┅☀️日间模式变量/┅┅╗ */
+body.rol-light-mode .rol-editor-panel {
+  --rol-bg: rgb(255, 245, 248);
+  --rol-card: rgb(255, 228, 242);
+  --rol-text: rgb(80, 60, 70);
+  --rol-accent: rgb(219, 112, 147);
+  --rol-input-bg: rgb(255, 240, 245);
+}
+
+.rol-container {
+    font-family: inherit;
+    padding: 8px;
+    max-width: 100%;
+    /* ❂ E4d: 半透明白底 */
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 12px;
+}
+/* ┗━━━━━━/ ☀️主题变量🌙 /━━━━━━┛ */
+
+/* ➤━━━━━━ ▍🗄️侧边栏样式🗄️ ▍━━━━━━┓ */
+/* ⬇️┅⭕️侧边栏的打开按钮/┅┅╗ */
+.rol-btn-drawer-open {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background: linear-gradient(135deg, #ffb3df, #D87757);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+.rol-btn-drawer-open:hover { opacity: 0.85; }
+
+/* ⬇️┅⭕️侧边栏遮罩层/┅┅╗ */
+.rol-drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9990;
+    background: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
+}
+.rol-drawer-overlay.rol-drawer-open {
+    display: flex;
+}
+
+/* ⬇️┅⭕️侧边栏面板 - 居中悬浮/┅┅╗ */
+.rol-drawer-panel {
+    position: relative;
+    width: 320px;
+    max-height: 82vh;
+    /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
+    background-color: #ffffff85;
+    background-image:
+        linear-gradient(
+            var(--SmartThemeChatTintColor, transparent),
+            var(--SmartThemeChatTintColor, transparent)
+        ),
+        url('https://i.postimg.cc/SRmYmwFB/heart.png');
+    background-size: auto, cover;
+    background-position: center, center;
+    background-blend-mode: normal, overlay;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(255, 166, 216, 0.35);
+    z-index: 9991;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
+    animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+               rol-glow-pulse 3s ease-in-out 0.4s infinite;
+}
+
+/* ⬇️┅⭕️侧边栏标题┅┅╗ */
+.rol-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 9px;
+    background-color: #fffad742;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #eeeb96);
+    flex-shrink: 0;
+}
+.rol-drawer-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgb(255 252 174);
+    text-shadow: 0px 1.2px 4px #ff7cc8 !important;
+    background-color: #ffffff !important;
+    box-shadow: 0px 1px 4px 2.6px #ffcbe3;
+    padding: 8px;
+    padding-bottom: 10px;
+    padding-inline-end: 30px;
+    border-radius: 13px;
+}
+.rol-drawer-close-btn {
+    font-size: 12px !important;
+    font-weight: 500;
+    text-shadow: 0px 0px 2.1px #ff62d3eb !important;
+    color: #ffffff !important;
+    padding: 4px 10px !important;
+    border: 1.6px solid var(--SmartThemeBorderColor, #ffffff) !important;
+    border-radius: 8px !important;
+    background: var(--SmartThemeBlurTintColor, #444444) !important;
+}
+
+/* ⬇️┅⭕️侧边栏Tab/┅┅╗ */
+.rol-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
+    padding-bottom: 8px;
+    position: relative;
+}
+.rol-tab {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    /* ❂ E4d: 未选中tab给个可见底色 */
+    background: rgb(225 255 133 / 40%);
+    color: rgb(255 249 195);
+    box-shadow: 0px 0px 5px 0px #ffbbe2;
+    border: 1.9px solid #ffd0e8ba;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 0 3px #ff56a9 !important;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    transition: background 0.2s;
+    position: relative;
+    z-index: 1;
+}
+.rol-tab-active {
+    background: rgb(255 230 243);
+}
+
+.rol-panel-section { display: none; }
+.rol-section-active { display: block; }
+
+/* ⬇️┅⭕️侧边栏 - 工具栏/┅┅╗ */
+.rol-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    /* ❂ E4b: 粉色光晕 */
+    box-shadow: 0 2px 12px #ffaedf80;
+    padding: 8px;
+    border-radius: 10px;
+}
+
+/* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
+.rol-input {
+    width: 100%;
+    padding: 6.4px 10px;
+    border: 1.6px solid rgb(255 199 230 / 99%);
+    border-radius: 6px;
+    background: rgb(255 253 234);
+    color: rgb(145 207 10);
+    font-size: 13px;
+    font-weight: 450;
+    box-sizing: border-box;
+}
+.rol-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor, #D87757);
+}
+.rol-input-sm { width: 70px; }
+.rol-textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+.rol-textarea-lg { min-height: 150px; }
+
+/* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
+.rol-btn {
+    padding: 8px 14px;
+    border: 1.6px solid var(--SmartThemeBorderColor, #ffc0e3);
+    border-radius: 6px;
+    background: rgb(255 250 243);
+    color: #ff93c5;
+    text-shadow: 0 0 2.7px #fff1f1 !important;
+    cursor: pointer;
+    font-size: 13.2px;
+    font-weight: bold;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+.rol-btn:active { opacity: 0.7; }
+.rol-btn-primary {
+    background: linear-gradient(rgb(234 255 169), #ffc9e7);
+    border-color: rgb(255 204 233);
+    text-shadow: 0 0 3px #ffffff !important;
+}
+.rol-btn-save {
+    background: #e8a0b4;
+    border-color: #e8a0b4;
+    color: #fff;
+    font-weight: 600;
+}
+.rol-btn-save:hover { background: #d4899f; }
+/* ┗━━━━━━/ 🗄️侧边栏样式🗄️ /━━━━━━┛ */
+
+/* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
+.rol-home {
+  padding: 20px 14px 16px;
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: visible;
+  /* ❂ E4a: 磨砂白框 + 粉色光晕 */
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 7.5px 0.4px #ffafdf80;
+}
+
+.rol-home-avatars {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 15px;
+  position: relative;
+}
+
+.rol-avatar img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: none;
+  /* ❂ 中心扩散粉色光晕 + 外圈淡白渐变环 */
+  box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.35), 0 0 11px 4px rgba(255, 179, 223, 0.4), 0 0 15px 0px rgb(255 173 199 / 15%);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.rol-avatar img:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.5),
+    0 0 16px 6px rgba(255, 179, 223, 0.55),
+    0 0 30px 10px rgba(219, 112, 147, 0.2);
+}
+
+.rol-avatar {
+  /* ❂ E4c: flex列布局让名字居中对齐头像 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rol-avatar-name {
+  display: block;
+  text-align: center;
+  font-size: 15px;
+  font-weight: bold;
+  margin-top: 4px;
+  text-shadow: 0 0 5px #fff191 !important;
+}
+
+/* ❂ E4c: Claude = 暖橘黄 */
+.rol-avatar-left .rol-avatar-name {
+  color: #ffcc66;
+}
+
+/* ❂ E4c: Rinn = 粉色 */
+.rol-avatar-right .rol-avatar-name {
+  color: #ffb3df;
+}
+
+.rol-home-heart {
+  font-size: 20px;
+  top: 10px;
+  animation: rol-heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes rol-heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.rol-home-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rol-day-number {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #fff888;
+  text-shadow: 0 0 3px #ff64ba !important;
+}
+
+.rol-day-label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  padding-right: inherit;
+  text-shadow: 0 0 3px #ff68c1 !important;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+/* ⬇️┅🍎果篮/┅┅╗ */
+.rol-fruit-garden {
+  width: 100%;
+  min-height: 100px;
+  max-height: 140px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rol-fruit-item {
+  position: absolute;
+  font-size: 24px;
+  cursor: pointer;
+  animation: rol-fruit-drop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.15s ease;
+}
+
+.rol-fruit-item:hover {
+  transform: scale(1.3) !important;
+}
+/* ⬇️┅🍎果子落下动画/┅┅╗ */
+@keyframes rol-fruit-drop {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(0) rotate(10deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(-14px) rotate(-4deg);
+  }
+  75% {
+    transform: translateY(0) rotate(2deg);
+  }
+  85% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+/* ┗━━━━━━/ 🧡Our Nest🩷 /━━━━━━┛ */
+
+/* ➤━━━━━━━ ▍💌卡片列表内容💌 ▍━━━━━━━┓ */
+/* ⬇️┅🧡重写按钮（橙色次按钮）/┅┅╗ */
+.rol-btn-rewrite {
+    background: #e8a060;
+    border-color: #e8a060;
+    color: #fff;
+    font-weight: 600;
+}
+.rol-btn-rewrite:hover { background: #d49050; }
+.rol-btn-cancel {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-weight: normal;
+}
+.rol-btn-cancel:hover { color: #ccc; }
+.rol-btn-ai {
+    background: rgb(255 166 137);
+    border-color: #ffb785;
+    color: #faf9f5;
+}
+.rol-btn-icon {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    color: #ffcbef;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+
+/* ⬇️┅💌记忆卡片列表/┅┅╗ */
+.rol-memory-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.rol-memory-card {
+    padding: 11px;
+    border: 2px solid rgb(255 191 231 / 55%);
+    border-radius: 10px;
+    background: rgb(255 254 250);
+    position: relative;
+    transition: opacity 0.2s;
+    cursor: pointer;
+    /* ❂ E4b: 粉色光晕 */
+    box-shadow: 3px 3px 1px 1px #ffb3dc40;
+}
+.rol-memory-card:active { opacity: 0.85; }
+.rol-memory-card.rol-disabled { opacity: 0.5; }
+.rol-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    text-shadow: 0 0 2px #ff97d1 !important;
+}
+.rol-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.rol-card-title {
+    font-weight: 750;
+    font-size: 15px;
+    color: rgb(147 205 23);
+    background-color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-shadow: 0 0 1px #ff60b6 !important;
+    text-overflow: ellipsis;
+}
+.rol-author-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    white-space: nowrap;
+    font-weight: bold;
+}
+.rol-author-claude {
+    background: #faf9f5;
+    color: #D87757;
+    text-shadow: none !important;
+}
+.rol-author-kairin {
+    background: rgba(255, 130, 170, 0.2);
+    color: #ff82aa;
+}
+.rol-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 11px;
+}
+.rol-card-date {
+    color: rgb(255 151 183);
+    text-shadow: none !important;
+    opacity: 0.8;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.rol-card-mood {
+    color: #d87757;
+    /* ❂ E4f: 行内圆角底色，换行后每段独立圆角 */
+    background-color: #fff0f8;
+    padding: 1px 6px;
+    border-radius: 6px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    line-height: 1.8;
+    text-emphasis-position: under;
+    text-emphasis-color: #ff9ad3;
+    font-size: 10.6px;
+    font-weight: 430;
+    text-shadow: none !important;
+}
+.rol-card-summary {
+    font-size: 12px;
+    font-weight: 500;
+    text-shadow: none !important;
+    color: var(--SmartThemeBodyColor, #84ae20);
+    margin-bottom: 8px;
+    line-height: 1.7;
+    text-decoration-line: underline;
+    text-decoration-color: #cceb10e8;
+}
+
+/* ⬇️┅💌toggle切换/┅┅╗ */
+.rol-toggle-wrap {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+}
+.rol-toggle-wrap input { opacity: 0; width: 0; height: 0; }
+.rol-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #ff9dd8;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.rol-toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 2px;
+    top: 2px;
+    background: #feffb1;
+    border-radius: 50%;
+}
+.rol-toggle-wrap input:checked + .rol-toggle-slider {background: rgb(255 207 232);}
+.rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
+
+/* ⬇️┅🏷️标签┅┅╗ */
+.rol-card-triggers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+.rol-tag {
+    padding: 2px 8px;
+    background: rgba(216, 119, 87, 0.2);
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--SmartThemeQuoteColor, #D87757);
+}
+.rol-card-preview {
+    font-size: 12px;
+    color: var(--SmartThemeBodyColor, #999);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+.rol-card-actions {
+    display: flex;
+    gap: 8px;
+    background-color: white;
+    border-radius: 9px;
+    text-shadow: none !important;
+}
+.rol-card-actions button {
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.rol-card-actions button:hover,
+.rol-card-actions button:active { opacity: 1; }
+.rol-mood-badge {
+    position: absolute;
+    top: 8px; right: 50px;
+    font-size: 11px;
+    padding: 2px 6px;
+    background: rgba(255, 200, 100, 0.2);
+    border-radius: 8px;
+    color: #f0c060;
+}
+/* ┗━━━━━━/ 💌卡片列表内容💌 /━━━━━━┛ */
+
+/* ➤━━━━━━ ▍🗄️编辑面板（遮罩层）🗄️ ▍━━━━━━┓ */
+.rol-editor-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+}
+
+.rol-editor-panel.rol-active {
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    overflow: hidden !important;
+}
+
+/* ⬇️┅┅🗄️编辑面板内部卡片/┅┅╗ */
+.rol-editor-inner {
+    position: relative;
+    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    background-color: #16161a;
+    background-image: linear-gradient(
+        var(--SmartThemeChatTintColor, transparent),
+        var(--SmartThemeChatTintColor, transparent)
+    );
+    border-radius: 14px;
+    padding: 24px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+/* ┗━━━━━━/ 🗄️编辑面板（遮罩层）🗄️ /━━━━━━┛ */
+
+/* ➤━━━━━━━ ▍☀️主题样式🌙 ▍━━━━━━┓ */
+/* ⬇️┅☀️日间模式/┅┅┓ */
+body.rol-light-mode .rol-editor-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.rol-light-mode .rol-editor-panel .rol-editor-inner {
+  background-color: #ffffff;  /* ❂垫一层纯白 */
+  background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png');
+  background-size: cover;
+  background-blend-mode: overlay;  /* ❂图片和白底混合，图就会变浅 */
+}
+
+/* ⬇️┅☀️日间模式字体颜色/┅┅╗ */
+body.rol-light-mode .rol-editor-panel .rol-editor-inner,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner * {
+    color: #d4627a !important;
+}
+
+body.rol-light-mode .rol-editor-panel .rol-editor-inner input,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner textarea,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner select {
+    color: #c75b73 !important;
+    background: rgba(255, 240, 245, 0.7) !important;
+    border-color: rgba(255, 150, 170, 0.3) !important;
+}
+
+body.rol-light-mode .rol-editor-panel .rol-editor-inner input::placeholder,
+body.rol-light-mode .rol-editor-panel .rol-editor-inner textarea::placeholder {
+    color: rgba(212, 98, 122, 0.45) !important;
+}
+
+/* ⬇️┅☀️日间模式滚动条/┅┅╗ */
+body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-thumb {
+    background: rgba(255, 150, 170, 0.3) !important;
+}
+
+body.rol-light-mode .rol-editor-panel .rol-editor-inner::-webkit-scrollbar-track {
+    background: rgba(255, 220, 230, 0.2) !important;
+}
+
+/* ⬇️┅🌙编辑面板滚动条美化（夜间）/┅┅╗ */
+.rol-editor-inner::-webkit-scrollbar {
+    width: 6px;
+}
+.rol-editor-inner::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+.rol-editor-inner::-webkit-scrollbar-track {
+    background: transparent;
+}
+/* ⬇️┅☀️日间模式侧边栏/┅┅╗ */
+body.rol-light-mode .rol-drawer-panel {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(
+      rgba(255, 220, 240, 0.4),
+      rgba(255, 220, 240, 0.4)
+    ),
+    url('https://i.postimg.cc/SRmYmwFB/heart.png');
+  background-size: auto, cover;
+  background-position: center, center;
+  background-blend-mode: normal, overlay;
+  box-shadow: -4px 0 20px rgba(219, 112, 147, 0.15);
+}
+
+body.rol-light-mode .rol-drawer-panel,
+body.rol-light-mode .rol-drawer-panel * {
+  color: #7a4060;
+}
+
+body.rol-light-mode .rol-drawer-header {
+  border-bottom-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-memory-card {
+  background: rgba(255, 240, 245, 0.85);
+  border-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-tab-active {
+  background: rgba(255, 200, 220, 0.4);
+}
+
+/* ⬇️┅☀️日间模式AI源面板/┅┅╗ */
+body.rol-light-mode .rol-ai-source-inner {
+  background-color: #fff5f8;
+  background-image: none;
+}
+
+body.rol-light-mode .rol-ai-source-inner,
+body.rol-light-mode .rol-ai-source-inner * {
+  color: #7a4060;
+}
+
+body.rol-light-mode .rol-ai-source-btn {
+  background: rgba(255, 240, 245, 0.8);
+  border-color: rgba(219, 112, 147, 0.2);
+}
+
+body.rol-light-mode .rol-ai-source-btn:hover {
+  border-color: #db7093;
+  background: rgba(255, 220, 235, 0.5);
+}
+
+/* ┗━━━━━━/ ☀️主题样式🌙 /━━━━━━┛ */
+
+/* ➤┅┅🍥手机端适配┅┅╗ */
+@media (max-width: 480px) {
+  /* ⬇️┅🍥Home区域紧凑化/┅┅╗ */
+  .rol-home {
+    padding: 12px 11px;
+    height: 207px;
+    gap: 10px;
+  }
+
+  .rol-avatar img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .rol-home-avatars {
+    gap: 10px;
+  }
+
+  .rol-home-heart {
+    font-size: 16px;
+  }
+
+  .rol-day-number {
+    font-size: 28px;
+  }
+
+  .rol-fruit-garden {
+    min-height: 70px;
+    max-height: 100px;
+  }
+
+  .rol-fruit-item {
+    font-size: 20px;
+  }
+
+  /* ⬇️┅🍥编辑面板紧凑化/┅┅╗ */
+  .rol-editor-inner {
+    max-width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .rol-editor-inner textarea {
+    font-size: 14px;
+    min-height: 80px;
+  }
+
+  .rol-editor-inner input {
+    font-size: 14px;
+    height: 36px;
+  }
+}
+.rol-editor-heading {
+    margin: 0 0 16px;
+    font-size: 16px;
+    color: var(--SmartThemeQuoteColor, #eee);
+}
+.rol-form-group { margin-bottom: 12px; }
+.rol-form-group label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: var(--SmartThemeBodyColor, #aaa);
+}
+.rol-editor-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+/* ╚┅┅/ 🍥手机端适配 /┅┅═╝ */
+
+/* ➤┅💌笔记正文展开查看面板┅┅╗ */
+.rol-letter-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 9998;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+.rol-letter-panel.rol-active {
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9998 !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    overflow: hidden !important;
+}
+.rol-letter-inner {
+    background: #faf6f0;
+    border-radius: 4px;
+    padding: 28px 24px 20px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.rol-letter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+.rol-letter-title {
+    font-size: 17px;
+    color: #4a4035;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.rol-letter-mood {
+    font-size: 12px;
+    color: #9a8b7a;
+    margin-bottom: 16px;
+    font-style: italic;
+}
+.rol-letter-body {
+    font-size: 14px;
+    line-height: 1.9;
+    color: #3d3428;
+    white-space: pre-wrap;
+    font-family: 'Georgia', 'Noto Serif SC', serif;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e8e0d4;
+    margin-bottom: 12px;
+}
+.rol-letter-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.rol-letter-footer select {
+    background: #f0ebe3;
+    border-color: #d8d0c4;
+    color: #5a5045;
+    font-size: 12px;
+}
+.rol-letter-actions {
+    display: flex;
+    gap: 8px;
+}
+.rol-letter-actions .rol-btn {
+    background: #ede7de;
+    border-color: #d8d0c4;
+    color: #5a5045;
+    font-size: 12px;
+}
+.rol-letter-actions .rol-btn:active { opacity: 0.7; }
+
+/* ⬇️┅💌信件引用块/┅┅╗ */
+.rol-quote {
+    display: block;
+    margin: 4px 0;
+    padding: 4px 10px;
+    border-left: 3px solid #ffb3df;
+    background: rgba(255, 179, 223, 0.12);
+    border-radius: 0 6px 6px 0;
+    color: #9a6878;
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.7;
+}
+/* ╚┅┅/ 💌笔记正文展开查看面板 /┅┅═╝ */
+
+/* ➤━━━━━━ ▍🍰设置组🍰 ▍━━━━━━┓ */
+.rol-config-group { margin-bottom: 14px; }
+.rol-config-group .rol-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: var(--SmartThemeBodyColor, #ccc);
+}
+
+/* ⬇️┅❔️提示/┅┅╗ */
+#rol-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--SmartThemeQuoteColor, #D87757);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 10000;
+}
+#rol-toast.rol-toast-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ⬇️┅🏷️表单行（并排）/┅┅╗ */
+.rol-form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.rol-form-half { flex: 1; margin-bottom: 0; }
+
+/* ⬇️┅🧡AI 源面板/┅┅╗ */
+.rol-ai-source-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+.rol-ai-source-panel.rol-active {
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    overflow: hidden !important;
+}
+.rol-ai-source-inner {
+    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    background-color: #1a1a2e;
+    background-image: linear-gradient(
+        var(--SmartThemeChatTintColor, transparent),
+        var(--SmartThemeChatTintColor, transparent)
+    );
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+}
+.rol-ai-source-desc {
+    font-size: 13px;
+    color: var(--SmartThemeBodyColor, #aaa);
+    margin: 0 0 16px;
+}
+.rol-ai-source-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.rol-ai-source-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+    background: var(--SmartThemeBlurTintColor, #2a2a2a);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+.rol-ai-source-btn:hover {
+    border-color: #D87757;
+    background: rgba(216, 119, 87, 0.08);
+}
+.rol-ai-source-icon { font-size: 20px; margin-bottom: 4px; }
+.rol-ai-source-label { font-size: 14px; font-weight: 600; color: var(--SmartThemeBodyColor, #eee); }
+.rol-ai-source-hint { font-size: 11px; color: #888; margin-top: 2px; }
+.rol-ai-paste-area { margin-bottom: 12px; }
+.rol-ai-source-footer { display: flex; justify-content: flex-end; }
+.rol-ai-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0;
+    font-size: 13px;
+    color: var(--SmartThemeBodyColor, #ccc);
+}
+
+.rol-stop-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: rgba(255, 100, 100, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: center;
+  transition: background 0.2s ease;
+  margin-top: 8px;
+}
+
+.rol-stop-btn:hover {
+  background: rgba(255, 100, 100, 0.25);
+}
+
+.rol-ai-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(167, 139, 250, 0.3);
+    border-top-color: #ffb3df;
+    border-radius: 50%;
+    animation: rol-spin 0.8s linear infinite;
+}
+@keyframes rol-spin { to { transform: rotate(360deg); } }
+
+.rol-empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--SmartThemeBodyColor, #777);
+    font-size: 13px;
+}
+
+/* ⬇️┅🧡聊天楼层选择区域/┅┅╗ */
+.rol-ai-chat-section {
+    padding: 14px 16px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+    background: var(--SmartThemeBlurTintColor, #2a2a2a);
+}
+.rol-ai-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.rol-floor-range {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.rol-floor-field {
+    flex: 1;
+}
+.rol-floor-field label {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+}
+.rol-floor-field .rol-input-sm {
+    width: 100%;
+}
+.rol-floor-gen-btn {
+    width: 100%;
+    margin-top: 6px;
+}
+/* ⬇️┅🏷️复选框标签/┅┅╗ */
+.rol-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--SmartThemeBodyColor, #aaa);
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+.rol-checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+/* ➤┅💡确认弹窗/┅┅╗ */
+.rol-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rol-fade-in 0.2s ease;
+}
+
+@keyframes rol-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rol-confirm-box {
+  background: var(--rol-bg, rgb(255, 245, 248));
+  border: 1px solid rgba(219, 112, 147, 0.3);
+  border-radius: 16px;
+  padding: 28px 24px;
+  min-width: 260px;
+  max-width: 340px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(219, 112, 147, 0.15);
+  animation: rol-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rol-confirm-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.rol-confirm-msg {
+  color: var(--rol-text, rgb(80, 60, 70));
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.rol-confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.rol-confirm-btn {
+  padding: 8px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.rol-confirm-btn:hover { opacity: 0.8; }
+
+.rol-btn-yes {
+  background: linear-gradient(135deg, #ffb3df, #ffc2e2);
+  color: #8b3a62;
+}
+
+.rol-btn-no {
+  background: rgba(219, 112, 147, 0.1);
+  color: var(--rol-accent, rgb(219, 112, 147));
+}
+/* ╚┅┅/ 💡确认弹窗 /┅┅═╝ */
+/* ┗━━━━━━/ 🍰设置组 🍰 /━━━━━━┛ */
+
+/* ┣========== ▍🍥移动端样式🍥 ▍==========┫ */
+@media (max-width: 768px) {
+    .rol-toolbar { flex-direction: column; }
+    .rol-toolbar .rol-input { width: 100%; }
+    .rol-editor-inner { max-width: 100%; border-radius: 8px; padding: 16px; }
+    .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
+    .rol-memory-list { max-height: 100vh; }
+    .rol-card-actions { justify-content: flex-end; }
+    /* ⬇️┅🍥移动端浮窗宽度/┅┅╗ */
+    .rol-drawer-panel { width: 92vw; max-width: 92vw; }
+}
