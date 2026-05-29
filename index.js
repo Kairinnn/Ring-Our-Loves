@@ -172,8 +172,11 @@ const Storage = (() => {
 const Trigger = (() => {
     const cooldownMap = new Map();  // 记录每颗恋果上次触发的轮数
     const COOLDOWN = 5;             // 冷却轮数
+let globalLastTriggerTurn = -999;
+const GLOBAL_COOLDOWN = 8;
 
     function detectTriggers(messageText, currentTurn) {
+    if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
         const memories = Storage.getMemories();
         const matched = [];
         for (const memory of memories) {
@@ -199,6 +202,9 @@ const Trigger = (() => {
                 if (isMatch) {
                     matched.push(memory);
                     cooldownMap.set(memory.id, currentTurn);  // ▸ 🩷记录触发轮数
+
+        globalLastTriggerTurn = currentTurn;  // ▸ 命中则更新冷却
+                       }
                     break;
                 }
             }
@@ -623,11 +629,16 @@ const AIService = (() => {
         }
     }
 
+controller
+let rolAbortController = null;
+
     async function generateWithPreset(prompt) {
         const config = Storage.getConfig();
         const targetPreset = config.presetName;
         let originalPreset = '';
 
+controller
+    rolAbortController = new AbortController();
         try {
             if (targetPreset) {
                 originalPreset = getCurrentPresetName();
@@ -638,6 +649,7 @@ const AIService = (() => {
             const result = await executeSlashCommandsWithOptions('/gen ' + prompt, {
                 handleExecutionErrors: true,
                 handleParserErrors: true
+                abortController: rolAbortController
             });
 
             return result?.pipe || '';
@@ -645,6 +657,7 @@ const AIService = (() => {
             console.error('[RingOurLuv] 🥀 酿造失败...:', e);
             return '';
         } finally {
+        rolAbortController = null;
             if (originalPreset && targetPreset) {
                 console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
                 await switchPreset(originalPreset);
@@ -1318,17 +1331,16 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const pasteConfirm = document.getElementById('rol-ai-paste-confirm');
         const cancelBtn = document.getElementById('rol-ai-source-cancel');
         const loading = document.getElementById('rol-ai-loading');
-        const rolStopBtn = document.querySelector('#rol-stop-gen');
-             if (rolStopBtn) {
-              rolStopBtn.addEventListener('click', () => {
-              const stStop = document.querySelector('#mes_stop');
-  if (stStop && !stStop.disabled) stStop.click();
-  if (typeof stopGeneration === 'function') stopGeneration();
-  if (typeof abortController !== 'undefined' && abortController) {
-    abortController.abort();
-  }
-  rolStopBtn.style.display = 'none';
-});
+const rolStopBtn = document.querySelector('#rol-stop-gen');
+if (rolStopBtn) {
+  rolStopBtn.addEventListener('click', () => {
+    if (rolAbortController) {
+      rolAbortController.abort();
+      console.log('[RingOurLuv] 🛑 手动停止');
+    }
+    rolStopBtn.style.display = 'none';
+  });
+}
        }
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
@@ -1596,7 +1608,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             e.stopPropagation();
             document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
         });
-        anchor.parentElement?.insertBefore(btn, anchor.nextSibling);
+        anchor.parentElement?.anchor.parentElement?.appendChild(btn);
     }
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
