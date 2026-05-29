@@ -5,7 +5,8 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.3.3'; // 每次改完代码手动+1
+const ROL_VERSION = '0.3.4'; // 每次改完代码手动+1
+let rolAbortController = null; // ┣━━🩷 全局 AbortController（供 AIService + UIController 共用）━━┫
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
   location.reload(true); // 强制刷新
@@ -626,8 +627,6 @@ const AIService = (() => {
         }
     }
 
-let rolAbortController = null;
-
     async function generateWithPreset(prompt) {
         const config = Storage.getConfig();
         const targetPreset = config.presetName;
@@ -779,6 +778,30 @@ const UIController = (() => {
             });
         }
         // ┣━━🩷已禁用点击遮罩关闭，只能通过关闭按钮收起━━┫
+
+        // ┣━━🩷 Home区日夜主题切换按钮━━┫
+        const homeSection = document.querySelector('.rol-home');
+        if (homeSection && !homeSection.querySelector('.rol-theme-toggle')) {
+            const themeBtn = document.createElement('button');
+            themeBtn.className = 'rol-theme-toggle rol-home-theme-btn';
+            themeBtn.textContent = '☀️';
+            themeBtn.title = '切换日/夜间模式';
+            themeBtn.type = 'button';
+            themeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const rolRoot = document.querySelector('.rol-container') || homeSection.closest('#rol-drawer-panel');
+                if (rolRoot) {
+                    rolRoot.classList.toggle('rol-light');
+                    document.body.classList.toggle('rol-light-mode');
+                }
+                const isLight = document.body.classList.contains('rol-light-mode');
+                themeBtn.textContent = isLight ? '🌙' : '☀️';
+                // ┣━━同步编辑器里的主题按钮状态━━┫
+                const editorThemeBtn = document.querySelector('.rol-editor-inner .rol-theme-toggle');
+                if (editorThemeBtn) editorThemeBtn.textContent = isLight ? '🌙' : '☀️';
+            });
+            homeSection.prepend(themeBtn);
+        }
     }
   // ┣━━ 🩷 果子物理 🩷 ━━┫
 function renderFruitGarden(fruits) {
@@ -1585,7 +1608,7 @@ if (rolStopBtn) {
                 e.preventDefault();
                 document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
             });
-            toolbar.append(btn);
+            toolbar.prepend(btn);
         });
     }
 

@@ -240,7 +240,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 /* ⬇️┅⭕️侧边栏标题┅┅╗ */
-.rol-drawer-header {
+#rol-drawer-panel .rol-drawer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -249,7 +249,7 @@ body.rol-light-mode .rol-editor-panel {
     border-bottom: 1px solid var(--SmartThemeBorderColor, #eeeb96);
     flex-shrink: 0;
 }
-.rol-drawer-title {
+#rol-drawer-panel .rol-drawer-title {
     font-size: 15px;
     font-weight: 600;
     color: rgb(255 252 174);
@@ -261,7 +261,7 @@ body.rol-light-mode .rol-editor-panel {
     padding-inline-end: 30px;
     border-radius: 13px;
 }
-.rol-drawer-close-btn {
+#rol-drawer-panel .rol-drawer-close-btn {
     font-size: 12px !important;
     font-weight: 500;
     text-shadow: 0px 0px 2.1px #ff62d3eb !important;
@@ -273,7 +273,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 /* ⬇️┅⭕️侧边栏Tab/┅┅╗ */
-.rol-tabs {
+#rol-drawer-panel .rol-tabs {
     display: flex;
     gap: 4px;
     margin-bottom: 12px;
@@ -281,7 +281,7 @@ body.rol-light-mode .rol-editor-panel {
     padding-bottom: 8px;
     position: relative;
 }
-.rol-tab {
+#rol-drawer-panel .rol-tab {
     flex: 1;
     padding: 8px 12px;
     border: none;
@@ -299,7 +299,7 @@ body.rol-light-mode .rol-editor-panel {
     position: relative;
     z-index: 1;
 }
-.rol-tab-active {
+#rol-drawer-panel .rol-tab-active {
     background: rgb(255 230 243);
 }
 
@@ -307,7 +307,7 @@ body.rol-light-mode .rol-editor-panel {
 .rol-section-active { display: block; }
 
 /* ⬇️┅⭕️侧边栏 - 工具栏/┅┅╗ */
-.rol-toolbar {
+#rol-drawer-panel .rol-toolbar {
     display: flex;
     gap: 8px;
     margin-bottom: 12px;
@@ -319,7 +319,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 /* ⬇️┅⭕️侧边栏 - 输入框/┅┅╗ */
-.rol-input {
+#rol-drawer-panel .rol-input {
     width: 100%;
     padding: 6.4px 10px;
     border: 1.6px solid rgb(255 199 230 / 99%);
@@ -330,20 +330,20 @@ body.rol-light-mode .rol-editor-panel {
     font-weight: 450;
     box-sizing: border-box;
 }
-.rol-input:focus {
+#rol-drawer-panel .rol-input:focus {
     outline: none;
     border-color: var(--SmartThemeQuoteColor, #D87757);
 }
-.rol-input-sm { width: 70px; }
-.rol-textarea {
+#rol-drawer-panel .rol-input-sm { width: 70px; }
+#rol-drawer-panel .rol-textarea {
     resize: vertical;
     min-height: 80px;
     font-family: inherit;
 }
-.rol-textarea-lg { min-height: 150px; }
+#rol-drawer-panel .rol-textarea-lg { min-height: 150px; }
 
 /* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
-.rol-btn {
+#rol-drawer-panel .rol-btn {
     padding: 8px 14px;
     border: 1.6px solid var(--SmartThemeBorderColor, #ffc0e3);
     border-radius: 6px;
@@ -356,23 +356,23 @@ body.rol-light-mode .rol-editor-panel {
     white-space: nowrap;
     transition: opacity 0.2s;
 }
-.rol-btn:active { opacity: 0.7; }
-.rol-btn-primary {
+#rol-drawer-panel .rol-btn:active { opacity: 0.7; }
+#rol-drawer-panel .rol-btn-primary {
     background: linear-gradient(rgb(234 255 169), #ffc9e7);
     border-color: rgb(255 204 233);
     text-shadow: 0 0 3px #ffffff !important;
 }
-.rol-btn-save {
+#rol-drawer-panel .rol-btn-save {
     background: #e8a0b4;
     border-color: #e8a0b4;
     color: #fff;
     font-weight: 600;
 }
-.rol-btn-save:hover { background: #d4899f; }
+#rol-drawer-panel .rol-btn-save:hover { background: #d4899f; }
 /* ┗━━━━━━/ 🗄️侧边栏样式🗄️ /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🧡Our Nest🩷 ▍━━━━━━┓ */
-.rol-home {
+#rol-drawer-panel .rol-home {
   padding: 20px 14px 16px;
   margin: 10px;
   display: flex;
@@ -553,7 +553,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 /* ⬇️┅💌记忆卡片列表/┅┅╗ */
-.rol-memory-list {
+#rol-drawer-panel .rol-memory-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -561,7 +561,7 @@ body.rol-light-mode .rol-editor-panel {
     overflow-y: auto;
     padding-right: 4px;
 }
-.rol-memory-card {
+#rol-drawer-panel .rol-memory-card {
     padding: 11px;
     border: 2px solid rgb(255 191 231 / 55%);
     border-radius: 10px;
@@ -572,9 +572,9 @@ body.rol-light-mode .rol-editor-panel {
     /* ❂ E4b: 粉色光晕 */
     box-shadow: 3px 3px 1px 1px #ffb3dc40;
 }
-.rol-memory-card:active { opacity: 0.85; }
-.rol-memory-card.rol-disabled { opacity: 0.5; }
-.rol-card-header {
+#rol-drawer-panel .rol-memory-card:active { opacity: 0.85; }
+#rol-drawer-panel .rol-memory-card.rol-disabled { opacity: 0.5; }
+#rol-drawer-panel .rol-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -588,7 +588,7 @@ body.rol-light-mode .rol-editor-panel {
     flex: 1;
     min-width: 0;
 }
-.rol-card-title {
+#rol-drawer-panel .rol-card-title {
     font-weight: 750;
     font-size: 15px;
     color: rgb(147 205 23);
@@ -703,14 +703,14 @@ body.rol-light-mode .rol-editor-panel {
     margin-bottom: 8px;
     line-height: 1.4;
 }
-.rol-card-actions {
+#rol-drawer-panel .rol-card-actions {
     display: flex;
     gap: 8px;
     background-color: white;
     border-radius: 9px;
     text-shadow: none !important;
 }
-.rol-card-actions button {
+#rol-drawer-panel .rol-card-actions button {
     padding: 4px 8px;
     border: none;
     background: transparent;
@@ -719,8 +719,8 @@ body.rol-light-mode .rol-editor-panel {
     opacity: 0.7;
     transition: opacity 0.2s;
 }
-.rol-card-actions button:hover,
-.rol-card-actions button:active { opacity: 1; }
+#rol-drawer-panel .rol-card-actions button:hover,
+#rol-drawer-panel .rol-card-actions button:active { opacity: 1; }
 .rol-mood-badge {
     position: absolute;
     top: 8px; right: 50px;
@@ -1492,7 +1492,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     border: 1px solid rgba(255, 182, 215, 0.4);
     border-bottom: none;
     box-shadow: 0 -8px 32px rgba(200, 80, 130, 0.12);
-    z-index: 9100;
+    z-index: 100000;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     animation: rol-picker-slide-up 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

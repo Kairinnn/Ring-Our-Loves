@@ -191,7 +191,24 @@ body.rol-light-mode .rol-editor-panel {
     align-items: center;
 }
 .rol-drawer-overlay.rol-drawer-open {
-    display: flex;
+    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9990 !important;
+    background: rgba(0,0,0,0.4) !important;
+    overflow: hidden !important;
 }
 
 /* ⬇️┅⭕️侧边栏面板 - 居中悬浮/┅┅╗ */
@@ -593,7 +610,7 @@ body.rol-light-mode .rol-editor-panel {
     color: #D87757;
     text-shadow: none !important;
 }
-.rol-author-kairin {
+.rol-authorrin {
     background: rgba(255, 130, 170, 0.2);
     color: #ff82aa;
 }
@@ -1347,4 +1364,280 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     .rol-card-actions { justify-content: flex-end; }
     /* ⬇️┅🍥移动端浮窗宽度/┅┅╗ */
     .rol-drawer-panel { width: 92vw; max-width: 92vw; }
+    .rol-fruit-picker-panel { width: 92vw; max-width: 92vw; }
 }
+/* ╚┅┅/ 🍥移动端样式 /┅┅═╝ */
+
+/* ┣========== ▍🍎果子系统🍎 ▍==========┫ */
+
+/* ┣━━ 果园 Tab 徽标 ━━┫ */
+.rol-garden-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ff6b9d;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    padding: 0 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+    line-height: 1;
+}
+
+/* ┣━━ 果园面板 ━━┫ */
+.rol-garden-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 12px;
+    flex-shrink: 0;
+}
+
+.rol-garden-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--rol-accent, rgb(219, 112, 147));
+}
+
+.rol-throw-btn {
+    font-size: 12px;
+    padding: 6px 14px;
+}
+
+.rol-garden-canvas {
+    position: relative;
+    /* ❂ flex:1 在动态父容器里高度不固定 → 换成明确高度才能让 overflow:hidden 生效 */
+    width: 100%;
+    height: 280px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    background: linear-gradient(160deg, rgba(255, 220, 235, 0.45) 0%, rgba(255, 240, 248, 0.3) 100%);
+    border: 1px solid rgba(255, 182, 215, 0.3);
+}
+
+/* ┣━━ 果子单颗 ━━┫ */
+.rol-fruit-item {
+    position: absolute;
+    font-size: 28px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease;
+    filter: drop-shadow(0 2px 4px rgba(180, 80, 120, 0.2));
+    animation: rol-fruit-drop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.rol-fruit-item:hover {
+    transform: scale(1.2) rotate(10deg) !important;
+    filter: drop-shadow(0 4px 8px rgba(180, 80, 120, 0.35));
+    z-index: 10;
+}
+
+.rol-fruit-item.rol-fruit-unread {
+    animation: rol-fruit-drop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+               rol-fruit-float 2s ease-in-out infinite;
+}
+
+@keyframes rol-fruit-float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-6px); }
+}
+
+/* ┣━━ 果子丢出飞行动画 ━━┫ */
+.rol-fruit-flying {
+    position: fixed;
+    pointer-events: none;
+    font-size: 28px;
+    z-index: 99999;
+    animation: rol-fruit-fly 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    transform-origin: center;
+}
+
+@keyframes rol-fruit-fly {
+    0%   { opacity: 1; transform: rotate(0deg) scale(1); }
+    50%  { opacity: 1; transform: rotate(180deg) scale(1.1); }
+    85%  { opacity: 1; transform: rotate(330deg) scale(0.9); }
+    100% { opacity: 0; transform: rotate(360deg) scale(0.6); }
+}
+
+/* ┣━━ 头像震动 ━━┫ */
+@keyframes rol-avatar-shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-3px) rotate(-2deg); }
+    40%      { transform: translateX(3px) rotate(2deg); }
+    60%      { transform: translateX(-2px); }
+    80%      { transform: translateX(2px); }
+}
+
+.rol-avatar-shaking img {
+    animation: rol-avatar-shake 0.35s ease both;
+}
+
+/* ┣━━ 果子选择浮层 ━━┫ */
+.rol-fruit-picker-panel {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    max-width: 96vw;
+    background: rgba(255, 248, 252, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 20px 20px 0 0;
+    border: 1px solid rgba(255, 182, 215, 0.4);
+    border-bottom: none;
+    box-shadow: 0 -8px 32px rgba(200, 80, 130, 0.12);
+    z-index: 9100;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: rol-picker-slide-up 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes rol-picker-slide-up {
+    from { transform: translateX(-50%) translateY(100%); opacity: 0.5; }
+    to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
+}
+
+.rol-fruit-picker-inner {
+    padding: 16px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rol-fruit-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rol-fruit-picker-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--rol-accent, rgb(219, 112, 147));
+}
+
+/* ┣━━ 横向滑动选果轨道 ━━┫ */
+.rol-fruit-picker-scroll-wrap {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x mandatory;
+    /* 两侧 padding 让首尾元素能滑到中心 */
+    padding: 8px 40%;
+    margin: 0 -18px;
+}
+
+.rol-fruit-picker-scroll-wrap::-webkit-scrollbar { display: none; }
+
+.rol-fruit-picker-track {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.rol-fruit-option {
+    flex-shrink: 0;
+    font-size: 32px;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    scroll-snap-align: center;
+    opacity: 0.35;
+    transform: scale(0.75);
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.rol-fruit-option.rol-selected {
+    opacity: 1;
+    transform: scale(1.25);
+    background: rgba(255, 182, 215, 0.25);
+    box-shadow: 0 0 0 3px rgba(219, 112, 147, 0.25);
+}
+
+/* ┣━━ 丢果子按钮区 ━━┫ */
+.rol-fruit-picker-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* ┣━━ 果子详情弹窗 ━━┫ */
+.rol-fruit-detail-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 9200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(180, 80, 120, 0.12);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: rol-fadein 0.2s ease both;
+}
+
+.rol-fruit-detail-inner {
+    position: relative;
+    background: rgba(255, 248, 252, 0.98);
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    max-width: 300px;
+    width: 88vw;
+    box-shadow: 0 8px 40px rgba(200, 80, 130, 0.18);
+    border: 1px solid rgba(255, 182, 215, 0.4);
+    text-align: center;
+    animation: rol-popup-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes rol-popup-in {
+    from { transform: scale(0.7) translateY(20px); opacity: 0; }
+    to   { transform: scale(1) translateY(0);      opacity: 1; }
+}
+
+.rol-fruit-detail-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 13px;
+    color: rgba(180, 80, 120, 0.5);
+    padding: 4px 8px;
+}
+
+.rol-fruit-detail-emoji {
+    font-size: 56px;
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 8px rgba(180, 80, 120, 0.2));
+}
+
+.rol-fruit-detail-from {
+    font-size: 12px;
+    color: rgba(180, 80, 120, 0.6);
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.rol-fruit-detail-note {
+    font-size: 14px;
+    color: var(--rol-text, rgb(80, 60, 70));
+    line-height: 1.7;
+    min-height: 20px;
+    margin-bottom: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.rol-fruit-detail-time {
+    font-size: 11px;
+    color: rgba(180, 80, 120, 0.4);
+}
+
+/* ╚┅┅/ 🍎果子系统 /┅┅═╝ */
