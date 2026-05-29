@@ -172,11 +172,8 @@ const Storage = (() => {
 const Trigger = (() => {
     const cooldownMap = new Map();  // 记录每颗恋果上次触发的轮数
     const COOLDOWN = 5;             // 冷却轮数
-let globalLastTriggerTurn = -999;
-const GLOBAL_COOLDOWN = 8;
 
     function detectTriggers(messageText, currentTurn) {
-    if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
         const memories = Storage.getMemories();
         const matched = [];
         for (const memory of memories) {
@@ -202,9 +199,6 @@ const GLOBAL_COOLDOWN = 8;
                 if (isMatch) {
                     matched.push(memory);
                     cooldownMap.set(memory.id, currentTurn);  // ▸ 🩷记录触发轮数
-
-        globalLastTriggerTurn = currentTurn;  // ▸ 命中则更新冷却
-                       }
                     break;
                 }
             }
@@ -239,10 +233,7 @@ function buildInjectionText(memories) {
             if (!config.autoInject) return;
             const chat = context.chat;
             if (!chat || !chat[msgIndex]) return;
-            const msg = chat[msgIndex];
-            // ▸ 只扫描 user 和 assistant 消息，跳过系统注入内容
-            if (msg.is_system) return;
-            const matched = detectTriggers(msg.mes, msgIndex);
+            const matched = detectTriggers(chat[msgIndex].mes, msgIndex);
             if (matched.length > 0) {
                 const selected = selectForInjection(matched);
                 const injectionText = buildInjectionText(selected);
@@ -259,8 +250,6 @@ function buildInjectionText(memories) {
         const recent = chat.slice(-count);
         const allMatched = new Map();
         for (const msg of recent) {
-            // ▸ 只扫描 user 和 assistant 消息，跳过系统注入内容
-            if (msg.is_system) continue;
             const matched = detectTriggers(msg.mes || '');
             for (const mem of matched) allMatched.set(mem.id, mem);
         }
@@ -629,16 +618,11 @@ const AIService = (() => {
         }
     }
 
-controller
-let rolAbortController = null;
-
     async function generateWithPreset(prompt) {
         const config = Storage.getConfig();
         const targetPreset = config.presetName;
         let originalPreset = '';
 
-controller
-    rolAbortController = new AbortController();
         try {
             if (targetPreset) {
                 originalPreset = getCurrentPresetName();
@@ -649,7 +633,6 @@ controller
             const result = await executeSlashCommandsWithOptions('/gen ' + prompt, {
                 handleExecutionErrors: true,
                 handleParserErrors: true
-                abortController: rolAbortController
             });
 
             return result?.pipe || '';
@@ -657,7 +640,6 @@ controller
             console.error('[RingOurLuv] 🥀 酿造失败...:', e);
             return '';
         } finally {
-        rolAbortController = null;
             if (originalPreset && targetPreset) {
                 console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
                 await switchPreset(originalPreset);
@@ -936,7 +918,7 @@ function renderFruitGarden(fruits) {
             card.dataset.id = mem.id;
 
             const authorLabel = mem.author === 'kairin' ? 'Rinn' : 'Claude';
-            const authorClass = mem.author === 'kairin' ? 'rol-author-3rin' : 'rol-author-claude';
+            const authorClass = mem.author === 'kairin' ? 'rol-author-kairin' : 'rol-author-claude';
             const displayDate = mem.date || '';
             const displaySummary = mem.summary || mem.content || '';
 
@@ -1010,10 +992,9 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
     }
 });
 
-            card.querySelector('.rol-btn-delete').addEventListener('click', async (e) => {
+            card.querySelector('.rol-btn-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
-                const yes = await rolConfirm('🍂', '确定净化这颗恋果嘛？', '净化', '留着吧');
-                if (yes) {
+                if (confirm('🍂确定净化这颗恋果嘛？')) {
                     Storage.deleteMemory(mem.id);
                     // ┣━━同步删除世界书条目━━┫
                     WorldBook.deleteEntry(mem.id).then(ok => {
@@ -1331,16 +1312,17 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const pasteConfirm = document.getElementById('rol-ai-paste-confirm');
         const cancelBtn = document.getElementById('rol-ai-source-cancel');
         const loading = document.getElementById('rol-ai-loading');
-const rolStopBtn = document.querySelector('#rol-stop-gen');
-if (rolStopBtn) {
-  rolStopBtn.addEventListener('click', () => {
-    if (rolAbortController) {
-      rolAbortController.abort();
-      console.log('[RingOurLuv] 🛑 手动停止');
-    }
-    rolStopBtn.style.display = 'none';
-  });
-}
+        const rolStopBtn = document.querySelector('#rol-stop-gen');
+             if (rolStopBtn) {
+              rolStopBtn.addEventListener('click', () => {
+              const stStop = document.querySelector('#mes_stop');
+  if (stStop && !stStop.disabled) stStop.click();
+  if (typeof stopGeneration === 'function') stopGeneration();
+  if (typeof abortController !== 'undefined' && abortController) {
+    abortController.abort();
+  }
+  rolStopBtn.style.display = 'none';
+});
        }
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
@@ -1411,7 +1393,6 @@ if (rolStopBtn) {
         const contextText = messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
 
         if (loading) loading.style.display = 'flex';
-        if (rolStopBtn) rolStopBtn.style.display = 'block';
 
         const config = Storage.getConfig();
         const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
@@ -1455,7 +1436,6 @@ if (rolStopBtn) {
         const loading = document.getElementById('rol-ai-loading');
 
         if (loading) loading.style.display = 'flex';
-        if (rolStopBtn) rolStopBtn.style.display = 'block';
         const config = Storage.getConfig();
         const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
@@ -1591,7 +1571,7 @@ if (rolStopBtn) {
                 e.preventDefault();
                 document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
             });
-            toolbar.append(btn);
+            toolbar.prepend(btn);
         });
     }
 
@@ -1608,343 +1588,10 @@ if (rolStopBtn) {
             e.stopPropagation();
             document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
         });
-        anchor.parentElement?.anchor.parentElement?.appendChild(btn);
+        anchor.parentElement?.insertBefore(btn, anchor.nextSibling);
     }
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
-})();
-
-// ┣━━╔═══════════════════════════════════════════════════════╗
-// ┣━━┅                  🍎 果子系统 FruitSystem 🍎            ┅
-// ┣━━╚═══════════════════════════════════════════════════════╝
-const FruitSystem = (() => {
-    // ┣━━ Storage helpers ━━┫
-    function loadFruits() {
-        return JSON.parse(localStorage.getItem('rol_fruits') || '[]');
-    }
-    function saveFruits(arr) {
-        localStorage.setItem('rol_fruits', JSON.stringify(arr));
-    }
-
-    // ┣━━ Badge update ━━┫
-    function updateBadge() {
-        const unread = loadFruits().filter(f => !f.read && f.from === 'claude').length;
-        const badge = document.getElementById('rol-garden-badge');
-        if (!badge) return;
-        if (unread > 0) {
-            badge.textContent = unread;
-            badge.style.display = 'inline-flex';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-
-    // ┣━━ Garden render ━━┫
-    function renderGarden() {
-        const canvas = document.getElementById('rol-garden-canvas');
-        if (!canvas) return;
-        canvas.innerHTML = '';
-        const fruits = loadFruits();
-        if (fruits.length === 0) {
-            canvas.innerHTML = '<div class="rol-garden-empty">还没有果子～扔一颗过来吧 🌱</div>';
-            return;
-        }
-        fruits.forEach((fruit, i) => {
-            const el = document.createElement('div');
-            el.className = 'rol-fruit-item' + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '');
-            el.textContent = fruit.emoji;
-            el.style.left = (8 + ((i * 17.3 + Math.sin(i) * 11) % 78)) + '%';
-            el.style.top = (8 + ((i * 13.7 + Math.cos(i) * 9) % 72)) + '%';
-            el.style.animationDelay = (i * 0.08 + (i % 4) * 0.15) + 's';
-            el.style.transform = `rotate(${((i * 7.3) % 20 - 10).toFixed(1)}deg)`;
-            el.addEventListener('click', () => showDetail(fruit));
-            canvas.appendChild(el);
-        });
-    }
-
-    // ┣━━ Fruit detail popup ━━┫
-    function showDetail(fruit) {
-        // mark read
-        const fruits = loadFruits();
-        const idx = fruits.findIndex(f => f.id === fruit.id);
-        if (idx !== -1 && !fruits[idx].read) {
-            fruits[idx].read = true;
-            saveFruits(fruits);
-            updateBadge();
-        }
-        // populate popup
-        document.getElementById('rol-fruit-detail-emoji').textContent = fruit.emoji;
-        document.getElementById('rol-fruit-detail-from').textContent =
-            fruit.from === 'claude' ? '🧡 来自 Claude' : '🩷 来自 Rinn';
-        document.getElementById('rol-fruit-detail-note').textContent =
-            fruit.message || '（没有附纸条）';
-        document.getElementById('rol-fruit-detail-time').textContent =
-            new Date(fruit.timestamp).toLocaleString('zh-CN');
-        const popup = document.getElementById('rol-fruit-detail-popup');
-        if (popup) popup.style.display = 'flex';
-    }
-
-    // ┣━━ Fruit picker scroll sync ━━┫
-    function initPickerScroll() {
-        const wrap = document.querySelector('.rol-fruit-picker-scroll-wrap');
-        const track = document.getElementById('rol-fruit-picker-track');
-        if (!wrap || !track) return;
-
-        function syncSelected() {
-            const wrapCenter = wrap.getBoundingClientRect().left + wrap.offsetWidth / 2;
-            let closest = null, minDist = Infinity;
-            track.querySelectorAll('.rol-fruit-option').forEach(opt => {
-                const r = opt.getBoundingClientRect();
-                const center = r.left + r.width / 2;
-                const dist = Math.abs(center - wrapCenter);
-                const ratio = Math.max(0, 1 - dist / (wrap.offsetWidth * 0.4));
-                opt.style.opacity = (0.3 + ratio * 0.7).toFixed(2);
-                opt.style.transform = `scale(${(0.75 + ratio * 0.55).toFixed(2)})`;
-                if (dist < minDist) { minDist = dist; closest = opt; }
-            });
-            track.querySelectorAll('.rol-fruit-option').forEach(o => o.classList.remove('rol-selected'));
-            if (closest) closest.classList.add('rol-selected');
-        }
-
-        wrap.addEventListener('scroll', syncSelected, { passive: true });
-        track.querySelectorAll('.rol-fruit-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                opt.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            });
-        });
-        // initial select first
-        setTimeout(() => {
-            const first = track.querySelector('.rol-fruit-option');
-            if (first) first.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
-            syncSelected();
-        }, 50);
-    }
-
-    // ┣━━ Show / hide picker ━━┫
-    function showPicker() {
-        const panel = document.getElementById('rol-fruit-picker-panel');
-        if (!panel) return;
-        const noteEl = document.getElementById('rol-fruit-note');
-        if (noteEl) noteEl.value = '';
-        panel.style.display = 'block';
-        // re-init scroll each time picker opens
-        setTimeout(initPickerScroll, 80);
-    }
-
-    function hidePicker() {
-        const panel = document.getElementById('rol-fruit-picker-panel');
-        if (panel) panel.style.display = 'none';
-    }
-
-    // ┣━━ Throw animation ━━┫
-    function throwAnimation(emoji, onComplete) {
-        const selected = document.querySelector('.rol-fruit-option.rol-selected');
-        const startEl = selected || document.getElementById('rol-throw-fruit-btn');
-        if (!startEl) { onComplete && onComplete(); return; }
-        const startRect = startEl.getBoundingClientRect();
-
-        // 寻找最后一条 AI 消息的头像
-        const avatars = document.querySelectorAll(
-            '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
-        );
-        if (avatars.length) {
-            const last = avatars[avatars.length - 1];
-            last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            setTimeout(() => {
-                const targetRect = last.getBoundingClientRect();
-                doFly(emoji, startRect, targetRect, last, onComplete);
-            }, 450);
-        } else {
-            // 没有 AI 消息就飞向屏幕中心
-            const targetRect = {
-                left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0
-            };
-            doFly(emoji, startRect, targetRect, null, onComplete);
-        }
-    }
-
-    function doFly(emoji, startRect, targetRect, targetEl, onComplete) {
-        const fly = document.createElement('div');
-        fly.className = 'rol-fruit-flying';
-        fly.textContent = emoji;
-        const sx = startRect.left + startRect.width / 2;
-        const sy = startRect.top + startRect.height / 2;
-        const ex = targetRect.left + targetRect.width / 2;
-        const ey = targetRect.top + targetRect.height / 2;
-        fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
-        document.body.appendChild(fly);
-        const dur = 650;
-        const start = performance.now();
-        const peakOffset = -(80 + (Math.sin(Date.now()) * 20 + 20));
-
-        function frame(now) {
-            const t = Math.min((now - start) / dur, 1);
-            const x = sx + (ex - sx) * t;
-            const parabola = 4 * t * (1 - t) * peakOffset;
-            const y = sy + (ey - sy) * t + parabola;
-            fly.style.left = x + 'px';
-            fly.style.top = y + 'px';
-            fly.style.transform = `rotate(${t * 360}deg) scale(${1 + Math.sin(t * Math.PI) * 0.15})`;
-            fly.style.opacity = t < 0.85 ? '1' : String((1 - (t - 0.85) / 0.15).toFixed(2));
-            if (t < 1) {
-                requestAnimationFrame(frame);
-            } else {
-                fly.remove();
-                if (targetEl) {
-                    const avatarWrap = targetEl.closest('.avatar') || targetEl.parentElement;
-                    if (avatarWrap) {
-                        avatarWrap.classList.add('rol-avatar-shaking');
-                        setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
-                    }
-                }
-                onComplete && onComplete();
-            }
-        }
-        requestAnimationFrame(frame);
-    }
-
-    // ┣━━ Save & throw ━━┫
-    function doThrow() {
-        const selected = document.querySelector('.rol-fruit-option.rol-selected');
-        if (!selected) {
-            UIController.showToast('先选一颗果子嘛 👀');
-            return;
-        }
-        const emoji = selected.dataset.emoji;
-        const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
-        const msgCount = ($('#chat .mes').length) || 0;
-        const fruit = {
-            id: 'fruit_' + Date.now(),
-            emoji,
-            from: 'user',
-            to: 'claude',
-            message,
-            timestamp: Date.now(),
-            read: false,
-            delivered: false,
-            deliverAt: msgCount + Math.floor(Math.random() * 30) + 5
-        };
-        const fruits = loadFruits();
-        fruits.push(fruit);
-        saveFruits(fruits);
-        hidePicker();
-        throwAnimation(emoji, () => {
-            UIController.showToast(`果子丢出去啦 ${emoji}`);
-            renderGarden();
-        });
-    }
-
-    // ┣━━ AI fruit block parser ━━┫
-    function parseAIFruit(text) {
-        const re = /```fruit\s*\n([\s\S]*?)```/g;
-        let match;
-        const found = [];
-        while ((match = re.exec(text)) !== null) {
-            const block = match[1];
-            const emojiMatch = block.match(/emoji\s*[:：]\s*(\S+)/);
-            const noteMatch = block.match(/note\s*[:：]\s*(.+)/);
-            if (emojiMatch) {
-                found.push({
-                    emoji: emojiMatch[1].trim(),
-                    message: noteMatch ? noteMatch[1].trim() : ''
-                });
-            }
-        }
-        return found;
-    }
-
-    function ingestAIFruits(rawText) {
-        const parsed = parseAIFruit(rawText);
-        if (!parsed.length) return false;
-        const fruits = loadFruits();
-        parsed.forEach(p => {
-            fruits.push({
-                id: 'fruit_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-                emoji: p.emoji,
-                from: 'claude',
-                to: 'user',
-                message: p.message,
-                timestamp: Date.now(),
-                read: false,
-                delivered: true
-            });
-        });
-        saveFruits(fruits);
-        updateBadge();
-        renderGarden();
-        return true;
-    }
-
-    // ┣━━ Delayed delivery check ━━┫
-    function checkDelivery() {
-        const msgCount = $('#chat .mes').length || 0;
-        const fruits = loadFruits();
-        let changed = false;
-        fruits.forEach(f => {
-            if (f.from === 'user' && !f.delivered && f.deliverAt <= msgCount) {
-                f.delivered = true;
-                changed = true;
-                const note = f.message ? `（附言：${f.message}）` : '';
-                const sysMsg = `[系统] Rinn偷偷丢来了一颗 ${f.emoji}${note}`;
-                if (typeof window.sendSystemMessage === 'function') {
-                    window.sendSystemMessage(sysMsg);
-                }
-                console.log(`[RingOurLuv] 🍎 果子投递：${sysMsg}`);
-            }
-        });
-        if (changed) saveFruits(fruits);
-    }
-
-    // ┣━━ Event bindings ━━┫
-    function bindEvents() {
-        // 果园 tab → render
-        $(document).on('click', '#rol-tab-garden', () => {
-            setTimeout(renderGarden, 50);
-        });
-
-        // 丢果子按钮（果园页面里的）
-        $(document).on('click', '#rol-throw-fruit-btn', showPicker);
-
-        // picker 关闭按钮
-        $(document).on('click', '#rol-fruit-picker-close, #rol-fruit-cancel-btn', hidePicker);
-
-        // 确认丢出
-        $(document).on('click', '#rol-fruit-throw-btn', doThrow);
-
-        // 详情弹窗关闭
-        $(document).on('click', '#rol-fruit-detail-close', () => {
-            const popup = document.getElementById('rol-fruit-detail-popup');
-            if (popup) popup.style.display = 'none';
-        });
-
-        // 点详情弹窗背景也关
-        $(document).on('click', '#rol-fruit-detail-popup', (e) => {
-            if (e.target.id === 'rol-fruit-detail-popup') {
-                e.target.style.display = 'none';
-            }
-        });
-
-        // 监听 ST 消息生成完成 → check delivery + parse AI fruits
-        $(document).on('rolMessageComplete', (e, data) => {
-            checkDelivery();
-            if (data && data.text) ingestAIFruits(data.text);
-        });
-
-        // MutationObserver 监听消息数量变化（延迟投递）
-        const chatEl = document.getElementById('chat');
-        if (chatEl) {
-            const obs = new MutationObserver(() => checkDelivery());
-            obs.observe(chatEl, { childList: true });
-        }
-    }
-
-    function init() {
-        bindEvents();
-        updateBadge();
-        console.log('[RingOurLuv] 🍎 FruitSystem 已就绪');
-    }
-
-    return { init, renderGarden, updateBadge, ingestAIFruits, showDetail };
 })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
@@ -1993,16 +1640,9 @@ jQuery(async () => {
         // ┣━━🩷确认弹窗也挂到body━━┫
         const confirmModal = temp.querySelector('#rol-confirm-modal');
         if (confirmModal) document.body.appendChild(confirmModal);
-
-        // ┣━━🍎果子 picker 面板 + 详情弹窗也挂到body━━┫
-        const fruitPickerPanel = temp.querySelector('#rol-fruit-picker-panel');
-        const fruitDetailPopup = temp.querySelector('#rol-fruit-detail-popup');
-        if (fruitPickerPanel) document.body.appendChild(fruitPickerPanel);
-        if (fruitDetailPopup) document.body.appendChild(fruitDetailPopup);
     }
 
     UIController.initUI();
-    FruitSystem.init();
     Trigger.setupTriggerListener(injectMemoryToContext);
     const context = getContext();
     if (context.eventSource) {
