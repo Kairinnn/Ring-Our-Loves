@@ -187,28 +187,25 @@ const GLOBAL_COOLDOWN = 8;
             if (currentTurn - lastTurn < COOLDOWN) continue;
 
             for (const trigger of memory.triggers) {
-                if (!trigger) continue;
-                let isMatch = false;
-                if (trigger.startsWith('/') && trigger.endsWith('/')) {
-                    try {
-                        const regex = new RegExp(trigger.slice(1, -1), 'i');
-                        isMatch = regex.test(messageText);
-                    } catch (e) {
-                        isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
-                    }
-                } else {
-                    isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
-                }
-                if (isMatch) {
-                    matched.push(memory);
-                    cooldownMap.set(memory.id, currentTurn);  // ▸ 🩷记录触发轮数
-
-        globalLastTriggerTurn = currentTurn;  // ▸ 命中则更新冷却
-                       }
-                    break;
-                }
-            }
+    if (!trigger) continue;
+    let isMatch = false;
+    if (trigger.startsWith('/') && trigger.endsWith('/')) {
+        try {
+            const regex = new RegExp(trigger.slice(1, -1), 'i');
+            isMatch = regex.test(messageText);
+        } catch (e) {
+            isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
         }
+    } else {
+        isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
+    }
+    if (isMatch) {
+        matched.push(memory);
+        cooldownMap.set(memory.id, currentTurn);
+        globalLastTriggerTurn = currentTurn;
+        break;
+           }
+       }
         return matched;
     }
 
