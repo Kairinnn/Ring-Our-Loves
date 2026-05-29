@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.3.1'; // 每次改完代码手动+1
+const ROL_VERSION = '0.3.3'; // 每次改完代码手动+1
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
   location.reload(true); // 强制刷新
@@ -176,13 +176,12 @@ let globalLastTriggerTurn = -999;
 const GLOBAL_COOLDOWN = 8;
 
     function detectTriggers(messageText, currentTurn) {
-    if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
+        if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
         const memories = Storage.getMemories();
         const matched = [];
         for (const memory of memories) {
             if (!memory.enabled) continue;
 
-            // ▸ 🩷冷却检查
             const lastTurn = cooldownMap.get(memory.id) || -999;
             if (currentTurn - lastTurn < COOLDOWN) continue;
 
@@ -201,10 +200,8 @@ const GLOBAL_COOLDOWN = 8;
                 }
                 if (isMatch) {
                     matched.push(memory);
-                    cooldownMap.set(memory.id, currentTurn);  // ▸ 🩷记录触发轮数
-
-        globalLastTriggerTurn = currentTurn;  // ▸ 命中则更新冷却
-                       }
+                    cooldownMap.set(memory.id, currentTurn);
+                    globalLastTriggerTurn = currentTurn;
                     break;
                 }
             }
@@ -629,7 +626,6 @@ const AIService = (() => {
         }
     }
 
-controller
 let rolAbortController = null;
 
     async function generateWithPreset(prompt) {
@@ -637,7 +633,6 @@ let rolAbortController = null;
         const targetPreset = config.presetName;
         let originalPreset = '';
 
-controller
     rolAbortController = new AbortController();
         try {
             if (targetPreset) {
@@ -648,7 +643,7 @@ controller
 
             const result = await executeSlashCommandsWithOptions('/gen ' + prompt, {
                 handleExecutionErrors: true,
-                handleParserErrors: true
+                handleParserErrors: true,
                 abortController: rolAbortController
             });
 
@@ -729,7 +724,7 @@ if (!raw) return null;
         }).join('\n');
 
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).replace('{{context}}', contextText);
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
         const parsed = parseAIOutput(raw);
@@ -1341,7 +1336,6 @@ if (rolStopBtn) {
     rolStopBtn.style.display = 'none';
   });
 }
-       }
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
             if (sourcePanel) { sourcePanel.classList.add('rol-active'); if (pasteArea) pasteArea.style.display = 'none'; }
@@ -1414,7 +1408,7 @@ if (rolStopBtn) {
         if (rolStopBtn) rolStopBtn.style.display = 'block';
 
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
@@ -1457,7 +1451,7 @@ if (rolStopBtn) {
         if (loading) loading.style.display = 'flex';
         if (rolStopBtn) rolStopBtn.style.display = 'block';
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
@@ -1608,7 +1602,7 @@ if (rolStopBtn) {
             e.stopPropagation();
             document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
         });
-        anchor.parentElement?.anchor.parentElement?.appendChild(btn);
+        anchor.parentElement?.appendChild(btn);
     }
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
