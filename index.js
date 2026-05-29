@@ -176,36 +176,36 @@ let globalLastTriggerTurn = -999;
 const GLOBAL_COOLDOWN = 8;
 
     function detectTriggers(messageText, currentTurn) {
-    if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
+        if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
         const memories = Storage.getMemories();
         const matched = [];
         for (const memory of memories) {
             if (!memory.enabled) continue;
 
-            // ▸ 🩷冷却检查
             const lastTurn = cooldownMap.get(memory.id) || -999;
             if (currentTurn - lastTurn < COOLDOWN) continue;
 
             for (const trigger of memory.triggers) {
-    if (!trigger) continue;
-    let isMatch = false;
-    if (trigger.startsWith('/') && trigger.endsWith('/')) {
-        try {
-            const regex = new RegExp(trigger.slice(1, -1), 'i');
-            isMatch = regex.test(messageText);
-        } catch (e) {
-            isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
+                if (!trigger) continue;
+                let isMatch = false;
+                if (trigger.startsWith('/') && trigger.endsWith('/')) {
+                    try {
+                        const regex = new RegExp(trigger.slice(1, -1), 'i');
+                        isMatch = regex.test(messageText);
+                    } catch (e) {
+                        isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
+                    }
+                } else {
+                    isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
+                }
+                if (isMatch) {
+                    matched.push(memory);
+                    cooldownMap.set(memory.id, currentTurn);
+                    globalLastTriggerTurn = currentTurn;
+                    break;
+                }
+            }
         }
-    } else {
-        isMatch = messageText.toLowerCase().includes(trigger.toLowerCase());
-    }
-    if (isMatch) {
-        matched.push(memory);
-        cooldownMap.set(memory.id, currentTurn);
-        globalLastTriggerTurn = currentTurn;
-        break;
-           }
-       }
         return matched;
     }
 
@@ -724,7 +724,7 @@ if (!raw) return null;
         }).join('\n');
 
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).replace('{{context}}', contextText);
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
         const parsed = parseAIOutput(raw);
@@ -1408,7 +1408,7 @@ if (rolStopBtn) {
         if (rolStopBtn) rolStopBtn.style.display = 'block';
 
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
@@ -1451,7 +1451,7 @@ if (rolStopBtn) {
         if (loading) loading.style.display = 'flex';
         if (rolStopBtn) rolStopBtn.style.display = 'block';
         const config = Storage.getConfig();
-        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).        replace('{{context}}', contextText);
+        const prompt = (config.summaryPrompt || AIService.DEFAULT_MEMORY_PROMPT).replace('{{context}}', contextText);
         const raw = await AIService.generateWithPreset(prompt);
         if (loading) loading.style.display = 'none';
         if (rolStopBtn) rolStopBtn.style.display = 'none';
