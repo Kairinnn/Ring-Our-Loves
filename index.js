@@ -1619,7 +1619,7 @@ if (rolStopBtn) {
                 e.preventDefault();
                 document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
             });
-            toolbar.appendChild(btn);
+            toolbar.append(btn);
         });
     }
 
