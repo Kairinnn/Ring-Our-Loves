@@ -1627,6 +1627,10 @@ if (rolStopBtn) {
         const anchor = document.getElementById('extensionsMenuButton');
         if (!anchor || document.getElementById('rol-input-btn')) return;
         const btn = document.createElement('div');
+         const textarea = document.getElementById('send_textarea');
+        if (textarea && textarea.parentElement) {
+        textarea.parentElement.insertBefore(btn, textarea);
+       }
         btn.id = 'rol-input-btn';
         btn.className = 'list-group-item flex-container flexGap5';
         btn.title = '恋果温室';
@@ -1636,11 +1640,6 @@ if (rolStopBtn) {
             e.stopPropagation();
             document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
         });
-        const textarea = document.getElementById('send_textarea');
-        if (textarea && textarea.parentElement) {
-        textarea.parentElement.insertBefore(btn, textarea);
-   }
-
     }
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
