@@ -858,7 +858,7 @@ function startCounter() {
         const presetSelect = document.getElementById('rol-preset-select');
         const summaryPromptArea = document.getElementById('rol-summary-prompt');
 
-        updateDayCount();
+        updateDayCounter();
 
         if (autoInjectToggle) {
             autoInjectToggle.checked = config.autoInject !== false;
@@ -1762,13 +1762,17 @@ const FruitSystem = (() => {
         const noteEl = document.getElementById('rol-fruit-note');
         if (noteEl) noteEl.value = '';
         panel.style.display = 'block';
+        panel.classList.add('rol-picker-animating');
         // re-init scroll each time picker opens
         setTimeout(initPickerScroll, 80);
     }
 
     function hidePicker() {
         const panel = document.getElementById('rol-fruit-picker-panel');
-        if (panel) panel.style.display = 'none';
+        if (panel) {
+            panel.classList.remove('rol-picker-animating');
+            panel.style.display = 'none';
+        }
     }
 
     // ┣━━ Throw animation ━━┫
@@ -1871,7 +1875,7 @@ const FruitSystem = (() => {
         }
 
         throwAnimation(emoji, () => {
-        hidePicker();  // 动画结束后才真正关掉
+        hidePicker();
         if (pickerPanel) {
         pickerPanel.style.opacity = '';
         pickerPanel.style.pointerEvents = '';
@@ -2008,7 +2012,7 @@ function injectMemoryToContext(memories, injectionText) {
 }
 
 async function loadPanel() {
-    const response = await fetch(`${extensionFolderPath}/index.html`);
+    const response = await fetch(`${extensionFolderPath}/index.html?v=${ROL_VERSION}`);
     if (!response.ok) return '';
     return await response.text();
 }
