@@ -177,6 +177,7 @@ let globalLastTriggerTurn = -999;
 const GLOBAL_COOLDOWN = 8;
 
     function detectTriggers(messageText, currentTurn) {
+        console.log('[RingOurLuv] 🩷 冷却检查:', { currentTurn, globalLastTriggerTurn, diff: currentTurn - globalLastTriggerTurn });
         if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
         const memories = Storage.getMemories();
         const matched = [];
@@ -1608,7 +1609,7 @@ if (rolStopBtn) {
                 e.preventDefault();
                 document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
             });
-            toolbar.prepend(btn);
+            toolbar.append(btn);
         });
     }
 
