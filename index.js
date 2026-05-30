@@ -1624,24 +1624,27 @@ if (rolStopBtn) {
     }
 
     function _injectInputBtn() {
-        const anchor = document.getElementById('extensionsMenuButton');
-        if (!anchor || document.getElementById('rol-input-btn')) return;
-        const btn = document.createElement('div');
-         const textarea = document.getElementById('send_textarea');
-        if (textarea && textarea.parentElement) {
+    const anchor = document.getElementById('extensionsMenuButton');
+    if (!anchor || document.getElementById('rol-input-btn')) return;
+    const btn = document.createElement('div');
+    btn.id = 'rol-input-btn';
+    btn.className = 'list-group-item flex-container flexGap5';
+    btn.title = '恋果温室';
+    btn.textContent = '🌳';
+    btn.style.cssText = 'cursor:pointer;font-size:17px;padding:2px 5px;';
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('rol-drawer-overlay')?.classList.add
+            ('rol-drawer-open');
+    });
+
+    const textarea = document.getElementById('send_textarea');
+    if (textarea && textarea.parentElement) {
         textarea.parentElement.insertBefore(btn, textarea);
-       }
-    } 
-        btn.id = 'rol-input-btn';
-        btn.className = 'list-group-item flex-container flexGap5';
-        btn.title = '恋果温室';
-        btn.textContent = '🌳';
-        btn.style.cssText = 'cursor:pointer;font-size:17px;padding:2px 5px;';
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
-        });
+    } else {
+        anchor.parentElement?.appendChild(btn);
     }
+}
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
 })();
