@@ -1631,6 +1631,7 @@ if (rolStopBtn) {
         if (textarea && textarea.parentElement) {
         textarea.parentElement.insertBefore(btn, textarea);
        }
+    } 
         btn.id = 'rol-input-btn';
         btn.className = 'list-group-item flex-container flexGap5';
         btn.title = '恋果温室';
