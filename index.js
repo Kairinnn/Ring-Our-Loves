@@ -371,6 +371,7 @@ function buildWiEntry(uid, memory, existingEntry = null) {
             content: memory.summary || '',           // ┣🩷摘要 → 注入上下文┫
             comment: memory.letter || memory.content || '',  // ┣🩷完整正文 → 仅管理界面可见┫
             constant: false,
+            cooldown: 8,
             selective: false,
             selectiveLogic: 0,
             addMemo: true,
@@ -824,22 +825,31 @@ function renderFruitGarden(fruits) {
   });
 }
 // ┣━━ 🩷 天数计算 🩷 ━━┫
-  function updateDayCounter() {
-  const startDate = new Date('2026-04-14T00:17:00+08:00'); // 起始日
-  const today = new Date();
-  const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-  const counter = document.querySelector('.rol-day-number');
-  if (counter) counter.textContent = diff;
+  let counterInterval = null;
+
+function updateDayCounter() {
+    const startDate = new Date('2026-04-14T00:17:00+08:00');
+    const now = new Date();
+    const diff = now - startDate;
+
+    const days = Math.floor(diff / 86400000);
+    const hours = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+    const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+
+    const dayEl = document.querySelector('.rol-day-number');
+    if (dayEl) dayEl.textContent = days;
+
+    const timeEl = document.querySelector('.rol-counter-time');
+    if (timeEl) timeEl.textContent = `${hours}:${mins}:${secs}`;
 }
 
-    // ┣━━ 🩷 设置面板 🩷 ━━┫
-    function updateDayCount() {
-        const start = new Date('2026-04-14T00:17:00+08:00');
-        const now = new Date();
-        const days = Math.floor((now - start) / 86400000);
-        const el = document.getElementById('rol-day-count');
-        if (el) el.textContent = days;
+function startCounter() {
+    updateDayCounter();
+    if (!counterInterval) {
+        counterInterval = setInterval(updateDayCounter, 1000);
     }
+}
 
     function bindConfigPanel() {
         const config = Storage.getConfig();
@@ -1122,7 +1132,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const vs = document.getElementById('rol-letter-version');
         if (vs) {
             vs.innerHTML = '';
-            const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
+            const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重酿' };
             mem.versions.forEach((v, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
@@ -1219,7 +1229,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
     function openEditor(memId) {
         currentEditId = memId;
         const panel = document.getElementById('rol-editor-panel');
-        if (!panel) { console.error('[RingOurLuv] 🥀 找不到传入面板 #rol-editor-panel'); return; }
+        if (!panel) { console.error('[RingOurLuv] 🥀 找不到传入面板 #rol-editor-panel...'); return; }
         panel.classList.add('rol-active');
 
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
@@ -1252,7 +1262,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             const vs = document.getElementById('rol-version-select');
             if (vs) {
                 vs.innerHTML = '';
-                const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
+                const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重酿' };
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
@@ -1609,7 +1619,7 @@ if (rolStopBtn) {
                 e.preventDefault();
                 document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
             });
-            toolbar.append(btn);
+            toolbar.appendChild(btn);
         });
     }
 
@@ -1626,7 +1636,11 @@ if (rolStopBtn) {
             e.stopPropagation();
             document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
         });
-        anchor.parentElement?.appendChild(btn);
+        const textarea = document.getElementById('send_textarea');
+        if (textarea && textarea.parentElement) {
+        textarea.parentElement.insertBefore(btn, textarea);
+   }
+
     }
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
@@ -1791,9 +1805,9 @@ const FruitSystem = (() => {
         const ey = targetRect.top + targetRect.height / 2;
         fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
         document.body.appendChild(fly);
-        const dur = 650;
+        const dur = 1200;
         const start = performance.now();
-        const peakOffset = -(80 + (Math.sin(Date.now()) * 20 + 20));
+        const peakOffset = -(120 + (Math.sin(Date.now()) * 20 + 20));
 
         function frame(now) {
             const t = Math.min((now - start) / dur, 1);
@@ -1823,6 +1837,7 @@ const FruitSystem = (() => {
 
     // ┣━━ Save & throw ━━┫
     function doThrow() {
+        console.log('doThrow被调用了')
         const selected = document.querySelector('.rol-fruit-option.rol-selected');
         if (!selected) {
             UIController.showToast('先选一颗果子嘛 👀');
@@ -1845,8 +1860,20 @@ const FruitSystem = (() => {
         const fruits = loadFruits();
         fruits.push(fruit);
         saveFruits(fruits);
-        hidePicker();
+        const pickerPanel = document.getElementById('rol-fruit-picker-panel');
+        if (pickerPanel) {
+        pickerPanel.style.transition = 'opacity 0.3s';
+        pickerPanel.style.opacity = '0';
+        pickerPanel.style.pointerEvents = 'none';
+        }
+
         throwAnimation(emoji, () => {
+        hidePicker();  // 动画结束后才真正关掉
+        if (pickerPanel) {
+        pickerPanel.style.opacity = '';
+        pickerPanel.style.pointerEvents = '';
+        pickerPanel.style.transition = '';
+    }
             UIController.showToast(`果子丢出去啦 ${emoji}`);
             renderGarden();
         });
@@ -1987,14 +2014,14 @@ jQuery(async () => {
     Storage.initSettings();
     const panelHtml = await loadPanel();
     if (panelHtml) {
-        // ┣━━🩷将HTML解析，分离侧边栏部分和浮动面板部分━━┫
+        // ┣━━🩷将HTML解析，分离扩展插件本体部分和浮动面板部分━━┫
         const temp = document.createElement('div');
         temp.innerHTML = panelHtml;
 
-        // ┣━━侧边栏中只添加 extension_settings 部分（含打开按钮）━━┫
-        const extSettings = temp.querySelector('.extension_settings');
-        if (extSettings) {
-            $('#extensions_settings2').append(extSettings.outerHTML);
+        // ┣━━主面板部分（含打开按钮）━━┫
+        const mainPanel = temp.querySelector('.main_panel');
+        if (mainPanel) {
+            $('#main_panel').append(mainPanel.outerHTML);
         }
 
         // ┣━━浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body━━┫
