@@ -1712,6 +1712,14 @@ const FruitSystem = (() => {
             new Date(fruit.timestamp).toLocaleString('zh-CN');
         const popup = document.getElementById('rol-fruit-detail-popup');
         if (popup) popup.style.display = 'flex';
+        const closeBtn = popup.querySelector('.rol-popup-close, .close-btn, [class*="close"]');
+    if (closeBtn) {
+        closeBtn.onclick = () => { popup.style.display = 'none'; };
+    }
+    // 点背景也能关
+    popup.onclick = (e) => {
+        if (e.target === popup) popup.style.display = 'none';
+    };
     }
 
     // ┣━━ Fruit picker scroll sync ━━┫
@@ -1757,6 +1765,8 @@ const FruitSystem = (() => {
         const noteEl = document.getElementById('rol-fruit-note');
         if (noteEl) noteEl.value = '';
         panel.style.display = 'block';
+        panel.style.opacity = '1';
+        panel.style.pointerEvents = 'auto';
         // re-init scroll each time picker opens
         setTimeout(initPickerScroll, 80);
     }
