@@ -1585,7 +1585,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 .rol-fruit-detail-popup {
     position: fixed;
     inset: 0;
-    z-index: 9200;
+    z-index: 999999;
     display: flex;
     align-items: center;
     justify-content: center;

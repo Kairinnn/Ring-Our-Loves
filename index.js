@@ -759,7 +759,7 @@ const UIController = (() => {
         bindMobileNav();
         renderMemoryList();
         renderPresetOptions();
-        updateDayCounter();  // ┣━━🩷 天数注入！━━┫
+        startCounter();  // ┣━━🩷 天数注入！━━┫
         injectToolbarButtons(); // ┣━━🩷 劫持工具栏添加快捷入口━━┫
     }
 
@@ -1638,12 +1638,7 @@ if (rolStopBtn) {
             ('rol-drawer-open');
     });
 
-    const textarea = document.getElementById('send_textarea');
-    if (textarea && textarea.parentElement) {
-        textarea.parentElement.insertBefore(btn, textarea);
-    } else {
-        anchor.parentElement?.appendChild(btn);
-    }
+    anchor.parentElement.insertBefore(btn, anchor.nextSibling);
 }
 
     return { initUI, renderMemoryList, renderPresetOptions, showToast };
@@ -1762,17 +1757,13 @@ const FruitSystem = (() => {
         const noteEl = document.getElementById('rol-fruit-note');
         if (noteEl) noteEl.value = '';
         panel.style.display = 'block';
-        panel.classList.add('rol-picker-animating');
         // re-init scroll each time picker opens
         setTimeout(initPickerScroll, 80);
     }
 
     function hidePicker() {
         const panel = document.getElementById('rol-fruit-picker-panel');
-        if (panel) {
-            panel.classList.remove('rol-picker-animating');
-            panel.style.display = 'none';
-        }
+        if (panel) panel.style.display = 'none';
     }
 
     // ┣━━ Throw animation ━━┫
@@ -1867,20 +1858,13 @@ const FruitSystem = (() => {
         const fruits = loadFruits();
         fruits.push(fruit);
         saveFruits(fruits);
-        const pickerPanel = document.getElementById('rol-fruit-picker-panel');
-        if (pickerPanel) {
-        pickerPanel.style.transition = 'opacity 0.3s';
-        pickerPanel.style.opacity = '0';
-        pickerPanel.style.pointerEvents = 'none';
-        }
+
+        // ┣━━ 淡出 picker 面板 ━━┫
+        const pickerPanel = document.querySelector('.rol-fruit-picker-panel');
+        if (pickerPanel) pickerPanel.style.opacity = '0';
+        setTimeout(() => hidePicker(), 900);
 
         throwAnimation(emoji, () => {
-        hidePicker();
-        if (pickerPanel) {
-        pickerPanel.style.opacity = '';
-        pickerPanel.style.pointerEvents = '';
-        pickerPanel.style.transition = '';
-    }
             UIController.showToast(`果子丢出去啦 ${emoji}`);
             renderGarden();
         });
