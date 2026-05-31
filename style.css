@@ -218,12 +218,12 @@ body.rol-light-mode .rol-editor-panel {
     max-height: 82vh;
     /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
     background-color: #ffffff85;
-    background-image:
-        linear-gradient(
-            var(--SmartThemeChatTintColor, transparent),
-            var(--SmartThemeChatTintColor, transparent)
-        ),
-        url('https://i.postimg.cc/SRmYmwFB/heart.png');
+   background-image:
+    linear-gradient(
+        var(--SmartThemeChatTintColor, rgba(255,255,255,0.4)),
+        var(--SmartThemeChatTintColor, rgba(255,255,255,0.4))
+    ),
+    url("./assets/strawberry.jpg");
     background-size: auto, cover;
     background-position: center, center;
     background-blend-mode: normal, overlay;
