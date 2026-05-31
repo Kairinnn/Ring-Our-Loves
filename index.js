@@ -827,6 +827,8 @@ function renderFruitGarden(fruits) {
 // ┣━━ 🩷 天数计算 🩷 ━━┫
   let counterInterval = null;
 
+let _lastDayCount = -1; // ┣━━记录上一次的天数，用于触发翻页动画━━┫
+
 function updateDayCounter() {
     const startDate = new Date('2026-04-14T00:17:00+08:00');
     const now = new Date();
@@ -838,7 +840,17 @@ function updateDayCounter() {
     const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
 
     const dayEl = document.querySelector('.rol-day-number');
-    if (dayEl) dayEl.textContent = days;
+    if (dayEl) {
+        dayEl.textContent = days;
+        // ┣━━天数变化时触发翻页动画━━┫
+        if (days !== _lastDayCount && _lastDayCount !== -1) {
+            dayEl.classList.remove('rol-day-flip');
+            void dayEl.offsetWidth; // ┣━━强制重绘，让动画能重新触发━━┫
+            dayEl.classList.add('rol-day-flip');
+            dayEl.addEventListener('animationend', () => dayEl.classList.remove('rol-day-flip'), { once: true });
+        }
+        _lastDayCount = days;
+    }
 
     const timeEl = document.querySelector('.rol-counter-time');
     if (timeEl) timeEl.textContent = `${hours}:${mins}:${secs}`;
@@ -1873,8 +1885,8 @@ const FruitSystem = (() => {
         fruits.push(fruit);
         saveFruits(fruits);
 
-        // ┣━━ 淡出 picker 面板 ━━┫
-        const pickerPanel = document.querySelector('.rol-fruit-picker-panel');
+        // ┣━━ 淡出 picker 面板（用 getElementById 避免 ST 框架改 class 前缀） ━━┫
+        const pickerPanel = document.getElementById('rol-fruit-picker-panel');
         if (pickerPanel) pickerPanel.style.opacity = '0';
         setTimeout(() => hidePicker(), 900);
 
