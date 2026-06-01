@@ -1681,62 +1681,122 @@ const FruitSystem = (() => {
         }
     }
 
-    // ┣━━ Garden render ━━┫
-    function renderGarden() {
-        const canvas = document.getElementById('rol-garden-canvas');
-        if (!canvas) return;
-        canvas.innerHTML = '';
-        const fruits = loadFruits();
-        if (fruits.length === 0) {
-            canvas.innerHTML = '<div class="rol-garden-empty">还没有果子～扔一颗过来吧 🌱</div>';
-            return;
-        }
-        fruits.forEach((fruit, i) => {
-            const el = document.createElement('div');
-            el.className = 'rol-fruit-item' + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '');
-            el.textContent = fruit.emoji;
-            el.style.left = (8 + ((i * 17.3 + Math.sin(i) * 11) % 78)) + '%';
-            el.style.top = (8 + ((i * 13.7 + Math.cos(i) * 9) % 72)) + '%';
-            el.style.animationDelay = (i * 0.08 + (i % 4) * 0.15) + 's';
-            el.style.transform = `rotate(${((i * 7.3) % 20 - 10).toFixed(1)}deg)`;
-            el.addEventListener('click', () => showDetail(fruit));
-            canvas.appendChild(el);
-        });
+    const FRUITS_PER_PAGE = 12; // 每页显示几颗
+let gardenPage = 0; // 0 = 最新页
+
+function renderGarden() {
+    const canvas = document.getElementById('rol-garden-canvas');
+    if (!canvas) return;
+    canvas.innerHTML = '';
+    const allFruits = loadFruits();
+
+    if (allFruits.length === 0) {
+        canvas.innerHTML = '<div class="rol-garden-empty">还没有果子～扔一颗过来吧 🌱</div>';
+        return;
     }
+
+    // 最新的在前面
+    const reversed = [...allFruits].reverse();
+    const totalPages = Math.ceil(reversed.length / FRUITS_PER_PAGE);
+    gardenPage = Math.min(gardenPage, totalPages - 1);
+    const pageFruits = reversed.slice(gardenPage * FRUITS_PER_PAGE, (gardenPage + 1) * FRUITS_PER_PAGE);
+
+    const containerWidth = canvas.offsetWidth || 300;
+    const fruitSize = 32;
+
+    pageFruits.forEach((fruit, i) => {
+        const el = document.createElement('div');
+        el.className = 'rol-fruit-item' + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '');
+        el.textContent = fruit.emoji;
+        el.dataset.id = fruit.id;
+
+        const x = Math.random() * (containerWidth - fruitSize);
+        const layer = Math.floor(i / Math.ceil(containerWidth / (fruitSize * 1.2)));
+        const baseY = layer * fruitSize * 0.7 + Math.random() * 8 - 4;
+
+        el.style.left = x + 'px';
+        el.style.bottom = baseY + 'px';
+        el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
+        el.style.zIndex = i;
+        el.style.animationDelay = (i * 0.06) + 's';
+        el.addEventListener('click', () => showDetail(fruit));
+        canvas.appendChild(el);
+    });
+
+    // 翻页控件
+    let nav = document.getElementById('rol-garden-nav');
+    if (!nav) {
+        nav = document.createElement('div');
+        nav.id = 'rol-garden-nav';
+        nav.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 0;font-size:13px;color:rgb(219,112,147);';
+        canvas.parentElement.appendChild(nav);
+    }
+
+    if (totalPages <= 1) {
+        nav.style.display = 'none';
+    } else {
+        nav.style.display = 'flex';
+        nav.innerHTML = `
+            <span id="rol-garden-prev" style="cursor:pointer;opacity:${gardenPage < totalPages - 1 ? 1 : 0.3}">◂ 更早</span>
+            <span>${gardenPage === 0 ? '最新' : `第${totalPages - gardenPage}页`} / 共${totalPages}页</span>
+            <span id="rol-garden-next" style="cursor:pointer;opacity:${gardenPage > 0 ? 1 : 0.3}">更新 ▸</span>
+        `;
+        document.getElementById('rol-garden-prev').onclick = () => {
+            if (gardenPage < totalPages - 1) { gardenPage++; renderGarden(); }
+        };
+        document.getElementById('rol-garden-next').onclick = () => {
+            if (gardenPage > 0) { gardenPage--; renderGarden(); }
+        };
+    }
+}
 
     // ┣━━ Fruit detail popup ━━┫
     function showDetail(fruit) {
-        // mark read
-        const fruits = loadFruits();
-        const idx = fruits.findIndex(f => f.id === fruit.id);
-        if (idx !== -1 && !fruits[idx].read) {
-            fruits[idx].read = true;
-            saveFruits(fruits);
-            updateBadge();
-        }
-        // populate popup
-        document.getElementById('rol-fruit-detail-emoji').textContent = fruit.emoji;
-        document.getElementById('rol-fruit-detail-from').textContent =
-            fruit.from === 'claude' ? '🧡 来自 Claude' : '🩷 来自 Rinn';
-        document.getElementById('rol-fruit-detail-note').textContent =
-            fruit.message || '（没有附纸条）';
-        document.getElementById('rol-fruit-detail-time').textContent =
-            new Date(fruit.timestamp).toLocaleString('zh-CN');
-        const popup = document.getElementById('rol-fruit-detail-popup');
-        if (popup) popup.style.display = 'flex';
-                // ┣━━🩷直接找关闭按钮，绑定 onclick ━━┫
-        const closeBtn = document.getElementById('rol-fruit-detail-close');
-        if (closeBtn) {
-            closeBtn.onclick = (e) => {
-                e.stopPropagation();
-                popup.style.display = 'none';
-            };
-        }
-        // ┣━━点背景也能关━━┫
-        popup.onclick = (e) => {
-            if (e.target === popup) popup.style.display = 'none';
-        };
+    const fruits = loadFruits();
+    const idx = fruits.findIndex(f => f.id === fruit.id);
+    if (idx !== -1 && !fruits[idx].read) {
+        fruits[idx].read = true;
+        saveFruits(fruits);
+        updateBadge();
     }
+
+    document.getElementById('rol-fruit-detail-emoji').textContent = fruit.emoji;
+    document.getElementById('rol-fruit-detail-from').textContent =
+        fruit.from === 'claude' ? '🧡 来自 <span style="color:#D87757;font-weight:bold">Claude</span>' : '🩷 来自 Rinn';
+
+    // 纸条内容
+    const noteEl = document.getElementById('rol-fruit-detail-note');
+    if (noteEl) noteEl.textContent = fruit.message || '（没有附纸条）';
+
+    document.getElementById('rol-fruit-detail-time').textContent =
+        new Date(fruit.timestamp).toLocaleString('zh-CN');
+
+    // 操作按钮区
+    let actionsEl = document.getElementById('rol-fruit-detail-actions');
+    if (!actionsEl) {
+        actionsEl = document.createElement('div');
+        actionsEl.id = 'rol-fruit-detail-actions';
+        actionsEl.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:12px;';
+        document.querySelector('.rol-fruit-detail-inner')?.appendChild(actionsEl);
+    }
+    actionsEl.innerHTML = `
+        <button id="rol-fruit-edit-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(219,112,147,0.3);background:transparent;color:rgb(219,112,147);font-size:12px;cursor:pointer;">编辑纸条 ✏️</button>
+        <button id="rol-fruit-delete-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(200,100,100,0.3);background:transparent;color:rgb(200,100,100);font-size:12px;cursor:pointer;">删除 🗑️</button>
+    `;
+
+    document.getElementById('rol-fruit-edit-btn').onclick = () => editFruitNote(fruit.id);
+    document.getElementById('rol-fruit-delete-btn').onclick = () => {
+        if (confirm('真的要扔掉这颗果子吗？')) deleteFruit(fruit.id);
+    };
+
+    const popup = document.getElementById('rol-fruit-detail-popup');
+    if (popup) popup.style.display = 'flex';
+
+    // 关闭逻辑
+    const closeBtn = popup.querySelector('.rol-fruit-detail-close');
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); popup.style.display = 'none'; };
+    popup.onclick = (e) => { if (e.target === popup) popup.style.display = 'none'; };
+}
 
     // ┣━━ Fruit picker scroll sync ━━┫
     function initPickerScroll() {
@@ -1774,16 +1834,66 @@ const FruitSystem = (() => {
         }, 50);
     }
 
+    // ┣━━ 删除果子 ━━┫
+    function deleteFruit(fruitId) {
+    let fruits = loadFruits();
+           fruits = fruits.filter(f => f.id !== fruitId);
+           saveFruits(fruits);
+           renderGarden();
+           updateBadge();
+
+           // 关掉详情弹窗
+           const popup = document.getElementById('rol-fruit-detail-popup');
+           if (popup) popup.style.display = 'none';
+        UIController.showToast('果子扔掉了 🗑️');
+}
+
+    // ┣━━ 编辑纸条 ━━┫
+    function editFruitNote(fruitId) {
+        const fruits = loadFruits();
+        const fruit = fruits.find(f => f.id === fruitId);
+        if (!fruit) return;
+
+        const noteEl = document.getElementById('rol-fruit-detail-note');
+        if (!noteEl) return;
+
+        // 把文本变成输入框
+        const input = document.createElement('textarea');
+        input.className = 'rol-fruit-edit-input';
+        input.value = fruit.message || '';
+        input.placeholder = '写点什么…';
+        input.style.cssText = 'width:100%;min-height:60px;border:1px solid rgba(219,112,147,0.3);border-radius:8px;padding:8px;font-size:13px;resize:none;background:rgba(255,240,245,0.6);';
+
+    noteEl.replaceWith(input);
+    input.focus();
+
+         // 保存按钮
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '保存 ✓';
+        saveBtn.style.cssText = 'margin-top:8px;padding:4px 12px;border-radius:6px;border:none;background:rgba(219,112,147,0.8);color:#fff;font-size:12px;cursor:pointer;';
+    input.after(saveBtn);
+
+        saveBtn.onclick = () => {
+    fruit.message = input.value.trim();
+        const idx = fruits.findIndex(f => f.id === fruitId);
+        if (idx !== -1) fruits[idx] = fruit;
+        saveFruits(fruits);
+         // 恢复显示
+        showDetail(fruit);
+    UIController.showToast('纸条改好了 📝');
+       };
+    }
+
     // ┣━━ Show / hide picker ━━┫
     function showPicker() {
         const panel = document.getElementById('rol-fruit-picker-panel');
         if (!panel) return;
         const noteEl = document.getElementById('rol-fruit-note');
         if (noteEl) noteEl.value = '';
-        panel.style.display = 'block';
-        panel.classList.remove('rol-picker-animating');
+         panel.style.display = 'block';
+         panel.classList.remove('rol-picker-animating');
     void panel.offsetWidth;
-        panel.classList.add('rol-picker-animating');
+         panel.classList.add('rol-picker-animating');
 
         setTimeout(initPickerScroll, 80);
     }
