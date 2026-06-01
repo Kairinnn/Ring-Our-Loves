@@ -1706,63 +1706,20 @@ function renderGarden() {
 
     pageFruits.forEach((fruit, i) => {
         const el = document.createElement('div');
-        el.className = 'rol-fruit-item'
-        + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '')
-        + (fruit.from === 'claude' ? ' rol-fruit-from-claude' : ' rol-fruit-from-user');
         el.className = 'rol-fruit-item' + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '');
         el.textContent = fruit.emoji;
         el.dataset.id = fruit.id;
 
-    const x = Math.random() * (containerWidth - fruitSize);
-    const layer = Math.floor(i / Math.ceil(containerWidth / (fruitSize * 1.2)));
-    const baseY = layer * fruitSize * 0.7 + Math.random() * 8 - 4;
+        const x = Math.random() * (containerWidth - fruitSize);
+        const layer = Math.floor(i / Math.ceil(containerWidth / (fruitSize * 1.2)));
+        const baseY = layer * fruitSize * 0.7 + Math.random() * 8 - 4;
 
         el.style.left = x + 'px';
         el.style.bottom = baseY + 'px';
         el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
         el.style.zIndex = i;
         el.style.animationDelay = (i * 0.06) + 's';
-        el.addEventListener('mousedown', startDrag);
-        el.addEventListener('touchstart', startDrag, { passive: false });
-
-function startDrag(e) {
-       e.preventDefault();
-    const fruit = e.currentTarget;
-    const canvas = fruit.parentElement;
-    const canvasRect = canvas.getBoundingClientRect();
-    const startX = (e.touches ? e.touches[0].clientX : e.clientX) - fruit.offsetLeft;
-    const startY = (e.touches ? e.touches[0].clientY : e.clientY) - (canvas.offsetHeight - fruit.offsetTop - fruit.offsetHeight);
-
-        fruit.style.zIndex = 9999; // 拖动时提到最上层
-        fruit.style.transition = 'none';
-
-    let moved = false;
-
-function onMove(ev) {
-        moved = true;
-    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX);
-    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY);
-    const newLeft = cx - startX;
-    const newBottom = canvasRect.bottom - cy - fruit.offsetHeight / 2;
-        fruit.style.left = Math.max(0, Math.min(newLeft, canvas.offsetWidth - 36)) + 'px';
-        fruit.style.bottom = Math.max(0, Math.min(newBottom, canvas.offsetHeight - 36)) + 'px';
-    }
-
-function onEnd() {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onEnd);
-        document.removeEventListener('touchmove', onMove);
-        document.removeEventListener('touchend', onEnd);
-        fruit.style.transition = '';
-        // 如果没有移动过，当作点击处理
-        if (!moved) fruit.click();
-    }
-
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onEnd);
-        document.addEventListener('touchmove', onMove, { passive: false });
-        document.addEventListener('touchend', onEnd);
-}
+        el.addEventListener('click', () => showDetail(fruit));
         canvas.appendChild(el);
     });
 
@@ -1796,19 +1753,13 @@ function onEnd() {
     // ┣━━ Fruit detail popup ━━┫
     function showDetail(fruit) {
     const fruits = loadFruits();
-    let idx = fruits.findIndex(f => f.id === fruit.id);
-    // 兜底：如果 id 匹配不到，用 emoji + timestamp
-    if (idx === -1) {
-        idx = fruits.findIndex(f => f.emoji === fruit.emoji && f.timestamp === fruit.timestamp);
-    }
+    const idx = fruits.findIndex(f => f.id === fruit.id);
     if (idx !== -1 && !fruits[idx].read) {
         fruits[idx].read = true;
         saveFruits(fruits);
         updateBadge();
     }
-    popup.addEventListener('mousedown', (e) => {
-    if (e.target === popup) popup.style.display = 'none';
-    }, { once: true });
+
     document.getElementById('rol-fruit-detail-emoji').textContent = fruit.emoji;
     document.getElementById('rol-fruit-detail-from').textContent =
         fruit.from === 'claude' ? '🧡 来自 <span style="color:#D87757;font-weight:bold">Claude</span>' : '🩷 来自 Rinn';
@@ -1828,15 +1779,10 @@ function onEnd() {
         actionsEl.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:12px;';
         document.querySelector('.rol-fruit-detail-inner')?.appendChild(actionsEl);
     }
-    // 操作按钮区
-actionsEl.innerHTML = '';
-
-// 编辑按钮只给自己丢的果子
-if (fruit.from === 'user') {
-    actionsEl.innerHTML += `<button id="rol-fruit-edit-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(219,112,147,0.3);background:transparent;color:rgb(219,112,147);font-size:12px;cursor:pointer;">编辑纸条 ✏️</button>`;
-}
-// 删除按钮都有
-actionsEl.innerHTML += `<button id="rol-fruit-delete-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(200,100,100,0.3);background:transparent;color:rgb(200,100,100);font-size:12px;cursor:pointer;">删除 🗑️</button>`;
+    actionsEl.innerHTML = `
+        <button id="rol-fruit-edit-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(219,112,147,0.3);background:transparent;color:rgb(219,112,147);font-size:12px;cursor:pointer;">编辑纸条 ✏️</button>
+        <button id="rol-fruit-delete-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(200,100,100,0.3);background:transparent;color:rgb(200,100,100);font-size:12px;cursor:pointer;">删除 🗑️</button>
+    `;
 
     document.getElementById('rol-fruit-edit-btn').onclick = () => editFruitNote(fruit.id);
     document.getElementById('rol-fruit-delete-btn').onclick = () => {
@@ -1944,13 +1890,21 @@ actionsEl.innerHTML += `<button id="rol-fruit-delete-btn" style="padding:4px 12p
     if (!panel) return;
     const noteEl = document.getElementById('rol-fruit-note');
     if (noteEl) noteEl.value = '';
-    panel.classList.add('rol-picker-open');
+    panel.style.display = 'block';
+    panel.dataset.justOpened = 'true'; // 标记刚打开
+    panel.classList.remove('rol-picker-animating');
+    void panel.offsetWidth;
+    panel.classList.add('rol-picker-animating');
     setTimeout(initPickerScroll, 80);
+    // 300ms 后解除保护
+    setTimeout(() => { panel.dataset.justOpened = ''; }, 300);
 }
 
 function hidePicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
-    if (panel) panel.classList.remove('rol-picker-open');
+    if (!panel) return;
+    if (panel.dataset.justOpened === 'true') return; // 刚打开的不许关
+    panel.style.display = 'none';
 }
 
     // ┣━━ Throw animation ━━┫
