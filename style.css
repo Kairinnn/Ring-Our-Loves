@@ -223,7 +223,7 @@ body.rol-light-mode .rol-editor-panel {
         var(--SmartThemeChatTintColor, rgba(255,255,255,0.4)),
         var(--SmartThemeChatTintColor, rgba(255,255,255,0.4))
     ),
-    url("./assets/strawberry.jpg");
+    url("./assets/strawberry.jpg") !important;
     background-size: auto, cover;
     background-position: center, center;
     background-blend-mode: normal, overlay;
@@ -524,7 +524,7 @@ body.rol-light-mode .rol-editor-panel {
   position: absolute;
   font-size: 24px;
   cursor: pointer;
-  animation: rol-fruit-drop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rol-fruit-drop 0.7s cubic-bezier(0.22, 0, 0.8, 1) both;
   transition: transform 0.15s ease;
 }
 
@@ -1481,22 +1481,37 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     50%       { transform: translateY(-6px); }
 }
 
-/* ┣━━ 果子丢出飞行动画 ━━┫ */
+/* ┣━━ 果子飞行（位移由 JS 控制，CSS 只管旋转和缩放） ━━┫ */
 .rol-fruit-flying {
     position: fixed;
     pointer-events: none;
     font-size: 28px;
     z-index: 99999;
-    animation: rol-fruit-fly 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-    transform-origin: center;
+    transition: left 0.6s cubic-bezier(0.2, 0.8, 0.3, 1),
+                top 0.6s cubic-bezier(0.5, -0.3, 0.7, 0.3);
+    /* left 用缓出让水平匀速偏减速，top 用自定义曲线模拟抛物线上升再下落 */
 }
 
-@keyframes rol-fruit-fly {
-    0%   { opacity: 1; transform: rotate(0deg) scale(1); }
-    50%  { opacity: 1; transform: rotate(180deg) scale(1.1); }
-    85%  { opacity: 1; transform: rotate(330deg) scale(0.9); }
-    100% { opacity: 0; transform: rotate(360deg) scale(0.6); }
+.rol-fruit-flying.rol-fruit-spin {
+    animation: rol-fruit-rotate 0.6s linear forwards;
 }
+
+@keyframes rol-fruit-rotate {
+    from { transform: rotate(0deg) scale(1); }
+    to   { transform: rotate(360deg) scale(0.85); }
+}
+
+/* 砸中后弹跳 */
+.rol-fruit-flying.rol-fruit-bounce {
+    transition: top 0.15s cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+
+/* 最后掉落 */
+.rol-fruit-flying.rol-fruit-fall {
+    transition: top 0.4s cubic-bezier(0.6, 0, 1, 0.4),
+                opacity 0.4s ease 0.2s;
+}
+
 
 /* ┣━━ 头像震动 ━━┫ */
 @keyframes rol-avatar-shake {

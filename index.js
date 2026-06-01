@@ -816,7 +816,8 @@ function renderFruitGarden(fruits) {
     el.className = 'rol-fruit-item';
     el.textContent = fruit.emoji;
     el.style.left = `${8 + Math.random() * 78}%`;
-    el.style.top = `${Math.random() * 80}%`;
+    el.style.bottom = (Math.random() * 30) + '%';
+    el.style.top = 'auto';
     el.style.animationDelay = `${i * 0.08 + Math.random() * 0.3}s`;
     el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
 
@@ -1780,7 +1781,10 @@ const FruitSystem = (() => {
         const noteEl = document.getElementById('rol-fruit-note');
         if (noteEl) noteEl.value = '';
         panel.style.display = 'block';
-        // re-init scroll each time picker opens
+        panel.classList.remove('rol-picker-animating');
+    void panel.offsetWidth;
+        panel.classList.add('rol-picker-animating');
+
         setTimeout(initPickerScroll, 80);
     }
 
@@ -1817,44 +1821,67 @@ const FruitSystem = (() => {
     }
 
     function doFly(emoji, startRect, targetRect, targetEl, onComplete) {
-        const fly = document.createElement('div');
-        fly.className = 'rol-fruit-flying';
-        fly.textContent = emoji;
-        const sx = startRect.left + startRect.width / 2;
-        const sy = startRect.top + startRect.height / 2;
-        const ex = targetRect.left + targetRect.width / 2;
-        const ey = targetRect.top + targetRect.height / 2;
-        fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
-        document.body.appendChild(fly);
-        const dur = 1200;
-        const start = performance.now();
-        const peakOffset = -(120 + (Math.sin(Date.now()) * 20 + 20));
+    const fly = document.createElement('div');
+    fly.className = 'rol-fruit-flying';
+    fly.textContent = emoji;
+    const sx = startRect.left + startRect.width / 2;
+    const sy = startRect.top + startRect.height / 2;
+    const ex = targetRect.left + targetRect.width / 2;
+    const ey = targetRect.top + targetRect.height / 2;
+    fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
+    document.body.appendChild(fly);
 
-        function frame(now) {
-            const t = Math.min((now - start) / dur, 1);
-            const x = sx + (ex - sx) * t;
-            const parabola = 4 * t * (1 - t) * peakOffset;
-            const y = sy + (ey - sy) * t + parabola;
-            fly.style.left = x + 'px';
-            fly.style.top = y + 'px';
-            fly.style.transform = `rotate(${t * 360}deg) scale(${1 + Math.sin(t * Math.PI) * 0.15})`;
-            fly.style.opacity = t < 0.85 ? '1' : String((1 - (t - 0.85) / 0.15).toFixed(2));
-            if (t < 1) {
-                requestAnimationFrame(frame);
-            } else {
-                fly.remove();
-                if (targetEl) {
-                    const avatarWrap = targetEl.closest('.avatar') || targetEl.parentElement;
-                    if (avatarWrap) {
-                        avatarWrap.classList.add('rol-avatar-shaking');
-                        setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
-                    }
+    const dur = 900; // 飞行时间缩短一点，别拖
+    const start = performance.now();
+    const peakOffset = -(100 + Math.random() * 40);
+
+    function flyPhase(now) {
+        const t = Math.min((now - start) / dur, 1);
+        const x = sx + (ex - sx) * t;
+        const parabola = 4 * t * (1 - t) * peakOffset;
+        const y = sy + (ey - sy) * t + parabola;
+        fly.style.left = x + 'px';
+        fly.style.top = y + 'px';
+        fly.style.transform = `rotate(${t * 360}deg) scale(${1 + Math.sin(t * Math.PI) * 0.15})`;
+        // 全程不淡出！保持 opacity 1 直到砸中
+        if (t < 1) {
+            requestAnimationFrame(flyPhase);
+        } else {
+            // ═══ 砸中！═══
+            // 头像震动
+            if (targetEl) {
+                const avatarWrap = targetEl.closest('.avatar') || targetEl.parentElement;
+                if (avatarWrap) {
+                    avatarWrap.classList.add('rol-avatar-shaking');
+                    setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
                 }
-                onComplete && onComplete();
             }
+            // 果子弹起来
+            bouncePhase();
         }
-        requestAnimationFrame(frame);
     }
+
+    function bouncePhase() {
+        // 往上弹 40px
+        fly.style.transition = 'top 0.15s cubic-bezier(0.1, 0.8, 0.3, 1), transform 0.15s ease';
+        fly.style.top = (ey - 40) + 'px';
+        fly.style.transform = 'rotate(380deg) scale(0.8)';
+
+        setTimeout(() => {
+            // 然后掉下去，出屏幕
+            fly.style.transition = 'top 0.5s cubic-bezier(0.6, 0, 1, 0.4), opacity 0.3s ease 0.25s';
+            fly.style.top = (window.innerHeight + 60) + 'px';
+            fly.style.opacity = '0';
+
+            setTimeout(() => {
+                fly.remove();
+                onComplete && onComplete();
+            }, 550);
+        }, 160);
+    }
+
+    requestAnimationFrame(flyPhase);
+}
 
     // ┣━━ Save & throw ━━┫
     function doThrow() {
@@ -1865,7 +1892,7 @@ const FruitSystem = (() => {
         }
         const emoji = selected.dataset.emoji;
         const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
-        const msgCount = ($('#chat .mes').length) || 0;
+        const msgCount = (SillyTavern.getContext().chat.length) || 0;
         const fruit = {
             id: 'fruit_' + Date.now(),
             emoji,
@@ -1940,7 +1967,7 @@ const FruitSystem = (() => {
 
     // ┣━━ Delayed delivery check ━━┫
     function checkDelivery() {
-        const msgCount = $('#chat .mes').length || 0;
+        const msgCount = SillyTavern.getContext().chat.length || 0;
         const fruits = loadFruits();
         let changed = false;
         fruits.forEach(f => {
@@ -1949,9 +1976,14 @@ const FruitSystem = (() => {
                 changed = true;
                 const note = f.message ? `（附言：${f.message}）` : '';
                 const sysMsg = `[系统] Rinn偷偷丢来了一颗 ${f.emoji}${note}`;
-                if (typeof window.sendSystemMessage === 'function') {
-                    window.sendSystemMessage(sysMsg);
-                }
+                if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+        const ctx = SillyTavern.getContext();
+              ctx.setExtensionPrompt(
+                  'rol_fruit_' + f.id,
+                  `[系统提示：Rinn 偷偷丢来了一颗 ${f.emoji}${note}，在接下来的对话中自然地回应这颗果子吧]`,
+                 1, 0
+         );
+    }
                 console.log(`[RingOurLuv] 🍎 果子投递：${sysMsg}`);
             }
         });
@@ -1988,9 +2020,11 @@ const FruitSystem = (() => {
         });
 
         // 监听 ST 消息生成完成 → check delivery + parse AI fruits
-        $(document).on('rolMessageComplete', (e, data) => {
-            checkDelivery();
-            if (data && data.text) ingestAIFruits(data.text);
+        const ctx = SillyTavern.getContext();
+              ctx.eventSource.on('message_received', (msgId) => {
+              checkDelivery();
+        const msg = ctx.chat?.[msgId];
+        if (msg && !msg.is_user) ingestAIFruits(msg.mes);
         });
 
         // MutationObserver 监听消息数量变化（延迟投递）
