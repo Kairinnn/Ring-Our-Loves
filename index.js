@@ -1706,7 +1706,9 @@ function renderGarden() {
 
     pageFruits.forEach((fruit, i) => {
         const el = document.createElement('div');
-        el.className = 'rol-fruit-item' + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '');
+        el.className = 'rol-fruit-item'
+            + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '')
+            + (fruit.from === 'claude' ? ' rol-fruit-from-claude' : ' rol-fruit-from-user');
         el.textContent = fruit.emoji;
         el.dataset.id = fruit.id;
 
@@ -1714,6 +1716,7 @@ function renderGarden() {
         const layer = Math.floor(i / Math.ceil(containerWidth / (fruitSize * 1.2)));
         const baseY = layer * fruitSize * 0.7 + Math.random() * 8 - 4;
 
+        el.style.position = 'absolute';
         el.style.left = x + 'px';
         el.style.bottom = baseY + 'px';
         el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
@@ -1753,7 +1756,11 @@ function renderGarden() {
     // ┣━━ Fruit detail popup ━━┫
     function showDetail(fruit) {
     const fruits = loadFruits();
-    const idx = fruits.findIndex(f => f.id === fruit.id);
+    let idx = fruits.findIndex(f => f.id === fruit.id);
+    // id 兜底：用 emoji + timestamp 再匹配一次（兼容老数据 id 不一致的情况）
+    if (idx === -1) {
+        idx = fruits.findIndex(f => f.emoji === fruit.emoji && f.timestamp === fruit.timestamp);
+    }
     if (idx !== -1 && !fruits[idx].read) {
         fruits[idx].read = true;
         saveFruits(fruits);
@@ -1779,12 +1786,18 @@ function renderGarden() {
         actionsEl.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:12px;';
         document.querySelector('.rol-fruit-detail-inner')?.appendChild(actionsEl);
     }
+    // 只有自己丢的果子才能编辑纸条
+    const editBtnHtml = fruit.from === 'user'
+        ? `<button id="rol-fruit-edit-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(219,112,147,0.3);background:transparent;color:rgb(219,112,147);font-size:12px;cursor:pointer;">编辑纸条 ✏️</button>`
+        : '';
     actionsEl.innerHTML = `
-        <button id="rol-fruit-edit-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(219,112,147,0.3);background:transparent;color:rgb(219,112,147);font-size:12px;cursor:pointer;">编辑纸条 ✏️</button>
+        ${editBtnHtml}
         <button id="rol-fruit-delete-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(200,100,100,0.3);background:transparent;color:rgb(200,100,100);font-size:12px;cursor:pointer;">删除 🗑️</button>
     `;
 
-    document.getElementById('rol-fruit-edit-btn').onclick = () => editFruitNote(fruit.id);
+    // 编辑按钮可能不存在，用可空保护
+    const editBtn = document.getElementById('rol-fruit-edit-btn');
+    if (editBtn) editBtn.onclick = () => editFruitNote(fruit.id);
     document.getElementById('rol-fruit-delete-btn').onclick = () => {
         if (confirm('真的要扔掉这颗果子吗？')) deleteFruit(fruit.id);
     };
@@ -1885,26 +1898,24 @@ function renderGarden() {
     }
 
     // ┣━━ Show / hide picker ━━┫
-    function showPicker() {
+function showPicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
     if (!panel) return;
     const noteEl = document.getElementById('rol-fruit-note');
     if (noteEl) noteEl.value = '';
     panel.style.display = 'block';
-    panel.dataset.justOpened = 'true'; // 标记刚打开
-    panel.classList.remove('rol-picker-animating');
+    // 强制 reflow 后加 open class，确保 transition 触发
     void panel.offsetWidth;
-    panel.classList.add('rol-picker-animating');
+    panel.classList.add('rol-picker-open');
     setTimeout(initPickerScroll, 80);
-    // 300ms 后解除保护
-    setTimeout(() => { panel.dataset.justOpened = ''; }, 300);
 }
 
 function hidePicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
     if (!panel) return;
-    if (panel.dataset.justOpened === 'true') return; // 刚打开的不许关
-    panel.style.display = 'none';
+    panel.classList.remove('rol-picker-open');
+    // 等动画走完再 display:none
+    setTimeout(() => { panel.style.display = 'none'; }, 280);
 }
 
     // ┣━━ Throw animation ━━┫
