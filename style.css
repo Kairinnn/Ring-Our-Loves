@@ -1513,7 +1513,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 
 /* ┣━━ 果子选择浮层 ━━┫ */
 .rol-fruit-picker-panel {
-    position: fixed;
+    position: fixed !important;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);

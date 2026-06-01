@@ -371,6 +371,7 @@ function buildWiEntry(uid, memory, existingEntry = null) {
             content: memory.summary || '',           // ┣🩷摘要 → 注入上下文┫
             comment: memory.letter || memory.content || '',  // ┣🩷完整正文 → 仅管理界面可见┫
             constant: false,
+            cooldown: 8,
             selective: false,
             selectiveLogic: 0,
             addMemo: true,
@@ -758,7 +759,7 @@ const UIController = (() => {
         bindMobileNav();
         renderMemoryList();
         renderPresetOptions();
-        updateDayCounter();  // ┣━━🩷 天数注入！━━┫
+        startCounter();  // ┣━━🩷 天数注入！━━┫
         injectToolbarButtons(); // ┣━━🩷 劫持工具栏添加快捷入口━━┫
     }
 
@@ -824,22 +825,43 @@ function renderFruitGarden(fruits) {
   });
 }
 // ┣━━ 🩷 天数计算 🩷 ━━┫
-  function updateDayCounter() {
-  const startDate = new Date('2026-04-14T00:17:00+08:00'); // 起始日
-  const today = new Date();
-  const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-  const counter = document.querySelector('.rol-day-number');
-  if (counter) counter.textContent = diff;
+  let counterInterval = null;
+
+let _lastDayCount = -1; // ┣━━记录上一次的天数，用于触发翻页动画━━┫
+
+function updateDayCounter() {
+    const startDate = new Date('2026-04-14T00:17:00+08:00');
+    const now = new Date();
+    const diff = now - startDate;
+
+    const days = Math.floor(diff / 86400000);
+    const hours = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+    const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+
+    const dayEl = document.querySelector('.rol-day-number');
+    if (dayEl) {
+        dayEl.textContent = days;
+        // ┣━━天数变化时触发翻页动画━━┫
+        if (days !== _lastDayCount && _lastDayCount !== -1) {
+            dayEl.classList.remove('rol-day-flip');
+            void dayEl.offsetWidth; // ┣━━强制重绘，让动画能重新触发━━┫
+            dayEl.classList.add('rol-day-flip');
+            dayEl.addEventListener('animationend', () => dayEl.classList.remove('rol-day-flip'), { once: true });
+        }
+        _lastDayCount = days;
+    }
+
+    const timeEl = document.querySelector('.rol-counter-time');
+    if (timeEl) timeEl.textContent = `${hours}:${mins}:${secs}`;
 }
 
-    // ┣━━ 🩷 设置面板 🩷 ━━┫
-    function updateDayCount() {
-        const start = new Date('2026-04-14T00:17:00+08:00');
-        const now = new Date();
-        const days = Math.floor((now - start) / 86400000);
-        const el = document.getElementById('rol-day-count');
-        if (el) el.textContent = days;
+function startCounter() {
+    updateDayCounter();
+    if (!counterInterval) {
+        counterInterval = setInterval(updateDayCounter, 1000);
     }
+}
 
     function bindConfigPanel() {
         const config = Storage.getConfig();
@@ -848,8 +870,8 @@ function renderFruitGarden(fruits) {
         const presetSelect = document.getElementById('rol-preset-select');
         const summaryPromptArea = document.getElementById('rol-summary-prompt');
 
-        updateDayCount();
-
+        updateDayCounter();
+        
         if (autoInjectToggle) {
             autoInjectToggle.checked = config.autoInject !== false;
             autoInjectToggle.addEventListener('change', () => {
@@ -978,7 +1000,7 @@ function renderFruitGarden(fruits) {
                 <div class="rol-card-actions">
                     ${mem.letter ? '<button class="rol-btn-letter" title="阅览恋果">💌</button>' : ''}
                     <button class="rol-btn-edit" title="传入爱意">🩷</button>
-                    <button class="rol-btn-rewrite" title="让Claude重写">🧡</button>
+                    <button class="rol-btn-rewrite" title="让Claude重酿">🧡</button>
                     <button class="rol-btn-delete" title="净化">🍃</button>
                 </div>
             `;
@@ -1122,7 +1144,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const vs = document.getElementById('rol-letter-version');
         if (vs) {
             vs.innerHTML = '';
-            const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
+            const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重酿' };
             mem.versions.forEach((v, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
@@ -1219,7 +1241,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
     function openEditor(memId) {
         currentEditId = memId;
         const panel = document.getElementById('rol-editor-panel');
-        if (!panel) { console.error('[RingOurLuv] 🥀 找不到传入面板 #rol-editor-panel'); return; }
+        if (!panel) { console.error('[RingOurLuv] 🥀 找不到传入面板 #rol-editor-panel...'); return; }
         panel.classList.add('rol-active');
 
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
@@ -1252,7 +1274,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             const vs = document.getElementById('rol-version-select');
             if (vs) {
                 vs.innerHTML = '';
-                const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
+                const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重酿' };
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
@@ -1617,6 +1639,7 @@ if (rolStopBtn) {
         const anchor = document.getElementById('extensionsMenuButton');
         if (!anchor || document.getElementById('rol-input-btn')) return;
         const btn = document.createElement('div');
+        btn.style.order = '999';
         btn.id = 'rol-input-btn';
         btn.className = 'list-group-item flex-container flexGap5';
         btn.title = '恋果温室';
@@ -1700,6 +1723,18 @@ const FruitSystem = (() => {
             new Date(fruit.timestamp).toLocaleString('zh-CN');
         const popup = document.getElementById('rol-fruit-detail-popup');
         if (popup) popup.style.display = 'flex';
+                // ┣━━🩷直接找关闭按钮，绑定 onclick ━━┫
+        const closeBtn = document.getElementById('rol-fruit-detail-close');
+        if (closeBtn) {
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                popup.style.display = 'none';
+            };
+        }
+        // ┣━━点背景也能关━━┫
+        popup.onclick = (e) => {
+            if (e.target === popup) popup.style.display = 'none';
+        };
     }
 
     // ┣━━ Fruit picker scroll sync ━━┫
@@ -1791,9 +1826,9 @@ const FruitSystem = (() => {
         const ey = targetRect.top + targetRect.height / 2;
         fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
         document.body.appendChild(fly);
-        const dur = 650;
+        const dur = 1200;
         const start = performance.now();
-        const peakOffset = -(80 + (Math.sin(Date.now()) * 20 + 20));
+        const peakOffset = -(120 + (Math.sin(Date.now()) * 20 + 20));
 
         function frame(now) {
             const t = Math.min((now - start) / dur, 1);
@@ -1845,11 +1880,21 @@ const FruitSystem = (() => {
         const fruits = loadFruits();
         fruits.push(fruit);
         saveFruits(fruits);
+
+        let savedScroll = 0;
+        const track = document.querySelector('.rol-fruit-track');
+        if (track) savedScroll = track.scrollLeft;
+
         hidePicker();
         throwAnimation(emoji, () => {
             UIController.showToast(`果子丢出去啦 ${emoji}`);
             renderGarden();
-        });
+            setTimeout(() => {
+        showPicker();
+        const track = document.querySelector('.rol-fruit-track');
+        if (track) track.scrollLeft = savedScroll;
+        }, 1000);
+       });
     }
 
     // ┣━━ AI fruit block parser ━━┫
@@ -1978,7 +2023,7 @@ function injectMemoryToContext(memories, injectionText) {
 }
 
 async function loadPanel() {
-    const response = await fetch(`${extensionFolderPath}/index.html`);
+    const response = await fetch(`${extensionFolderPath}/index.html?v=${ROL_VERSION}`);
     if (!response.ok) return '';
     return await response.text();
 }
