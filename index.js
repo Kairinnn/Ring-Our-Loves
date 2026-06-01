@@ -1886,22 +1886,26 @@ function renderGarden() {
 
     // ┣━━ Show / hide picker ━━┫
     function showPicker() {
-        const panel = document.getElementById('rol-fruit-picker-panel');
-        if (!panel) return;
-        const noteEl = document.getElementById('rol-fruit-note');
-        if (noteEl) noteEl.value = '';
-         panel.style.display = 'block';
-         panel.classList.remove('rol-picker-animating');
+    const panel = document.getElementById('rol-fruit-picker-panel');
+    if (!panel) return;
+    const noteEl = document.getElementById('rol-fruit-note');
+    if (noteEl) noteEl.value = '';
+    panel.style.display = 'block';
+    panel.dataset.justOpened = 'true'; // 标记刚打开
+    panel.classList.remove('rol-picker-animating');
     void panel.offsetWidth;
-         panel.classList.add('rol-picker-animating');
+    panel.classList.add('rol-picker-animating');
+    setTimeout(initPickerScroll, 80);
+    // 300ms 后解除保护
+    setTimeout(() => { panel.dataset.justOpened = ''; }, 300);
+}
 
-        setTimeout(initPickerScroll, 80);
-    }
-
-    function hidePicker() {
-        const panel = document.getElementById('rol-fruit-picker-panel');
-        if (panel) panel.style.display = 'none';
-    }
+function hidePicker() {
+    const panel = document.getElementById('rol-fruit-picker-panel');
+    if (!panel) return;
+    if (panel.dataset.justOpened === 'true') return; // 刚打开的不许关
+    panel.style.display = 'none';
+}
 
     // ┣━━ Throw animation ━━┫
     function throwAnimation(emoji, onComplete) {
