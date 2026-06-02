@@ -1960,71 +1960,44 @@ function hidePicker() {
 }
 
     /* ⬇️┅🍎丢果动画/┅┅╗ */
-    function throwAnimation(emoji, onComplete) {
-        const selected = document.querySelector('.rol-fruit-option.rol-selected');
-        const startEl = selected || document.getElementById('rol-throw-fruit-btn');
-        if (!startEl) { onComplete && onComplete(); return; }
-        const startRect = startEl.getBoundingClientRect();
-
-        // 寻找最后一条 AI 消息的头像
-        const avatars = document.querySelectorAll(
-            '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
-        );
-        if (avatars.length) {
-            const last = avatars[avatars.length - 1];
-            last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            setTimeout(() => {
-                const targetRect = last.getBoundingClientRect();
-                doFly(emoji, startRect, targetRect, last, onComplete);
-            }, 450);
-        } else {
-            // 没有 AI 消息就飞向屏幕中心
-            const targetRect = {
-                left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0
-            };
-            doFly(emoji, startRect, targetRect, null, onComplete);
-        }
+    function doThrow() {
+    const selected = document.querySelector('.rol-fruit-option.rol-selected');
+    if (!selected) {
+        UIController.showToast('先选一颗果子嘛 👀');
+        return;
     }
+    const emoji = selected.dataset.emoji;
+    const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
 
-    function doFly(emoji, startRect, targetRect, targetEl, onComplete) {
-        const fly = document.createElement('div');
-        fly.className = 'rol-fruit-flying';
-        fly.textContent = emoji;
-        const sx = startRect.left + startRect.width / 2;
-        const sy = startRect.top + startRect.height / 2;
-        const ex = targetRect.left + targetRect.width / 2;
-        const ey = targetRect.top + targetRect.height / 2;
-        fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
-        document.body.appendChild(fly);
-        const dur = 1200;
-        const start = performance.now();
-        const peakOffset = -(120 + (Math.sin(Date.now()) * 20 + 20));
+    // ┣━━ ① 先记住起飞位置（在面板还在原位的时候） ━━┫
+    const startRect = selected.getBoundingClientRect();
 
-        function frame(now) {
-            const t = Math.min((now - start) / dur, 1);
-            const x = sx + (ex - sx) * t;
-            const parabola = 4 * t * (1 - t) * peakOffset;
-            const y = sy + (ey - sy) * t + parabola;
-            fly.style.left = x + 'px';
-            fly.style.top = y + 'px';
-            fly.style.transform = `rotate(${t * 360}deg) scale(${1 + Math.sin(t * Math.PI) * 0.15})`;
-            fly.style.opacity = t < 0.85 ? '1' : String((1 - (t - 0.85) / 0.15).toFixed(2));
-            if (t < 1) {
-                requestAnimationFrame(frame);
-            } else {
-                fly.remove();
-                if (targetEl) {
-                    const avatarWrap = targetEl.closest('.avatar') || targetEl.parentElement;
-                    if (avatarWrap) {
-                        avatarWrap.classList.add('rol-avatar-shaking');
-                        setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
-                    }
-                }
-                onComplete && onComplete();
-            }
-        }
-        requestAnimationFrame(frame);
-    }
+    // ┣━━ ② 写入数据 ━━┫
+    const msgCount = SillyTavern.getContext().chat.length || 0;
+    const fruit = {
+        id: 'fruit_' + Date.now(),
+        emoji,
+        from: 'user',
+        to: 'claude',
+        message,
+        timestamp: Date.now(),
+        read: false,
+        delivered: false,
+        deliverAt: msgCount + Math.floor(Math.random() * 30) + 5
+    };
+    const fruits = loadFruits();
+    fruits.push(fruit);
+    saveFruits(fruits);
+
+    // ┣━━ ③ 关面板（让出舞台给动画） ━━┫
+    hidePicker();
+
+    // ┣━━ ④ 用预存的 startRect 飞 ━━┫
+    throwAnimationFrom(emoji, startRect, () => {
+        UIController.showToast(`果子丢出去啦 ${emoji}`);
+        renderGarden();
+    });
+}
 
     /* ⬇️┅💾保存/丢出/┅┅╗ */
     function doThrow() {
