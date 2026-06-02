@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.4.1';// ┣━━🩷━━┫
+const ROL_VERSION = '0.4.2';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
@@ -1881,13 +1881,19 @@ function onEnd() {
                 opt.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             });
         });
-        // ❤︎ 先初始化选择 ❤︎
-        setTimeout(() => {
+        // ❤︎ 先初始化选择：滚到第一颗🍎居中 + 双帧重算确保 rect 准确 ❤︎
+        const initFirst = () => {
             const first = track.querySelector('.rol-fruit-option');
-            if (first) first.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
+            if (!first) return;
+            // ❤︎ 用 scrollLeft 直接对齐（比 scrollIntoView 更稳，不受父容器滚动干扰）❤︎
+            const wrapCenter = wrap.offsetWidth / 2;
+            const firstCenter = first.offsetLeft + first.offsetWidth / 2;
+            wrap.scrollLeft = firstCenter - wrapCenter;
             syncSelected();
-        }, 50);
+        };
+        requestAnimationFrame(() => requestAnimationFrame(initFirst));
     }
+
 
     /* ⬇️┅🗑️删除果子/┅┅╗ */
     function deleteFruit(fruitId) {
@@ -1951,16 +1957,88 @@ function showPicker() {
     const noteEl = document.getElementById('rol-fruit-note');
     if (noteEl) noteEl.value = '';
     panel.classList.add('rol-picker-open');
-    setTimeout(initPickerScroll, 80);
+
+    // ❤︎ 等滑入动画(0.32s)结束后再算 rect，否则首颗🍎选不到 ❤︎
+    let scrolled = false;
+    function runScroll() {
+        if (scrolled) return;
+        scrolled = true;
+        panel.removeEventListener('transitionend', onTransEnd);
+        initPickerScroll();
+    }
+    function onTransEnd(e) {
+        // ❤︎ 只在面板自身的 transform/opacity 过渡结束时触发 ❤︎
+        if (e.target === panel && (e.propertyName === 'transform' || e.propertyName === 'opacity')) {
+            runScroll();
+        }
+    }
+    panel.addEventListener('transitionend', onTransEnd);
+    // ❤︎ 兜底：万一 transitionend 没触发(被打断/无过渡)，360ms 后强制执行 ❤︎
+    setTimeout(runScroll, 360);
 }
+
 
 function hidePicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
     if (panel) panel.classList.remove('rol-picker-open');
 }
 
+    /* ⬇️┅🍎果子飞行动画/┅┅╗ */
+    function throwAnimationFrom(emoji, startRect, onComplete) {
+        const avatars = document.querySelectorAll(
+            '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) .avatar img'
+        );
+        let targetRect; let targetEl = null;
+        if (avatars.length) {
+            targetEl = avatars[avatars.length - 1];
+            targetRect = targetEl.getBoundingClientRect();
+        } else {
+            targetRect = { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+        }
+        doFly(emoji, startRect, targetRect, targetEl, onComplete);
+    }
+
+    function doFly(emoji, startRect, targetRect, targetEl, onComplete) {
+        const fly = document.createElement('div');
+        fly.textContent = emoji;
+        const sx = startRect.left + startRect.width / 2;
+        const sy = startRect.top + startRect.height / 2;
+        const ex = targetRect.left + targetRect.width / 2;
+        const ey = targetRect.top + targetRect.height / 2;
+        fly.style.cssText = `position: fixed; left: ${sx}px; top: ${sy}px; font-size: 32px; z-index: 999999; pointer-events: none; transition: none;`;
+        document.body.appendChild(fly);
+        const dur = 1200; const start = performance.now();
+        const peakOffset = -(140 + Math.random() * 40);
+        function frame(now) {
+            const t = Math.min((now - start) / dur, 1);
+            const x = sx + (ex - sx) * t;
+            const arc = 4 * t * (1 - t) * peakOffset;
+            const y = sy + (ey - sy) * t + arc;
+            fly.style.left = x + 'px'; fly.style.top = y + 'px';
+            fly.style.transform = `rotate(${t * 360}deg) scale(${1 + Math.sin(t * Math.PI) * 0.15})`;
+            if (t < 1) { requestAnimationFrame(frame); }
+            else {
+                if (targetEl) {
+                    const wrap = targetEl.closest('.avatar') || targetEl.parentElement;
+                    if (wrap) { wrap.classList.add('rol-avatar-shaking'); setTimeout(() => wrap.classList.remove('rol-avatar-shaking'), 400); }
+                }
+                fly.style.transition = 'top 0.15s ease-out, transform 0.15s ease';
+                fly.style.top = (ey - 35) + 'px';
+                fly.style.transform = 'rotate(380deg) scale(0.7)';
+                setTimeout(() => {
+                    fly.style.transition = 'top 0.45s ease-in, opacity 0.3s ease 0.2s';
+                    fly.style.top = (window.innerHeight + 50) + 'px';
+                    fly.style.opacity = '0';
+                    setTimeout(() => { fly.remove(); if (onComplete) onComplete(); }, 500);
+                }, 160);
+            }
+        }
+        requestAnimationFrame(frame);
+    }
+
     /* ⬇️┅🍎丢果动画/┅┅╗ */
     function doThrow() {
+
     const selected = document.querySelector('.rol-fruit-option.rol-selected');
     if (!selected) {
         UIController.showToast('先选一颗果子嘛 🍏');
@@ -1991,13 +2069,18 @@ function hidePicker() {
 
     // ❤︎ 关面板（让出舞台给动画）❤︎
     hidePicker();
+    // ❤︎ 飞行期间把所有面板暂时藏起来（CSS body.rol-fruit-animating 控制）❤︎
+    document.body.classList.add('rol-fruit-animating');
 
     // ❤︎ 用预存的 startRect 飞 ❤︎
     throwAnimationFrom(emoji, startRect, () => {
+        // ❤︎ 动画结束 → 把面板移回来 ❤︎
+        document.body.classList.remove('rol-fruit-animating');
         UIController.showToast(`果子丢出去啦 ${emoji}`);
         renderGarden();
     });
 }
+
 
 /* ⬇️┅🧡解析AI丢出的果子/┅┅╗ */
     function parseAIFruit(text) {
