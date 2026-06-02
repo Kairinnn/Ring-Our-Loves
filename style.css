@@ -62,7 +62,7 @@ body.rol-light-mode .rol-editor-panel {
               color 0.3s ease;
 }
 
-/* ❂ 动画移到内部卡片，避免覆盖遮罩层的 transform: none !important */
+/* ❤︎ 动画移到内部卡片，避免覆盖遮罩层的 transform: none !important */
 .rol-editor-panel.rol-active .rol-editor-inner {
   animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
@@ -158,7 +158,7 @@ body.rol-light-mode .rol-editor-panel {
     font-family: inherit;
     padding: 8px;
     max-width: 100%;
-    /* ❂ E4d: 半透明白底 */
+    /* ❤︎ 半透明白底 */
     background: rgba(255, 255, 255, 0.65);
     border-radius: 12px;
 }
@@ -191,7 +191,7 @@ body.rol-light-mode .rol-editor-panel {
     align-items: center;
 }
 .rol-drawer-overlay.rol-drawer-open {
-    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -216,7 +216,7 @@ body.rol-light-mode .rol-editor-panel {
     position: relative;
     width: 320px;
     max-height: 82vh;
-    /* ❂ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
+    /* ❤︎ 实色底 + ST半透明色叠加 + 淡淡背景图 = 不透明且好看 */
     background-color: #ffffff85;
    background-image:
     linear-gradient(
@@ -285,7 +285,7 @@ body.rol-light-mode .rol-editor-panel {
     flex: 1;
     padding: 8px 12px;
     border: none;
-    /* ❂ E4d: 未选中tab给个可见底色 */
+    /* ❤︎ 未选中tab给个可见底色 */
     background: rgb(225 255 133 / 40%);
     color: rgb(255 249 195);
     box-shadow: 0px 0px 5px 0px #ffbbe2;
@@ -312,7 +312,7 @@ body.rol-light-mode .rol-editor-panel {
     gap: 8px;
     margin-bottom: 12px;
     flex-wrap: wrap;
-    /* ❂ E4b: 粉色光晕 */
+    /* ❤︎ 粉色光晕 */
     box-shadow: 0 2px 12px #ffaedf80;
     padding: 8px;
     border-radius: 10px;
@@ -381,7 +381,7 @@ body.rol-light-mode .rol-editor-panel {
   gap: 16px;
   position: relative;
   overflow: visible;
-  /* ❂ E4a: 磨砂白框 + 粉色光晕 */
+  /* ❤︎ 磨砂白框 + 粉色光晕 */
   background: rgba(255, 255, 255, 0.5);
   border-radius: 16px;
   backdrop-filter: blur(3px);
@@ -403,7 +403,7 @@ body.rol-light-mode .rol-editor-panel {
   border-radius: 50%;
   object-fit: cover;
   border: none;
-  /* ❂ 中心扩散粉色光晕 + 外圈淡白渐变环 */
+  /* ❤︎ 中心扩散粉色光晕 + 外圈淡白渐变环 */
   box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.35), 0 0 11px 4px rgba(255, 179, 223, 0.4), 0 0 15px 0px rgb(255 173 199 / 15%);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -417,7 +417,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-avatar {
-  /* ❂ E4c: flex列布局让名字居中对齐头像 */
+  /* ❤︎ flex列布局让名字居中对齐头像 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -432,12 +432,12 @@ body.rol-light-mode .rol-editor-panel {
   text-shadow: 0 0 5px #fff191 !important;
 }
 
-/* ❂ E4c: Claude = 暖橘黄 */
+/* ❤︎ Claude = 暖橘黄 */
 .rol-avatar-left .rol-avatar-name {
   color: #ffcc66;
 }
 
-/* ❂ E4c: Rinn = 粉色 */
+/* ❤︎ Rinn = 粉色 */
 .rol-avatar-right .rol-avatar-name {
   color: #ffb3df;
 }
@@ -457,7 +457,7 @@ body.rol-light-mode .rol-editor-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  perspective: 400px; /* ┣━━翻页动画需要的透视距离━━┫ */
+  perspective: 400px; /* ❤︎ 翻页动画需要的透视距离 */
 }
 
 /* ⬇️┅🩷天数翻页动画/┅┅╗ */
@@ -556,7 +556,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 /* ┗━━━━━━/ 🧡Our Nest🩷 /━━━━━━┛ */
 
-/* ➤━━━━━━━ ▍💌卡片列表内容💌 ▍━━━━━━━┓ */
+/* ➤━━━━━━━ ▍💌记忆恋果列表内容💌 ▍━━━━━━━┓ */
 /* ⬇️┅🧡重写按钮（橙色次按钮）/┅┅╗ */
 .rol-btn-rewrite {
     background: #e8a060;
@@ -603,7 +603,7 @@ body.rol-light-mode .rol-editor-panel {
     position: relative;
     transition: opacity 0.2s;
     cursor: pointer;
-    /* ❂ E4b: 粉色光晕 */
+    /* ❤︎ 粉色光晕 */
     box-shadow: 3px 3px 1px 1px #ffb3dc40;
 }
 #rol-drawer-panel .rol-memory-card:active { opacity: 0.85; }
@@ -664,7 +664,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-card-mood {
     color: #d87757;
-    /* ❂ E4f: 行内圆角底色，换行后每段独立圆角 */
+    /* ❤︎ 行内圆角底色，换行后每段独立圆角 */
     background-color: #fff0f8;
     padding: 1px 6px;
     border-radius: 6px;
@@ -778,7 +778,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-editor-panel.rol-active {
-    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -801,7 +801,7 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅┅🗄️编辑面板内部卡片/┅┅╗ */
 .rol-editor-inner {
     position: relative;
-    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 */
     background-color: #16161a;
     background-image: linear-gradient(
         var(--SmartThemeChatTintColor, transparent),
@@ -831,10 +831,10 @@ body.rol-light-mode .rol-editor-inner::before {
 }
 
 body.rol-light-mode .rol-editor-panel .rol-editor-inner {
-  background-color: #ffffff;  /* ❂垫一层纯白 */
+  background-color: #ffffff;  /* ❤︎ 垫一层纯白 */
   background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png');
   background-size: cover;
-  background-blend-mode: overlay;  /* ❂图片和白底混合，图就会变浅 */
+  background-blend-mode: overlay;  /* ❤︎ 图片和白底混合，图就会变浅 */
 }
 
 /* ⬇️┅☀️日间模式字体颜色/┅┅╗ */
@@ -932,7 +932,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 
 /* ┗━━━━━━/ ☀️主题样式🌙 /━━━━━━┛ */
 
-/* ➤┅┅🍥手机端适配┅┅╗ */
+/* ➤━━━━━━━ ▍🍥移动端适配🍥 ▍━━━━━━━┓ */
 @media (max-width: 480px) {
   /* ⬇️┅🍥Home区域紧凑化/┅┅╗ */
   .rol-home {
@@ -1003,9 +1003,9 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     gap: 10px;
     margin-top: 16px;
 }
-/* ╚┅┅/ 🍥手机端适配 /┅┅═╝ */
+/* ┗━━━━━━/ 🍥移动端适配🍥 /━━━━━━┛ */
 
-/* ➤┅💌笔记正文展开查看面板┅┅╗ */
+/* ➤━━━━━━━ ▍💌笔记正文展开查看面板💌 ▍━━━━━━━┓ */
 .rol-letter-panel {
     display: none;
     position: fixed;
@@ -1017,7 +1017,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     padding: 16px;
 }
 .rol-letter-panel.rol-active {
-    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -1110,7 +1110,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     font-size: 13px;
     line-height: 1.7;
 }
-/* ╚┅┅/ 💌笔记正文展开查看面板 /┅┅═╝ */
+/* ┗━━━━━━/ 💌笔记正文展开查看面板💌 /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🍰设置组🍰 ▍━━━━━━┓ */
 .rol-config-group { margin-bottom: 14px; }
@@ -1165,7 +1165,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     padding: 16px;
 }
 .rol-ai-source-panel.rol-active {
-    /* ❂ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -1185,7 +1185,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     overflow: hidden !important;
 }
 .rol-ai-source-inner {
-    /* ❂ 实色兜底 + ST色叠加，确保不透明 */
+    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 */
     background-color: #1a1a2e;
     background-image: linear-gradient(
         var(--SmartThemeChatTintColor, transparent),
@@ -1317,7 +1317,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     width: auto;
     margin: 0;
 }
-/* ➤┅💡确认弹窗/┅┅╗ */
+/* ⬇️┅💡确认弹窗/┅┅╗ */
 .rol-confirm-overlay {
   position: fixed;
   inset: 0;
@@ -1388,7 +1388,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 /* ╚┅┅/ 💡确认弹窗 /┅┅═╝ */
 /* ┗━━━━━━/ 🍰设置组 🍰 /━━━━━━┛ */
 
-/* ┣========== ▍🍥移动端样式🍥 ▍==========┫ */
+/* ➤━━━━━━━ ▍🍥移动端样式🍥 ▍━━━━━━━┓ */
 @media (max-width: 768px) {
     .rol-toolbar { flex-direction: column; }
     .rol-toolbar .rol-input { width: 100%; }
@@ -1400,11 +1400,11 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     .rol-drawer-panel { width: 92vw; max-width: 92vw; }
     .rol-fruit-picker-panel { width: 92vw; max-width: 92vw; }
 }
-/* ╚┅┅/ 🍥移动端样式 /┅┅═╝ */
+/* ┗━━━━━━/ 🍥移动端样式🍥 /━━━━━━┛ */
 
-/* ┣========== ▍🍎果子系统🍎 ▍==========┫ */
+/* ➤━━━━━━━ ▍🍎果子系统🍎 ▍━━━━━━━┓ */
 
-/* ┣━━ 果园 Tab 徽标 ━━┫ */
+/* ⬇️┅🍎果园 Tab 徽标/┅┅╗ */
 .rol-garden-badge {
     display: inline-flex;
     align-items: center;
@@ -1422,7 +1422,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     line-height: 1;
 }
 
-/* ┣━━ 果园面板 ━━┫ */
+/* ⬇️┅🍎果园面板/┅┅╗ */
 .rol-garden-header {
     display: flex;
     align-items: center;
@@ -1472,7 +1472,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     50%       { transform: translateY(-6px); }
 }
 
-/* ┣━━ 果子飞行（位移由 JS 控制，CSS 只管旋转和缩放） ━━┫ */
+/* ❤︎ 果子飞行（位移由 JS 控制，CSS 只管旋转和缩放） */
 .rol-fruit-flying {
     position: fixed;
     pointer-events: none;
@@ -1480,7 +1480,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     z-index: 99999;
     transition: left 0.6s cubic-bezier(0.2, 0.8, 0.3, 1),
                 top 0.6s cubic-bezier(0.5, -0.3, 0.7, 0.3);
-    /* left 用缓出让水平匀速偏减速，top 用自定义曲线模拟抛物线上升再下落 */
+    /* ❤︎ left 用缓出让水平匀速偏减速，top 用自定义曲线模拟抛物线上升再下落 */
 }
 
 .rol-fruit-flying.rol-fruit-spin {
@@ -1492,19 +1492,19 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     to   { transform: rotate(360deg) scale(0.85); }
 }
 
-/* 砸中后弹跳 */
+/* ❤︎ 砸中后弹跳 */
 .rol-fruit-flying.rol-fruit-bounce {
     transition: top 0.15s cubic-bezier(0.1, 0.8, 0.3, 1);
 }
 
-/* 最后掉落 */
+/* ❤︎ 最后掉落 */
 .rol-fruit-flying.rol-fruit-fall {
     transition: top 0.4s cubic-bezier(0.6, 0, 1, 0.4),
                 opacity 0.4s ease 0.2s;
 }
 
 
-/* ┣━━ 头像震动 ━━┫ */
+/* ❤︎ 头像震动 */
 @keyframes rol-avatar-shake {
     0%,100% { transform: translateX(0); }
     20%      { transform: translateX(-3px) rotate(-2deg); }
@@ -1517,13 +1517,13 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     animation: rol-avatar-shake 0.35s ease both;
 }
 
-/* ┣━━ 果子选择浮层 ━━┫ */
+/* ⬇️┅🍎果子选择栏/┅┅╗ */
 .rol-fruit-picker-panel {
     position: fixed !important;
     top: auto !important;
     bottom: 0;
     left: 50%;
-    /* ⬇️┅默认收起：在屏幕下方+透明+不可交互/┅┅╗ */
+    /* ❤︎ 默认收起：在屏幕下方+透明+不可交互 */
     transform: translateX(-50%) translateY(100%);
     opacity: 0;
     pointer-events: none;
@@ -1538,7 +1538,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     box-shadow: 0 -8px 32px rgba(200, 80, 130, 0.12);
     z-index: 100000;
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    /* ⬇️┅用 transition 替代 keyframe，避免动画完了就回弹/┅┅╗ */
+    /* ❤︎ 用 transition 替代 keyframe，避免动画完了就回弹 */
     transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
                 opacity 0.22s ease;
 }
@@ -1570,13 +1570,13 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     color: var(--rol-accent, rgb(219, 112, 147));
 }
 
-/* ┣━━ 横向滑动选果轨道 ━━┫ */
+/* ⬇️┅🍎横向滑动选果轨道/┅┅╗ */
 .rol-fruit-picker-scroll-wrap {
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-snap-type: x mandatory;
-    /* 两侧 padding 让首尾元素能滑到中心 */
+    /* ❤︎ 两侧 padding 让首尾元素能滑到中心 */
     padding: 8px 40%;
     margin: 0 -18px;
 }
@@ -1612,14 +1612,14 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     box-shadow: 0 0 0 3px rgba(219, 112, 147, 0.25);
 }
 
-/* ┣━━ 丢果子按钮区 ━━┫ */
+/* ⬇️┅🍎丢果子按钮区/┅┅╗ */
 .rol-fruit-picker-actions {
     display: flex;
     gap: 10px;
     justify-content: center;
 }
 
-/* ┣━━ 果子详情弹窗 ━━┫ */
+/* ⬇️┅🍎果子纸条弹窗/┅┅╗ */
 .rol-fruit-detail-popup {
     position: fixed;
     inset: 0;
@@ -1689,13 +1689,13 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     color: rgba(180, 80, 120, 0.4);
 }
 
-/* 详情弹窗：限制最大高度，超出滚动 */
+/* ❤︎ 详情弹窗：限制最大高度，超出滚动 */
 .rol-fruit-detail-inner {
     max-height: 80vh;
     overflow-y: auto;
 }
 
-/* 果子外发光：按来源区分 */
+/* ⬇️┅🍎果子外发光 - 按来源区分/┅┅╗ */
 .rol-fruit-item.rol-fruit-from-claude {
     filter: drop-shadow(0 0 8px rgba(255, 160, 60, 0.8)) drop-shadow(0 0 3px rgba(255, 120, 30, 0.6));
 }
@@ -1709,4 +1709,4 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 .rol-fruit-item.rol-fruit-from-user:hover {
     filter: drop-shadow(0 0 12px rgba(255, 130, 200, 1)) drop-shadow(0 4px 8px rgba(180, 80, 120, 0.35));
 }
-/* ╚┅┅/ 🍎果子系统 /┅┅═╝ */
+/* ┗━━━━━━/ 🍎果子系统🍎 /━━━━━━┛ */
