@@ -2051,9 +2051,10 @@ function hidePicker() {
     const emoji = selected.dataset.emoji;
     const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
 
-    // ❤︎ 先记住起飞位置！再隐藏面板 ❤︎
+    // ❤︎ 先记住起飞位置（在面板还在原位的时候）❤︎
     const startRect = selected.getBoundingClientRect();
 
+    // ❤︎ 写入数据 ❤︎
     const msgCount = SillyTavern.getContext().chat.length || 0;
     const fruit = {
         id: 'fruit_' + Date.now(),
@@ -2070,9 +2071,10 @@ function hidePicker() {
     fruits.push(fruit);
     saveFruits(fruits);
 
+    // ❤︎ 关面板（让出舞台给动画）❤︎
     hidePicker();
 
-    // ❤︎ 把预存的 startRect 传进去 ❤︎
+    // ❤︎ 用预存的 startRect 飞 ❤︎
     throwAnimationFrom(emoji, startRect, () => {
         UIController.showToast(`果子丢出去啦 ${emoji}`);
         renderGarden();
