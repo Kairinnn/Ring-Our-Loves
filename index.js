@@ -1933,6 +1933,12 @@ function onEnd() {
 function showPicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
     if (!panel) return;
+
+    // ❤︎ 把面板移到 body 下面，脱离 drawer 的 overflow 裁剪 ❤︎
+    if (panel.parentElement !== document.body) {
+        document.body.appendChild(panel);
+    }
+
     const noteEl = document.getElementById('rol-fruit-note');
     if (noteEl) noteEl.value = '';
     panel.classList.add('rol-picker-open');
