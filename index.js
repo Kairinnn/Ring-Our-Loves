@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.4.2';// ┣━━🩷━━┫
+const ROL_VERSION = '0.4.3';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
@@ -1604,6 +1604,12 @@ if (rolStopBtn) {
 
     /* ⬇️┅🌳劫持ST工具栏：添加温室快捷入口/┅┅╗ */
     function injectToolbarButtons() {
+        // ❤︎ 一次性事件委托：ST 重渲染消息会丢掉直接绑定的监听，用委托才稳 ❤︎
+        $(document).off('click.rolMesBtn').on('click.rolMesBtn', '.rol-mes-btn', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
+        });
         // ❤︎ 楼层消息顶部工具栏 ❤︎
         _injectMesButtons();
         const chatEl = document.getElementById('chat');
@@ -1949,6 +1955,9 @@ function showPicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
     if (!panel) return;
 
+    // ❤︎ 进场先清掉可能卡死的动画 class，防止 picker 被连环透明点不动 ❤︎
+    document.body.classList.remove('rol-fruit-animating');
+
     // ❤︎ 把面板移到 body 下面，脱离 drawer 的 overflow 裁剪 ❤︎
     if (panel.parentElement !== document.body) {
         document.body.appendChild(panel);
@@ -2071,6 +2080,8 @@ function hidePicker() {
     hidePicker();
     // ❤︎ 飞行期间把所有面板暂时藏起来（CSS body.rol-fruit-animating 控制）❤︎
     document.body.classList.add('rol-fruit-animating');
+    // ❤︎ 兜底：万一动画回调没触发，2s 后强制摘掉 class，防止面板被卡死透明 ❤︎
+    setTimeout(() => document.body.classList.remove('rol-fruit-animating'), 2000);
 
     // ❤︎ 用预存的 startRect 飞 ❤︎
     throwAnimationFrom(emoji, startRect, () => {
@@ -2222,6 +2233,8 @@ async function loadPanel() {
 
 jQuery(async () => {
     Storage.initSettings();
+    // ❤︎ 清除可能卡死的飞行动画 class（防止主面板/picker 连环透明点不动）❤︎
+    document.body.classList.remove('rol-fruit-animating');
     const panelHtml = await loadPanel();
     if (panelHtml) {
         // ❤︎ 将HTML解析，分离侧边栏部分和浮动面板部分 ❤︎
