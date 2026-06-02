@@ -1963,46 +1963,6 @@ function hidePicker() {
     function doThrow() {
     const selected = document.querySelector('.rol-fruit-option.rol-selected');
     if (!selected) {
-        UIController.showToast('先选一颗果子嘛 👀');
-        return;
-    }
-    const emoji = selected.dataset.emoji;
-    const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
-
-    // ┣━━ ① 先记住起飞位置（在面板还在原位的时候） ━━┫
-    const startRect = selected.getBoundingClientRect();
-
-    // ┣━━ ② 写入数据 ━━┫
-    const msgCount = SillyTavern.getContext().chat.length || 0;
-    const fruit = {
-        id: 'fruit_' + Date.now(),
-        emoji,
-        from: 'user',
-        to: 'claude',
-        message,
-        timestamp: Date.now(),
-        read: false,
-        delivered: false,
-        deliverAt: msgCount + Math.floor(Math.random() * 30) + 5
-    };
-    const fruits = loadFruits();
-    fruits.push(fruit);
-    saveFruits(fruits);
-
-    // ┣━━ ③ 关面板（让出舞台给动画） ━━┫
-    hidePicker();
-
-    // ┣━━ ④ 用预存的 startRect 飞 ━━┫
-    throwAnimationFrom(emoji, startRect, () => {
-        UIController.showToast(`果子丢出去啦 ${emoji}`);
-        renderGarden();
-    });
-}
-
-    /* ⬇️┅💾保存/丢出/┅┅╗ */
-    function doThrow() {
-    const selected = document.querySelector('.rol-fruit-option.rol-selected');
-    if (!selected) {
         UIController.showToast('先选一颗果子嘛 🍏');
         return;
     }
