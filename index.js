@@ -1699,23 +1699,32 @@ function renderGarden() {
     const fruitSize = 32;
 
     pageFruits.forEach((fruit, i) => {
-        const el = document.createElement('div');
-        el.className = 'rol-fruit-item'
-            + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '')
-            + (fruit.from === 'claude' ? ' rol-fruit-from-claude' : ' rol-fruit-from-user');
-        el.textContent = fruit.emoji;
-        el.dataset.id = fruit.id;
+    const el = document.createElement('div');
+    el.className = 'rol-fruit-item'
+        + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '')
+        + (fruit.from === 'claude' ? ' rol-fruit-from-claude' : ' rol-fruit-from-user');
+    el.textContent = fruit.emoji;
+    el.dataset.id = fruit.id;
 
+    if (gardenPage === 0) {
+        // ❤︎ 最新页：随机散落，保留刚掉下来的乱感 ❤︎
         const x = Math.random() * (containerWidth - fruitSize);
         const layer = Math.floor(i / Math.ceil(containerWidth / (fruitSize * 1.2)));
         const baseY = layer * fruitSize * 0.7 + Math.random() * 8 - 4;
-
-        el.style.position = 'absolute';
         el.style.left = x + 'px';
         el.style.bottom = baseY + 'px';
         el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
-        el.style.zIndex = i;
-        el.style.animationDelay = (i * 0.06) + 's';
+    } else {
+        // ❤︎ 旧页：网格排列，每行N列整整齐齐 ❤︎
+        const cols = Math.max(1, Math.floor(containerWidth / 50));
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        el.style.left = (col * 50 + 10) + 'px';
+        el.style.bottom = (row * 50 + 10) + 'px';
+        el.style.transform = 'rotate(0deg)';
+    }
+    el.style.zIndex = i;
+    el.style.animationDelay = (i * 0.06) + 's';
 
 /* ⬇️┅🍎果子拖动＋查看/┅┅╗ */
 let dragState = { moved: false };
@@ -1774,16 +1783,16 @@ function onEnd() {
     } else {
         nav.style.display = 'flex';
         nav.innerHTML = `
-            <span id="rol-garden-prev" style="cursor:pointer;opacity:${gardenPage < totalPages - 1 ? 1 : 0.3}">◂ 更早</span>
-            <span>${gardenPage === 0 ? '最新' : `第${totalPages - gardenPage}页`} / 共${totalPages}页</span>
-            <span id="rol-garden-next" style="cursor:pointer;opacity:${gardenPage > 0 ? 1 : 0.3}">更新 ▸</span>
-        `;
+    <span id="rol-garden-prev" style="cursor:pointer;opacity:${gardenPage > 0 ? 1 : 0.3}">◂ 更新</span>
+    <span>${gardenPage === 0 ? '最新' : `第${gardenPage + 1}页`} / 共${totalPages}页</span>
+    <span id="rol-garden-next" style="cursor:pointer;opacity:${gardenPage < totalPages - 1 ? 1 : 0.3}">更早 ▸</span>
+    `;
         document.getElementById('rol-garden-prev').onclick = () => {
-            if (gardenPage < totalPages - 1) { gardenPage++; renderGarden(); }
-        };
+    if (gardenPage > 0) { gardenPage--; renderGarden(); }
+    };
         document.getElementById('rol-garden-next').onclick = () => {
-            if (gardenPage > 0) { gardenPage--; renderGarden(); }
-        };
+    if (gardenPage < totalPages - 1) { gardenPage++; renderGarden(); }
+    };
     }
 }
 
