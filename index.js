@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.3.9'; // 每次改完代码手动+1
+const ROL_VERSION = '0.4.0'; // 每次改完代码手动+1
 let rolAbortController = null; // ┣━━🩷 全局 AbortController（供 AIService + UIController 共用）━━┫
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
@@ -1722,7 +1722,45 @@ function renderGarden() {
         el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
         el.style.zIndex = i;
         el.style.animationDelay = (i * 0.06) + 's';
-        el.addEventListener('click', () => showDetail(fruit));
+        // ┣━━ 果子可拖动 + 点击查看 ━━┫
+let dragState = { moved: false };
+function onDragStart(e) {
+    e.preventDefault();
+    dragState.moved = false;
+        const startX = (e.touches ? e.touches[0].clientX : e.clientX);
+        const startY = (e.touches ? e.touches[0].clientY : e.clientY);
+        const origLeft = el.offsetLeft;
+        const origBottom = parseInt(el.style.bottom) || 0;
+
+        el.style.zIndex = 9999;
+        el.style.transition = 'none';
+
+    function onMove(ev) {
+        const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX);
+        const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+        const dx = cx - startX;
+        const dy = cy - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.moved = true;
+        el.style.left = (origLeft + dx) + 'px';
+        el.style.bottom = (origBottom - dy) + 'px';
+    }
+function onEnd() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onEnd);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onEnd);
+        el.style.transition = '';
+        el.style.zIndex = i;
+        if (!dragState.moved) showDetail(fruit);
+    }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onEnd);
+}
+        el.addEventListener('mousedown', onDragStart);
+        el.addEventListener('touchstart', onDragStart, { passive: false });
+
         canvas.appendChild(el);
     });
 
@@ -1768,8 +1806,8 @@ function renderGarden() {
     }
 
     document.getElementById('rol-fruit-detail-emoji').textContent = fruit.emoji;
-    document.getElementById('rol-fruit-detail-from').textContent =
-        fruit.from === 'claude' ? '🧡 来自 <span style="color:#D87757;font-weight:bold">Claude</span>' : '🩷 来自 Rinn';
+    document.getElementById('rol-fruit-detail-from').innerHTML =
+    fruit.from === 'claude' ? '🧡 来自 <span style="color:#D87757;font-weight:bold"><span style="color:#D87757;font-weight:bold">Claude</span></span>' : '🩷 来自 Rinn';
 
     // 纸条内容
     const noteEl = document.getElementById('rol-fruit-detail-note');
@@ -1903,47 +1941,33 @@ function showPicker() {
     if (!panel) return;
     const noteEl = document.getElementById('rol-fruit-note');
     if (noteEl) noteEl.value = '';
-    panel.style.display = 'block';
-    // 强制 reflow 后加 open class，确保 transition 触发
-    void panel.offsetWidth;
     panel.classList.add('rol-picker-open');
     setTimeout(initPickerScroll, 80);
 }
 
 function hidePicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
-    if (!panel) return;
-    panel.classList.remove('rol-picker-open');
-    // 等动画走完再 display:none
-    setTimeout(() => { panel.style.display = 'none'; }, 280);
+    if (panel) panel.classList.remove('rol-picker-open');
 }
 
     // ┣━━ Throw animation ━━┫
-    function throwAnimation(emoji, onComplete) {
-        const selected = document.querySelector('.rol-fruit-option.rol-selected');
-        const startEl = selected || document.getElementById('rol-throw-fruit-btn');
-        if (!startEl) { onComplete && onComplete(); return; }
-        const startRect = startEl.getBoundingClientRect();
+    function throwAnimationFrom(emoji, startRect, onComplete) {
+    // 寻找最后一条 AI 消息的头像
+    const avatars = document.querySelectorAll(
+        '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
+    );
+    let targetEl = null;
+    let targetRect;
 
-        // 寻找最后一条 AI 消息的头像
-        const avatars = document.querySelectorAll(
-            '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
-        );
-        if (avatars.length) {
-            const last = avatars[avatars.length - 1];
-            last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            setTimeout(() => {
-                const targetRect = last.getBoundingClientRect();
-                doFly(emoji, startRect, targetRect, last, onComplete);
-            }, 450);
-        } else {
-            // 没有 AI 消息就飞向屏幕中心
-            const targetRect = {
-                left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0
-            };
-            doFly(emoji, startRect, targetRect, null, onComplete);
-        }
+    if (avatars.length) {
+        targetEl = avatars[avatars.length - 1];
+        targetRect = targetEl.getBoundingClientRect();
+    } else {
+        targetRect = { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
     }
+
+    doFly(emoji, startRect, targetRect, targetEl, onComplete);
+}
 
     function doFly(emoji, startRect, targetRect, targetEl, onComplete) {
     const fly = document.createElement('div');
@@ -1956,9 +1980,9 @@ function hidePicker() {
     fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
     document.body.appendChild(fly);
 
-    const dur = 900; // 飞行时间缩短一点，别拖
+    const dur = 1400; // 飞行时间缩短一点，别拖
     const start = performance.now();
-    const peakOffset = -(100 + Math.random() * 40);
+    const peakOffset = -(160 + Math.random() * 40);
 
     function flyPhase(now) {
         const t = Math.min((now - start) / dur, 1);
@@ -2010,44 +2034,42 @@ function hidePicker() {
 
     // ┣━━ Save & throw ━━┫
     function doThrow() {
-        const selected = document.querySelector('.rol-fruit-option.rol-selected');
-        if (!selected) {
-            UIController.showToast('先选一颗果子嘛 👀');
-            return;
-        }
-        const emoji = selected.dataset.emoji;
-        const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
-        const msgCount = (SillyTavern.getContext().chat.length) || 0;
-        const fruit = {
-            id: 'fruit_' + Date.now(),
-            emoji,
-            from: 'user',
-            to: 'claude',
-            message,
-            timestamp: Date.now(),
-            read: false,
-            delivered: false,
-            deliverAt: msgCount + Math.floor(Math.random() * 30) + 5
-        };
-        const fruits = loadFruits();
-        fruits.push(fruit);
-        saveFruits(fruits);
-
-        let savedScroll = 0;
-        const track = document.querySelector('.rol-fruit-track');
-        if (track) savedScroll = track.scrollLeft;
-
-        hidePicker();
-        throwAnimation(emoji, () => {
-            UIController.showToast(`果子丢出去啦 ${emoji}`);
-            renderGarden();
-            setTimeout(() => {
-        showPicker();
-        const track = document.querySelector('.rol-fruit-track');
-        if (track) track.scrollLeft = savedScroll;
-        }, 1000);
-       });
+    const selected = document.querySelector('.rol-fruit-option.rol-selected');
+    if (!selected) {
+        UIController.showToast('先选一颗果子嘛 👀');
+        return;
     }
+    const emoji = selected.dataset.emoji;
+    const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
+
+    // ┣━━🩷 先记住起飞位置！再隐藏面板！━━┫
+    const startRect = selected.getBoundingClientRect();
+
+    const msgCount = SillyTavern.getContext().chat.length || 0;
+    const fruit = {
+        id: 'fruit_' + Date.now(),
+        emoji,
+        from: 'user',
+        to: 'claude',
+        message,
+        timestamp: Date.now(),
+        read: false,
+        delivered: false,
+        deliverAt: msgCount + Math.floor(Math.random() * 30) + 5
+    };
+    const fruits = loadFruits();
+    fruits.push(fruit);
+    saveFruits(fruits);
+
+    // 现在才隐藏
+    hidePicker();
+
+    // 把预存的 startRect 传进去
+    throwAnimationFrom(emoji, startRect, () => {
+        UIController.showToast(`果子丢出去啦 ${emoji}`);
+        renderGarden();
+    });
+}
 
     // ┣━━ AI fruit block parser ━━┫
     function parseAIFruit(text) {

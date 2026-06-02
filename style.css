@@ -1697,10 +1697,16 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 
 /* 果子外发光：按来源区分 */
 .rol-fruit-item.rol-fruit-from-claude {
-    filter: drop-shadow(0 0 6px rgba(255, 180, 100, 0.5));
+    filter: drop-shadow(0 0 8px rgba(255, 160, 60, 0.8)) drop-shadow(0 0 3px rgba(255, 120, 30, 0.6));
 }
 .rol-fruit-item.rol-fruit-from-user {
-    filter: drop-shadow(0 0 6px rgba(255, 180, 215, 0.5));
+    filter: drop-shadow(0 0 8px rgba(255, 130, 200, 0.7)) drop-shadow(0 0 3px rgba(255, 80, 160, 0.5));
 }
 
+.rol-fruit-item.rol-fruit-from-claude:hover {
+    filter: drop-shadow(0 0 12px rgba(255, 160, 60, 1)) drop-shadow(0 4px 8px rgba(180, 80, 120, 0.35));
+}
+.rol-fruit-item.rol-fruit-from-user:hover {
+    filter: drop-shadow(0 0 12px rgba(255, 130, 200, 1)) drop-shadow(0 4px 8px rgba(180, 80, 120, 0.35));
+}
 /* ╚┅┅/ 🍎果子系统 /┅┅═╝ */
