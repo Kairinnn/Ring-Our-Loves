@@ -1929,7 +1929,7 @@ function onEnd() {
        };
     }
 
-    /* ⬇️┅🍎✨️显示/隐藏选果栏/┅┅╗ */
+/* ⬇️┅🍎✨️显示/隐藏选果栏/┅┅╗ */
 function showPicker() {
     const panel = document.getElementById('rol-fruit-picker-panel');
     if (!panel) return;
