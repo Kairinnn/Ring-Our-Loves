@@ -1977,12 +1977,8 @@ function hidePicker() {
 
 
     /* ⬇️┅🍎果子飞行动画/┅┅╗ */
+    // ❤︎ 找到最后一条 AI 消息的头像当靶子，然后丢果子 ❤︎
     function throwAnimation(emoji, onComplete) {
-        const selected = document.querySelector('.rol-fruit-option.rol-selected');
-        const startEl = selected || document.getElementById('rol-throw-fruit-btn');
-        if (!startEl) { onComplete && onComplete(); return; }
-        const startRect = startEl.getBoundingClientRect();
-
         // 寻找最后一条 AI 消息的头像
         const avatars = document.querySelectorAll(
             '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
@@ -1990,58 +1986,183 @@ function hidePicker() {
         if (avatars.length) {
             const last = avatars[avatars.length - 1];
             last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            setTimeout(() => {
-                const targetRect = last.getBoundingClientRect();
-                doFly(emoji, startRect, targetRect, last, onComplete);
-            }, 450);
+            // ❤︎ 等滚动稳一下再丢，确保 targetEl 中心点拿得准 ❤︎
+            setTimeout(() => doFly(emoji, last, onComplete), 450);
         } else {
-            // 没有 AI 消息就飞向屏幕中心
-            const targetRect = {
-                left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0
-            };
-            doFly(emoji, startRect, targetRect, null, onComplete);
+            // ❤︎ 没有 AI 消息就丢向屏幕中心（targetEl 传 null，doFly 内部兜底）❤︎
+            doFly(emoji, null, onComplete);
         }
     }
 
-    function doFly(emoji, startRect, targetRect, targetEl, onComplete) {
-        const fly = document.createElement('div');
-        fly.className = 'rol-fruit-flying';
-        fly.textContent = emoji;
-        const sx = startRect.left + startRect.width / 2;
-        const sy = startRect.top + startRect.height / 2;
-        const ex = targetRect.left + targetRect.width / 2;
-        const ey = targetRect.top + targetRect.height / 2;
-        fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
-        document.body.appendChild(fly);
-        const dur = 650;
-        const start = performance.now();
-        const peakOffset = -(80 + (Math.sin(Date.now()) * 20 + 20));
+    // ❤︎━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //  🍎 doFly(emoji, targetEl, onComplete)
+    //  · 果子从屏幕外随机方向飞入（上 / 左 / 右 / 角，四选一）
+    //  · 不依赖任何面板坐标，只认 targetEl 头像中心点
+    //  · 抛物线 + 自转，rAF 实现，飞入时长 800~1000ms 随机
+    //  · 命中后头像震一下（.rol-avatar-shaking，400ms 移除）
+    //  · 砸中弹起一点，再加速坠出屏幕底部并淡出
+    //  · position:fixed / z-index:999999 / pointer-events:none，纯内联样式挂 body
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    function doFly(emoji, targetEl, onComplete) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const M = 120; // ❤︎ 屏幕外余量，保证起飞点完全在视口外
 
-        function frame(now) {
-            const t = Math.min((now - start) / dur, 1);
+        // ❤︎ 目标 = targetEl 头像中心；拿不到就兜底到屏幕中心 ❤︎
+        let ex, ey;
+        if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
+            const r = targetEl.getBoundingClientRect();
+            ex = r.left + r.width / 2;
+            ey = r.top + r.height / 2;
+        } else {
+            ex = vw / 2;
+            ey = vh / 2;
+        }
+
+        // ❤︎ 4 个进入方向分支：不同起飞点 + 不同抛物线拱高 + 不同弹跳幅度 ❤︎
+        const variants = [
+            { // ① 顶部砸下来
+                start: () => ({ x: ex + (Math.random() - 0.5) * vw * 0.4, y: -M }),
+                arc: -(60 + Math.random() * 40),   // 抛物线峰偏移（负=向上拱）
+                bounce: 26 + Math.random() * 10     // 砸中后弹起高度
+            },
+            { // ② 左侧飞入
+                start: () => ({ x: -M, y: ey - vh * 0.25 + Math.random() * vh * 0.2 }),
+                arc: -(90 + Math.random() * 50),
+                bounce: 18 + Math.random() * 10
+            },
+            { // ③ 右侧飞入
+                start: () => ({ x: vw + M, y: ey - vh * 0.25 + Math.random() * vh * 0.2 }),
+                arc: -(90 + Math.random() * 50),
+                bounce: 18 + Math.random() * 10
+            },
+            { // ④ 随机一角斜射
+                start: () => ({ x: Math.random() < 0.5 ? -M : vw + M, y: -M }),
+                arc: -(70 + Math.random() * 60),
+                bounce: 30 + Math.random() * 14
+            }
+        ];
+
+        // ❤︎ 每次丢果子随机抽一个分支 ❤︎
+        const v = variants[Math.floor(Math.random() * variants.length)];
+        const sp = v.start();
+        const sx = sp.x, sy = sp.y;
+
+        const dur = 800 + Math.random() * 200;        // ❤︎ 飞入时长 800~1000ms 随机
+        const spinDir = Math.random() < 0.5 ? 1 : -1; // ❤︎ 自转方向随机
+        const spinTurns = 1 + Math.random();          // ❤︎ 自转 1~2 圈随机
+
+        // ❤︎ 纯内联样式，挂 body，绝不依赖任何 ST 弹窗层级节点 ❤︎
+        const fly = document.createElement('div');
+        fly.textContent = emoji;
+        fly.style.cssText =
+            'position:fixed;left:0;top:0;font-size:34px;line-height:1;' +
+            'z-index:999999;pointer-events:none;will-change:transform,opacity;' +
+            'transform:translate(' + sx + 'px,' + sy + 'px);';
+        document.body.appendChild(fly);
+
+        // ❤︎ onComplete 只触发一次（命中即恢复面板，坠落是纯视觉收尾）❤︎
+        let done = false;
+        const finish = () => { if (done) return; done = true; onComplete && onComplete(); };
+
+        const startT = performance.now();
+
+        // ❤︎ 阶段一：屏幕外 → 头像中心，抛物线 + 自转 ❤︎
+        function flyIn(now) {
+            const t = Math.min((now - startT) / dur, 1);
             const x = sx + (ex - sx) * t;
-            const parabola = 4 * t * (1 - t) * peakOffset;
+            const parabola = 4 * t * (1 - t) * v.arc; // 顶点上拱的抛物线
             const y = sy + (ey - sy) * t + parabola;
-            fly.style.left = x + 'px';
-            fly.style.top = y + 'px';
-            fly.style.transform = `rotate(${t * 360}deg) scale(${1 + Math.sin(t * Math.PI) * 0.15})`;
-            fly.style.opacity = t < 0.85 ? '1' : String((1 - (t - 0.85) / 0.15).toFixed(2));
+            const rot = spinDir * spinTurns * 360 * t;
+            const scale = 1 + Math.sin(t * Math.PI) * 0.12;
+            fly.style.transform =
+                'translate(' + x + 'px,' + y + 'px) rotate(' + rot + 'deg) scale(' + scale + ')';
             if (t < 1) {
-                requestAnimationFrame(frame);
+                requestAnimationFrame(flyIn);
             } else {
-                fly.remove();
-                if (targetEl) {
-                    const avatarWrap = targetEl.closest('.avatar') || targetEl.parentElement;
-                    if (avatarWrap) {
-                        avatarWrap.classList.add('rol-avatar-shaking');
-                        setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
-                    }
-                }
-                onComplete && onComplete();
+                shakeAvatar(targetEl); // 命中 → 头像震一下
+                finish();              // 命中即恢复面板 / 提示 / 刷新果园
+                bounceAndFall(rot);    // 弹起 + 坠落收尾
             }
         }
-        requestAnimationFrame(frame);
+
+        // ❤︎ 阶段二：砸中后弹起一点（半个正弦上抬）❤︎
+        function bounceAndFall(baseRot) {
+            const bounceDur = 180;
+            const bStart = performance.now();
+            function bounceFrame(now) {
+                const t = Math.min((now - bStart) / bounceDur, 1);
+                const up = Math.sin(t * Math.PI) * v.bounce;
+                fly.style.transform =
+                    'translate(' + ex + 'px,' + (ey - up) + 'px) rotate(' + baseRot + 'deg) scale(1)';
+                if (t < 1) {
+                    requestAnimationFrame(bounceFrame);
+                } else {
+                    fallOut(baseRot);
+                }
+            }
+            requestAnimationFrame(bounceFrame);
+        }
+
+        // ❤︎ 阶段三：加速坠出屏幕底部 + 淡出 ❤︎
+        function fallOut(baseRot) {
+            const fallDur = 420;
+            const fStart = performance.now();
+            const targetY = vh + M;                  // 落到视口外底部
+            const drift = (Math.random() - 0.5) * 80; // 下坠时轻微水平漂移
+            function fallFrame(now) {
+                const t = Math.min((now - fStart) / fallDur, 1);
+                const ease = t * t;                   // 加速下坠
+                const x = ex + drift * t;
+                const y = ey + (targetY - ey) * ease;
+                const rot = baseRot + spinDir * 180 * t;
+                fly.style.transform =
+                    'translate(' + x + 'px,' + y + 'px) rotate(' + rot + 'deg) scale(1)';
+                fly.style.opacity = String(1 - t);
+                if (t < 1) {
+                    requestAnimationFrame(fallFrame);
+                } else {
+                    fly.remove();
+                    finish(); // 兜底（正常情况已在命中时触发过）
+                }
+            }
+            requestAnimationFrame(fallFrame);
+        }
+
+        requestAnimationFrame(flyIn);
     }
+
+    // ❤︎ 给头像加震动 class，400ms 后移除（CSS: .rol-avatar-shaking img）❤︎
+    function shakeAvatar(targetEl) {
+        if (!targetEl) return;
+        const avatarWrap = targetEl.closest('.avatar')
+            || targetEl.closest('.rol-avatar')
+            || targetEl.parentElement;
+        if (avatarWrap) {
+            avatarWrap.classList.add('rol-avatar-shaking');
+            setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
+        }
+    }
+
+    /* ❤︎━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       🌈 想让「每一次」动画都完全随机？（备选方案，先留注释不启用）
+
+       现在是 4 个离散分支随机抽一个。如果想要无限不重复的随机感，可以
+       把分支换成「连续随机参数」——起飞角度、拱高、时长、自转、弹跳
+       全部独立 random，永远不会有两次一模一样：
+
+         const angle  = Math.random() * Math.PI * 2;        // 任意进入角度
+         const R      = Math.max(vw, vh) * 0.7 + M;          // 出生在视口外的圆环上
+         const sx     = ex + Math.cos(angle) * R;
+         const sy     = ey + Math.sin(angle) * R;
+         const arc    = -(40 + Math.random() * 120);         // 拱高随机
+         const dur    = 700 + Math.random() * 500;           // 时长随机
+         const bounce = 12 + Math.random() * 30;             // 弹跳随机
+         const spinTurns = 0.5 + Math.random() * 2.5;        // 圈数随机
+
+       甚至可以叠加「飞入时左右摆动」「命中粒子迸溅」等。等宝贝想升级
+       的时候，把上面这套参数接到 flyIn / bounce / fall 里就行～ 🍓
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
     /* ⬇️┅🍎丢果动画/┅┅╗ */
     function doThrow() {
@@ -2053,9 +2174,6 @@ function hidePicker() {
     }
     const emoji = selected.dataset.emoji;
     const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
-
-    // ❤︎ 先记住起飞位置（在面板还在原位的时候）❤︎
-    const startRect = selected.getBoundingClientRect();
 
     // ❤︎ 写入数据 ❤︎
     const msgCount = SillyTavern.getContext().chat.length || 0;
@@ -2081,9 +2199,9 @@ function hidePicker() {
     // ❤︎ 兜底：万一动画回调没触发，2s 后强制摘掉 class，防止面板被卡死透明 ❤︎
     setTimeout(() => document.body.classList.remove('rol-fruit-animating'), 2000);
 
-    // ❤︎ 用预存的 startRect 飞 ❤︎
-    throwAnimationFrom(emoji, startRect, () => {
-        // ❤︎ 动画结束 → 把面板移回来 ❤︎
+    // ❤︎ 调用新版 throwAnimation：自动找最后一条 AI 头像当靶子，果子从屏幕外飞入 ❤︎
+    throwAnimation(emoji, () => {
+        // ❤︎ 命中头像 → 把面板移回来（坠落淡出是纯视觉收尾，不阻塞）❤︎
         document.body.classList.remove('rol-fruit-animating');
         UIController.showToast(`果子丢出去啦 ${emoji}`);
         renderGarden();
