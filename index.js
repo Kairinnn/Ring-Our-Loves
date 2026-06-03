@@ -1950,47 +1950,31 @@ function onEnd() {
        };
     }
 
-/* ⬇️┅🍎✨️显示/隐藏选果栏/┅┅╗ */
+/* ⬇️┅🍎✨️显示/隐藏选果栏（内联在果园容器里，靠 .rol-garden-picking 切换）/┅┅╗ */
 function showPicker() {
-    const panel = document.getElementById('rol-fruit-picker-panel');
-    if (!panel) return;
+    const garden = document.getElementById('rol-section-garden');
+    if (!garden) return;
 
     // ❤︎ 进场先清掉可能卡死的动画 class，防止 picker 被连环透明点不动 ❤︎
     document.body.classList.remove('rol-fruit-animating');
 
-    // ❤︎ 把面板移到 body 下面，脱离 drawer 的 overflow 裁剪 ❤︎
-    if (panel.parentElement !== document.body) {
-        document.body.appendChild(panel);
-    }
-
+    // ❤︎ 清空纸条 ❤︎
     const noteEl = document.getElementById('rol-fruit-note');
     if (noteEl) noteEl.value = '';
-    panel.classList.add('rol-picker-open');
 
-    // ❤︎ 等滑入动画(0.32s)结束后再算 rect，否则首颗🍎选不到 ❤︎
-    let scrolled = false;
-    function runScroll() {
-        if (scrolled) return;
-        scrolled = true;
-        panel.removeEventListener('transitionend', onTransEnd);
-        initPickerScroll();
-    }
-    function onTransEnd(e) {
-        // ❤︎ 只在面板自身的 transform/opacity 过渡结束时触发 ❤︎
-        if (e.target === panel && (e.propertyName === 'transform' || e.propertyName === 'opacity')) {
-            runScroll();
-        }
-    }
-    panel.addEventListener('transitionend', onTransEnd);
-    // ❤︎ 兜底：万一 transitionend 没触发(被打断/无过渡)，360ms 后强制执行 ❤︎
-    setTimeout(runScroll, 360);
+    // ❤︎ 给果园容器加 class：隐藏果子画布，显示选果UI ❤︎
+    garden.classList.add('rol-garden-picking');
+
+    // ❤︎ display 切换后双帧重算 rect，让首颗🍎能居中选中 ❤︎
+    requestAnimationFrame(() => requestAnimationFrame(initPickerScroll));
 }
 
 
 function hidePicker() {
-    const panel = document.getElementById('rol-fruit-picker-panel');
-    if (panel) panel.classList.remove('rol-picker-open');
+    const garden = document.getElementById('rol-section-garden');
+    if (garden) garden.classList.remove('rol-garden-picking');
 }
+
 
     /* ⬇️┅🍎果子飞行动画/┅┅╗ */
     function throwAnimationFrom(emoji, startRect, onComplete) {
@@ -2261,11 +2245,10 @@ jQuery(async () => {
         const confirmModal = temp.querySelector('#rol-confirm-modal');
         if (confirmModal) document.body.appendChild(confirmModal);
 
-        // ❤︎ 果子 picker 面板 + 详情弹窗也挂到body ❤︎
-        const fruitPickerPanel = temp.querySelector('#rol-fruit-picker-panel');
+        // ❤︎ 果子详情弹窗挂到body（选果栏已内联在 garden 容器里，随 drawer 一起挂载）❤︎
         const fruitDetailPopup = temp.querySelector('#rol-fruit-detail-popup');
-        if (fruitPickerPanel) document.body.appendChild(fruitPickerPanel);
         if (fruitDetailPopup) document.body.appendChild(fruitDetailPopup);
+
     }
 
     UIController.initUI();
