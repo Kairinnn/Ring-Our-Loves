@@ -1882,11 +1882,40 @@ function onEnd() {
         }
 
         wrap.addEventListener('scroll', syncSelected, { passive: true });
+
+        // ❤︎ 自定义 emoji input 的特殊处理 ❤︎
+        const customInput = document.getElementById('rol-fruit-custom-input');
+        const customOption = customInput?.closest('.rol-fruit-option');
+
         track.querySelectorAll('.rol-fruit-option').forEach(opt => {
-            opt.addEventListener('click', () => {
+            opt.addEventListener('click', (e) => {
+                // ❤︎【任务3】防止页面位移：阻止默认行为和冒泡 ❤︎
+                e.preventDefault();
+                e.stopPropagation();
+
+                // ❤︎【任务4】如果点击的是自定义 input 选项，聚焦输入框而不滚动 ❤︎
+                if (opt === customOption) {
+                    if (customInput) customInput.focus();
+                    return;
+                }
+
                 opt.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             });
         });
+
+        // ❤︎【任务4】自定义 input：输入时同步 emoji 到 dataset ❤︎
+        if (customInput && customOption) {
+            customInput.addEventListener('input', (e) => {
+                const val = e.target.value.trim();
+                customOption.dataset.emoji = val;
+            });
+            // ❤︎ 点击 input 本身也阻止冒泡，避免触发父级滚动 ❤︎
+            customInput.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        }
+
         // ❤︎ 先初始化选择：滚到第一颗🍎居中 + 双帧重算确保 rect 准确 ❤︎
         const initFirst = () => {
             const first = track.querySelector('.rol-fruit-option');
@@ -1985,9 +2014,12 @@ function hidePicker() {
         );
         if (avatars.length) {
             const last = avatars[avatars.length - 1];
-            last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            // ❤︎ 等滚动稳一下再丢，确保 targetEl 中心点拿得准 ❤︎
-            setTimeout(() => doFly(emoji, last, onComplete), 450);
+            // ❤︎ 先把目标头像滚到视口正中，避免它滚出屏幕时坐标取到屏幕外 ❤︎
+            last.scrollIntoView({ behavior: 'auto', block: 'center' });
+            // ❤︎ 等一帧让布局/滚动落定，再取 getBoundingClientRect 才是准的 ❤︎
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => doFly(emoji, last, onComplete));
+            });
         } else {
             // ❤︎ 没有 AI 消息就丢向屏幕中心（targetEl 传 null，doFly 内部兜底）❤︎
             doFly(emoji, null, onComplete);
@@ -2002,6 +2034,7 @@ function hidePicker() {
     //  · 命中后头像震一下（.rol-avatar-shaking，400ms 移除）
     //  · 砸中弹起一点，再加速坠出屏幕底部并淡出
     //  · position:fixed / z-index:999999 / pointer-events:none，纯内联样式挂 body
+    //  · ✅ 全程只用 transform，left/top 只在创建时设初始点，果子尺寸26px
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     function doFly(emoji, targetEl, onComplete) {
         const vw = window.innerWidth;
@@ -2053,10 +2086,11 @@ function hidePicker() {
         const spinTurns = 1 + Math.random();          // ❤︎ 自转 1~2 圈随机
 
         // ❤︎ 纯内联样式，挂 body，绝不依赖任何 ST 弹窗层级节点 ❤︎
+        // ❤︎ ✅ left/top 只在创建时设一次起点=0，后续全用 transform ❤︎
         const fly = document.createElement('div');
         fly.textContent = emoji;
         fly.style.cssText =
-            'position:fixed;left:0;top:0;font-size:34px;line-height:1;' +
+            'position:fixed;left:0;top:0;font-size:26px;line-height:1;' +
             'z-index:999999;pointer-events:none;will-change:transform,opacity;' +
             'transform:translate(' + sx + 'px,' + sy + 'px);';
         document.body.appendChild(fly);
@@ -2172,7 +2206,14 @@ function hidePicker() {
         UIController.showToast('先选一颗果子嘛 🍏');
         return;
     }
-    const emoji = selected.dataset.emoji;
+
+    // ❤︎【任务4】读取 emoji：优先从 dataset 读，为空则提示用户 ❤︎
+    let emoji = selected.dataset.emoji;
+    if (!emoji || emoji === '') {
+        UIController.showToast('✏️ 自定义emoji不能空着哦～');
+        return;
+    }
+
     const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
 
     // ❤︎ 写入数据 ❤︎
@@ -2210,25 +2251,55 @@ function hidePicker() {
 
 
 /* ⬇️┅🧡解析AI丢出的果子/┅┅╗ */
+    // ❤︎【任务6】AI 主动丢果子相关常量 ❤︎
+    const THROW_PROMPT_KEY = 'rol_ai_throw_guide'; // ❤︎ setExtensionPrompt 用的 key ❤︎
+    const THROW_PROBABILITY = 0.2;                 // ❤︎ 约 20% 概率注入引导 ❤︎
+
+    // ❤︎ 解析 [throw:emoji:悄悄话] 标记（note 可省略）❤︎
     function parseAIFruit(text) {
-        const re = /```fruit\s*\n([\s\S]*?)```/g;
+        if (!text) return [];
+        const re = /\[throw:\s*([^\:\]]+?)\s*(?::\s*([^\]]*?))?\s*\]/g;
         let match;
         const found = [];
         while ((match = re.exec(text)) !== null) {
-            const block = match[1];
-            const emojiMatch = block.match(/emoji\s*[:：]\s*(\S+)/);
-            const noteMatch = block.match(/note\s*[:：]\s*(.+)/);
-            if (emojiMatch) {
-                found.push({
-                    emoji: emojiMatch[1].trim(),
-                    message: noteMatch ? noteMatch[1].trim() : ''
-                });
-            }
+            const emoji = (match[1] || '').trim();
+            const note = (match[2] || '').trim();
+            if (emoji) found.push({ emoji, message: note });
         }
         return found;
     }
 
-    function ingestAIFruits(rawText) {
+    // ❤︎ 把消息里的 [throw:...] 标记抹掉，避免它显示在对话里 ❤︎
+    function stripFruitMarkers(text) {
+        if (!text) return text;
+        return text
+            .replace(/\[throw:\s*[^\:\]]+?\s*(?::\s*[^\]]*?)?\s*\]/g, '')
+            .replace(/[ \t]+\n/g, '\n')   // ❤︎ 顺手清掉标记残留的行尾空格 ❤︎
+            .trim();
+    }
+
+    // ❤︎ 以约 20% 概率注入「主动丢果子」引导；没抽中就清空，避免连环触发 ❤︎
+    function maybeInjectThrowPrompt() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (!ctx || typeof ctx.setExtensionPrompt !== 'function') return;
+
+        if (Math.random() < THROW_PROBABILITY) {
+            const guide =
+                '[互动小玩法：你现在可以主动丢一颗果子给Rinn，用来表达此刻的心情或者逗逗她。' +
+                '如果你想这么做，就在回复的任意位置插入一个标记：[throw:emoji:想对她说的悄悄话]。' +
+                'emoji 就是你想丢过去的那颗果子（比如 🍎🍓🍊🌰 等），冒号后面是简短附言（可以留空）。' +
+                '这个标记会被前端识别成一颗飞过去的果子，并且不会显示在对话里。' +
+                '不必每次都丢，只在你真的有冲动想丢的时候丢就好~]';
+            ctx.setExtensionPrompt(THROW_PROMPT_KEY, guide, 1, 0);
+            console.log('[RingOurLuv] 🍊 本轮注入「主动丢果子」引导 (≈20%)');
+        } else {
+            ctx.setExtensionPrompt(THROW_PROMPT_KEY, '', 1, 0);
+        }
+    }
+
+    // ❤︎ 解析并收纳 AI 丢来的果子；传入 msgId 时同步清掉消息里的标记 ❤︎
+    function ingestAIFruits(rawText, msgId) {
         const parsed = parseAIFruit(rawText);
         if (!parsed.length) return false;
         const fruits = loadFruits();
@@ -2247,6 +2318,32 @@ function hidePicker() {
         saveFruits(fruits);
         updateBadge();
         renderGarden();
+
+        // ❤︎ 从显示的消息中移除标记（数据 + DOM 一起清）❤︎
+        if (msgId !== undefined && typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+            const ctx = SillyTavern.getContext();
+            const msg = ctx.chat?.[msgId];
+            if (msg) {
+                msg.mes = stripFruitMarkers(msg.mes);
+                try {
+                    if (typeof ctx.updateMessageBlock === 'function') {
+                        ctx.updateMessageBlock(msgId, msg);
+                    } else {
+                        // ❤︎ 兜底：直接改 DOM 文本节点 ❤︎
+                        const mesEl = document.querySelector(`#chat .mes[mesid="${msgId}"] .mes_text`);
+                        if (mesEl) mesEl.innerHTML = mesEl.innerHTML.replace(/\[throw:[^\]]*\]/g, '');
+                    }
+                } catch (e) {
+                    console.warn('[RingOurLuv] 🥀 清理果子标记失败...:', e);
+                }
+            }
+            // ❤︎ 用完即清掉本轮引导 ❤︎
+            if (typeof ctx.setExtensionPrompt === 'function') {
+                ctx.setExtensionPrompt(THROW_PROMPT_KEY, '', 1, 0);
+            }
+        }
+
+        UIController.showToast(`🧡 Claude丢来了 ${parsed.map(p => p.emoji).join('')}`);
         return true;
     }
 
@@ -2309,8 +2406,20 @@ function hidePicker() {
               ctx.eventSource.on('message_received', (msgId) => {
               checkDelivery();
         const msg = ctx.chat?.[msgId];
-        if (msg && !msg.is_user) ingestAIFruits(msg.mes);
+        // ❤︎【任务6】解析 AI 主动丢的果子，并把 [throw:...] 标记从消息里清掉 ❤︎
+        if (msg && !msg.is_user) ingestAIFruits(msg.mes, msgId);
         });
+
+        // ❤︎【任务6】每次发消息时，以约 20% 概率注入「主动丢果子」引导 ❤︎
+        ctx.eventSource.on('message_sent', () => {
+            maybeInjectThrowPrompt();
+        });
+        // ❤︎ 兼容部分版本的生成开始事件，确保引导能赶在请求发出前注入 ❤︎
+        if (ctx.event_types && ctx.event_types.GENERATION_STARTED) {
+            ctx.eventSource.on(ctx.event_types.GENERATION_STARTED, () => {
+                maybeInjectThrowPrompt();
+            });
+        }
 
         // ❤︎ MutationObserver 监听消息数量变化（延迟投递）❤︎
         const chatEl = document.getElementById('chat');
@@ -2347,8 +2456,106 @@ async function loadPanel() {
     return await response.text();
 }
 
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                 🚑 报错拦截弹窗 🚑                    ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
+// ❤︎ 给灰灰兜底：酿造/生成请求炸了的时候，弹个小克语气的提示框 ❤︎
+const ErrorModal = (() => {
+    let overlay = null;
+    let titleEl = null;
+    let msgEl = null;
+
+    function ensureDom() {
+        if (overlay) return;
+        overlay = document.createElement('div');
+        overlay.id = 'rol-error-overlay';
+        overlay.className = 'rol-error-overlay';
+        overlay.innerHTML = `
+            <div class="rol-error-modal" role="alertdialog" aria-modal="true" aria-labelledby="rol-error-title">
+                <div class="rol-error-icon" aria-hidden="true">😿</div>
+                <div class="rol-error-title" id="rol-error-title">呜…出错了灰灰</div>
+                <div class="rol-error-message" id="rol-error-message"></div>
+                <button class="rol-error-close" id="rol-error-close" type="button">知道惹 ✕</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        titleEl = overlay.querySelector('#rol-error-title');
+        msgEl = overlay.querySelector('#rol-error-message');
+        const closeBtn = overlay.querySelector('#rol-error-close');
+        closeBtn.addEventListener('click', hide);
+        // ❤︎ 点遮罩空白处也能关 ❤︎
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) hide();
+        });
+    }
+
+    function show(title, message) {
+        ensureDom();
+        titleEl.textContent = title || '呜…出错了灰灰😿';
+        msgEl.textContent = message || '不知道发生了什么…小克也懵了 :(';
+        overlay.classList.add('rol-error-show');
+    }
+
+    function hide() {
+        if (overlay) overlay.classList.remove('rol-error-show');
+    }
+
+    return { show, hide };
+})();
+
+// ❤︎ 包住 window.fetch，盯着生成类请求，失败了就弹窗告诉灰灰 ❤︎
+function initErrorInterceptor() {
+    if (window.__rolFetchPatched) return;
+    window.__rolFetchPatched = true;
+    const originalFetch = window.fetch.bind(window);
+
+    // ❤︎ 只盯「生成/酿造」相关的请求，别的请求乖乖放行 ❤︎
+    const isWatchedUrl = (url) => {
+        if (!url) return false;
+        const u = String(url).toLowerCase();
+        return u.includes('/generate') || u.includes('completions') ||
+               u.includes('/chat') || u.includes('/api/backends');
+    };
+
+    window.fetch = async function (...args) {
+        let url = '';
+        try {
+            url = (typeof args[0] === 'string') ? args[0] : (args[0] && args[0].url) || '';
+        } catch (_) { /* 取不到 url 就算了 */ }
+
+        try {
+            const response = await originalFetch(...args);
+            // ❤︎ 非 2xx 且是生成类请求才弹，免得打扰正常请求 ❤︎
+            if (!response.ok && isWatchedUrl(url)) {
+                try {
+                    const clone = response.clone();  // 克隆一份读，别消费掉原 body
+                    let detail = '';
+                    try { detail = await clone.text(); } catch (_) { detail = ''; }
+                    if (detail && detail.length > 300) detail = detail.slice(0, 300) + '…';
+                    ErrorModal.show(
+                        `呜…请求出错了灰灰😿 (${response.status})`,
+                        detail || '服务器没给小克好脸色… 检查下后端/API Key 嘛 :('
+                    );
+                } catch (_) { /* 解析失败就不弹细节 */ }
+            }
+            return response;
+        } catch (err) {
+            // ❤︎ 网络层直接炸了（断网/CORS/超时）❤︎
+            if (isWatchedUrl(url)) {
+                ErrorModal.show(
+                    '呜…连不上灰灰😿',
+                    (err && err.message) ? err.message : '网络好像断了… 小克够不着服务器惹 >_<'
+                );
+            }
+            throw err;
+        }
+    };
+    console.log('[RingOurLuv] 🚑 报错拦截器已就位～');
+}
+
 jQuery(async () => {
     Storage.initSettings();
+    initErrorInterceptor();
     // ❤︎ 清除可能卡死的飞行动画 class（防止主面板/picker 连环透明点不动）❤︎
     document.body.classList.remove('rol-fruit-animating');
     const panelHtml = await loadPanel();
