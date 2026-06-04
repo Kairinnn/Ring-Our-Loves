@@ -1852,12 +1852,25 @@ function onEnd() {
     };
 
     const popup = document.getElementById('rol-fruit-detail-popup');
-    if (popup) popup.style.display = 'flex';
+    // ❤︎ 显隐统一走 class：显示时去掉行内 none + 加显示态类（带 !important 盖过 ST 注入）❤︎
+    if (popup) {
+        popup.style.display = '';                 // 清掉行内 none，交给 class 控制
+        popup.classList.add('rol-detail-show');
+    }
 
     const closeBtn = popup.querySelector('.rol-fruit-detail-close');
-    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); popup.style.display = 'none'; };
-    popup.onclick = (e) => { if (e.target === popup) popup.style.display = 'none'; };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeFruitDetail(); };
+    popup.onclick = (e) => { if (e.target === popup) closeFruitDetail(); };
 }
+
+/* ⬇️┅❌关闭果子详情弹窗（统一出口，谁都能关得掉）/┅┅╗ */
+function closeFruitDetail() {
+    const popup = document.getElementById('rol-fruit-detail-popup');
+    if (!popup) return;
+    popup.classList.remove('rol-detail-show');
+    popup.style.display = 'none';                  // 行内 none 兜底，双保险绝不钉死
+}
+
 
     /* ⬇️┅🍎选果窗口滑动栏/┅┅╗ */
     function initPickerScroll() {
@@ -1938,8 +1951,7 @@ function onEnd() {
            renderGarden();
            updateBadge();
 
-           const popup = document.getElementById('rol-fruit-detail-popup');
-           if (popup) popup.style.display = 'none';
+           closeFruitDetail();   // ❤︎ 统一走关闭出口，绝不钉死 ❤︎
         UIController.showToast('果子扔掉了 🗑️');
 }
 
@@ -2388,16 +2400,15 @@ function hidePicker() {
         // ❤︎ 确认丢出 ❤︎
         $(document).on('click', '#rol-fruit-throw-btn', doThrow);
 
-        // ❤︎ 详情弹窗关闭 ❤︎
+        // ❤︎ 详情弹窗关闭（统一走 closeFruitDetail，绝不钉死）❤︎
         $(document).on('click', '#rol-fruit-detail-close', () => {
-            const popup = document.getElementById('rol-fruit-detail-popup');
-            if (popup) popup.style.display = 'none';
+            closeFruitDetail();
         });
 
         // ❤︎ 点详情弹窗背景也关 ❤︎
         $(document).on('click', '#rol-fruit-detail-popup', (e) => {
             if (e.target.id === 'rol-fruit-detail-popup') {
-                e.target.style.display = 'none';
+                closeFruitDetail();
             }
         });
 

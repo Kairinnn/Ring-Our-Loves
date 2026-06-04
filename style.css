@@ -1665,7 +1665,8 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     margin: 0 !important;
     transform: none !important;
     z-index: 999999 !important;
-    display: flex !important;
+    /* ⚠️ display 千万别加 !important！否则会盖过行内 display:none，导致弹窗刷新就钉死、关也关不掉。
+       显隐交给行内样式(none/flex)和下面的 .rol-detail-show 类来管 */
     align-items: center !important;
     justify-content: center !important;
     padding: 16px;
@@ -1676,11 +1677,19 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     animation: rol-fadein 0.2s ease both;
 }
 
+/* ⬇️┅😻显示态：加 .rol-detail-show 才弹出/┅┅╗ */
+/* ❤︎ 只有这个类带 display:flex !important（高优先级盖过 ST 注入）；
+   隐藏时移除此类，回落到行内 display:none，绝不会再钉死 ❤︎ */
+.rol-fruit-detail-popup.rol-detail-show {
+    display: flex !important;
+}
+
 /* ❤︎ 详情弹窗淡入（之前引用了但没定义，补上） */
 @keyframes rol-fadein {
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+
 
 .rol-fruit-detail-inner {
     position: relative;

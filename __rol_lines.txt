@@ -1,0 +1,6 @@
+1854:    const popup = document.getElementById('rol-fruit-detail-popup');
+1941:           const popup = document.getElementById('rol-fruit-detail-popup');
+2393:            const popup = document.getElementById('rol-fruit-detail-popup');
+2398:        $(document).on('click', '#rol-fruit-detail-popup', (e) => {
+2399:            if (e.target.id === 'rol-fruit-detail-popup') {
+2639:        const fruitDetailPopup = temp.querySelector('#rol-fruit-detail-popup');
