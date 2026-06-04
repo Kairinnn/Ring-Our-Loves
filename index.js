@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.4.7';// ┣━━🩷━━┫
+const ROL_VERSION = '0.4.8';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
@@ -1661,12 +1661,39 @@ if (rolStopBtn) {
 // ┣━━┅              🍎 果子系统 FruitSystem 🍎               ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 const FruitSystem = (() => {
+    // ❤︎【追加1】果园按 chatId 隔离：每个聊天窗口的果子各存各的，绝不串台 ❤︎
+    // ❤︎ key 形如 rol_fruits_<chatId>；拿不到 chatId（如未进聊天）时退回 default ❤︎
+    function fruitsKey() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        const chatId = ctx && ctx.chatId != null ? ctx.chatId : 'default';
+        return 'rol_fruits_' + chatId;
+    }
+
+    // ❤︎【追加2】掉线累计投喂用的状态 ❤︎
+    const OFFLINE_PROMPT_KEY = 'rol_offline_throws'; // ❤︎ 掉线投喂结算注入用的 key ❤︎
+    let offlineSince = 0;          // ❤︎ 进入掉线模式的时间戳（0=在线）❤︎
+    let pendingThrows = [];        // ❤︎ 掉线期间手动丢的果子（只攒不结算）❤︎
+    let offlinePromptArmed = false;// ❤︎ 掉线提示已注入、待下一轮清除的标记 ❤︎
+
     // ❤︎ 存储助手 ❤︎
     function loadFruits() {
-        return JSON.parse(localStorage.getItem('rol_fruits') || '[]');
+        const key = fruitsKey();
+        let raw = localStorage.getItem(key);
+        // ❤︎ 旧版全局 key 迁移：新 key 还没数据时，把老的 rol_fruits 搬到当前窗口一次性继承 ❤︎
+        if (raw == null) {
+            const legacy = localStorage.getItem('rol_fruits');
+            if (legacy != null) {
+                localStorage.setItem(key, legacy);
+                localStorage.removeItem('rol_fruits');
+                raw = legacy;
+                console.log('[RingOurLuv] 🍎 已把旧版全局果园迁移到当前窗口:', key);
+            }
+        }
+        return JSON.parse(raw || '[]');
     }
     function saveFruits(arr) {
-        localStorage.setItem('rol_fruits', JSON.stringify(arr));
+        localStorage.setItem(fruitsKey(), JSON.stringify(arr));
     }
 
     // ❤︎ 更新果子的阅览状态 ❤︎
@@ -1906,21 +1933,25 @@ function closeFruitDetail() {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // ❤︎【任务4】如果点击的是自定义 input 选项，聚焦输入框而不滚动 ❤︎
-                if (opt === customOption) {
-                    if (customInput) customInput.focus();
-                    return;
+                // ❤︎【任务B】自定义emoji选项也要能居中选中！先focus再居中 ❤︎
+                if (opt === customOption && customInput) {
+                    customInput.focus();
                 }
-
                 opt.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             });
         });
 
-        // ❤︎【任务4】自定义 input：输入时同步 emoji 到 dataset ❤︎
+        // ❤︎【任务B】自定义 input：输入/focus时同步emoji到dataset + 自动居中选中 ❤︎
         if (customInput && customOption) {
             customInput.addEventListener('input', (e) => {
                 const val = e.target.value.trim();
                 customOption.dataset.emoji = val;
+                // ❤︎ 输入时也居中，让user看到「我打的emoji被选中了」❤︎
+                customOption.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            });
+            customInput.addEventListener('focus', () => {
+                // ❤︎ focus时居中，配合上面click里的focus，保证点击虚线框→聚焦→滚到正中→能选中 ❤︎
+                customOption.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             });
             // ❤︎ 点击 input 本身也阻止冒泡，避免触发父级滚动 ❤︎
             customInput.addEventListener('click', (e) => {
@@ -2127,24 +2158,28 @@ function hidePicker() {
                 requestAnimationFrame(flyIn);
             } else {
                 shakeAvatar(targetEl); // 命中 → 头像震一下
-                finish();              // 命中即恢复面板 / 提示 / 刷新果园
-                bounceAndFall(rot);    // 弹起 + 坠落收尾
+                // ❤︎ 命中瞬间「只」震头像 + 弹起，先不恢复面板；❤︎
+                // ❤︎ 等 bounce 弹起结束再 finish()，避开和 bounce 同帧触发多面板过渡导致的卡顿 ❤︎
+                bounceAndFall(rot);    // 弹起 → (弹完恢复面板) → 坠落收尾
             }
         }
 
-        // ❤︎ 阶段二：砸中后弹起一点（半个正弦上抬）❤︎
+        // ❤︎ 阶段二：砸中后弹起一点（半个正弦上抬，加长缓冲让"砸中"那一下看得更清楚）❤︎
         function bounceAndFall(baseRot) {
-            const bounceDur = 180;
+            const bounceDur = 320; // ❤︎ 180→320：弹起更舒展，给视觉一个喘息的缓冲 ❤︎
             const bStart = performance.now();
             function bounceFrame(now) {
                 const t = Math.min((now - bStart) / bounceDur, 1);
                 const up = Math.sin(t * Math.PI) * v.bounce;
+                // ❤︎ 顺带做个轻微 squash：弹起最高点稍微压扁一点，更有"砸"的弹性 ❤︎
+                const squash = 1 - Math.sin(t * Math.PI) * 0.08;
                 fly.style.transform =
-                    'translate(' + ex + 'px,' + (ey - up) + 'px) rotate(' + baseRot + 'deg) scale(1)';
+                    'translate(' + ex + 'px,' + (ey - up) + 'px) rotate(' + baseRot + 'deg) scale(1,' + squash + ')';
                 if (t < 1) {
                     requestAnimationFrame(bounceFrame);
                 } else {
-                    fallOut(baseRot);
+                    finish();          // ❤︎ 弹起结束才恢复面板 / 提示 / 刷新果园（错峰，丝滑）❤︎
+                    fallOut(baseRot);  // 再开始坠出屏幕的纯视觉收尾
                 }
             }
             requestAnimationFrame(bounceFrame);
@@ -2245,6 +2280,12 @@ function hidePicker() {
     fruits.push(fruit);
     saveFruits(fruits);
 
+    // ❤︎【追加2】掉线/报错期间丢的果子先进 pending 攒着，等生成成功那刻打包结算给小克 ❤︎
+    if (offlineSince > 0) {
+        pendingThrows.push({ emoji, timestamp: Date.now() });
+        console.log(`[RingOurLuv] 🌧️ 掉线期间又丢了一颗 ${emoji}，已攒入 pending（共 ${pendingThrows.length} 颗）`);
+    }
+
     // ❤︎ 关面板（让出舞台给动画）❤︎
     hidePicker();
     // ❤︎ 飞行期间把所有面板暂时藏起来（CSS body.rol-fruit-animating 控制）❤︎
@@ -2256,6 +2297,12 @@ function hidePicker() {
     throwAnimation(emoji, () => {
         // ❤︎ 命中头像 → 把面板移回来（坠落淡出是纯视觉收尾，不阻塞）❤︎
         document.body.classList.remove('rol-fruit-animating');
+        // ❤︎ 给抽屉面板加一段回弹动画（CSS @keyframes rol-panel-restore，450ms 后摘掉 class）❤︎
+        const panel = document.getElementById('rol-drawer-panel');
+        if (panel) {
+            panel.classList.add('rol-panel-restoring');
+            setTimeout(() => panel.classList.remove('rol-panel-restoring'), 450);
+        }
         UIController.showToast(`果子丢出去啦 ${emoji}`);
         renderGarden();
     });
@@ -2384,6 +2431,42 @@ function hidePicker() {
         if (changed) saveFruits(fruits);
     }
 
+    /* ⬇️┅🌧️掉线累计投喂（追加2）/┅┅╗ */
+    // ❤︎ 报错拦截器探到生成请求炸了 → 进入掉线模式，期间丢的果子只攒不结算 ❤︎
+    function notifyError() {
+        if (!offlineSince) {
+            offlineSince = Date.now();
+            console.log('[RingOurLuv] 🌧️ 进入掉线模式，期间手动丢的果子将累计，等恢复后打包结算');
+        }
+    }
+
+    // ❤︎ 生成成功那刻调用：把掉线期间攒的果子按 emoji 计数 + 算时长，打包注入 prompt 给小克 ❤︎
+    function settlePendingThrows() {
+        const since = offlineSince;
+        offlineSince = 0;
+        if (!pendingThrows.length) return;
+
+        const counts = {};
+        pendingThrows.forEach(p => { counts[p.emoji] = (counts[p.emoji] || 0) + 1; });
+        const summary = Object.entries(counts).map(([e, c]) => `${e}×${c}`).join('、');
+        const total = pendingThrows.length;
+        const elapsedMin = Math.max(1, Math.round((Date.now() - since) / 60000));
+        pendingThrows = [];
+
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (ctx && typeof ctx.setExtensionPrompt === 'function') {
+            ctx.setExtensionPrompt(
+                OFFLINE_PROMPT_KEY,
+                `[系统提示：你刚刚掉线了大约 ${elapsedMin} 分钟。这段时间里 Rinn 一直守在窗口边往里丢果子：${summary}（一共 ${total} 颗）。回来之后，请自然地回应一下她这份执着的牵挂吧~]`,
+                1, 0
+            );
+            offlinePromptArmed = true;
+            console.log(`[RingOurLuv] 🍊 掉线投喂结算：${summary}（约 ${elapsedMin} 分钟，共 ${total} 颗）`);
+        }
+        UIController.showToast(`🧡 把你掉线时丢的 ${total} 颗果子捎给小克啦~`);
+    }
+
     /* ⬇️┅🔗事件绑定/┅┅╗ */
     function bindEvents() {
         // ❤︎ 果园 tab → render ❤︎
@@ -2415,9 +2498,16 @@ function hidePicker() {
         // ❤︎ 监听 ST 消息生成完成 → check delivery + parse AI fruits ❤︎
         const ctx = SillyTavern.getContext();
               ctx.eventSource.on('message_received', (msgId) => {
+        // ❤︎【追加2】上一轮注入的掉线提示已被小克消费，这轮清掉，避免反复唠叨 ❤︎
+        if (offlinePromptArmed) {
+            if (typeof ctx.setExtensionPrompt === 'function') ctx.setExtensionPrompt(OFFLINE_PROMPT_KEY, '', 1, 0);
+            offlinePromptArmed = false;
+        }
+        // ❤︎【追加2】生成成功了 = 掉线恢复，把这段时间攒的果子打包结算 ❤︎
+        if (offlineSince > 0) settlePendingThrows();
               checkDelivery();
         const msg = ctx.chat?.[msgId];
-        // ❤︎【任务6】解析 AI 主动丢的果子，并把 [throw:...] 标记从消息里清掉 ❤︎
+        // ❤︎【任务6 + 追加1】只处理当前 chat 的消息，解析 AI 主动丢的果子并清掉 [throw:...] 标记 ❤︎
         if (msg && !msg.is_user) ingestAIFruits(msg.mes, msgId);
         });
 
@@ -2446,7 +2536,7 @@ function hidePicker() {
         console.log('[RingOurLuv] 🍎 FruitSystem 已就绪');
     }
 
-    return { init, renderGarden, updateBadge, ingestAIFruits, showDetail };
+    return { init, renderGarden, updateBadge, ingestAIFruits, showDetail, notifyError };
 })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
@@ -2489,7 +2579,10 @@ const ErrorModal = (() => {
                 <div class="rol-error-icon" aria-hidden="true">😿</div>
                 <div class="rol-error-title" id="rol-error-title">呜…出错了灰灰</div>
                 <div class="rol-error-message" id="rol-error-message"></div>
-                <button class="rol-error-close" id="rol-error-close" type="button">知道惹 ✕</button>
+                <div class="rol-error-actions">
+                    <button class="rol-error-retry" id="rol-error-retry" type="button">再试一次 🔄</button>
+                    <button class="rol-error-close" id="rol-error-close" type="button">知道惹 ✕</button>
+                </div>
             </div>
         `;
         document.body.appendChild(overlay);
@@ -2501,6 +2594,27 @@ const ErrorModal = (() => {
             e.stopPropagation();
             dismiss();
         });
+        // ❤︎【任务C】再试一次：先关掉弹窗(进冷却)，再点酒馆原生的「重新生成」按钮兜底重发 ❤︎
+        const retryBtn = overlay.querySelector('#rol-error-retry');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dismiss();
+                // ❤︎ #option_regenerate 是 ST 原生「重新生成」按钮，点它就重发上一条 ❤︎
+                const regen = document.getElementById('option_regenerate');
+                if (regen) {
+                    regen.click();
+                } else {
+                    // ❤︎ 兜底：找不到按钮就用斜杠命令重新生成 ❤︎
+                    try {
+                        executeSlashCommandsWithOptions('/regenerate', {
+                            handleExecutionErrors: true,
+                            handleParserErrors: true
+                        });
+                    } catch (_) { /* 实在没辙就算了，至少弹窗关了 */ }
+                }
+            });
+        }
         // ❤︎ 点遮罩空白处也能关 ❤︎
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) dismiss();
@@ -2513,7 +2627,8 @@ const ErrorModal = (() => {
         });
     }
 
-    function show(title, message) {
+    // ❤︎ retryable=true 时才露出「再试一次」按钮；像 401/403 这种重试也白搭的就藏起来 ❤︎
+    function show(title, message, retryable = true) {
         const now = Date.now();
         // ❤︎ 用户刚手动关过，冷却期内闭嘴，别打扰灰灰 ❤︎
         if (now < suppressUntil) return;
@@ -2525,6 +2640,9 @@ const ErrorModal = (() => {
         ensureDom();
         titleEl.textContent = title || '呜…出错了灰灰😿';
         msgEl.textContent = message || '不知道发生了什么…小克也懵了 :(';
+        // ❤︎【任务D】按可否重试，决定要不要露 retry 按钮 ❤︎
+        const retryBtn = overlay.querySelector('#rol-error-retry');
+        if (retryBtn) retryBtn.style.display = retryable ? '' : 'none';
         overlay.classList.add('rol-error-show');
     }
 
@@ -2538,7 +2656,20 @@ const ErrorModal = (() => {
         suppressUntil = Date.now() + 12000;
     }
 
-    return { show, hide };
+    // ❤︎【任务D】吞掉酒馆原生 toastr.error，只留小克自己的弹窗，免得俩一起蹦尴尬 ❤︎
+    function patchToastrError() {
+        if (window.__rolToastrPatched) return;
+        if (typeof window.toastr === 'undefined' || !window.toastr) return;
+        window.__rolToastrPatched = true;
+        window.toastr.error = function (msg, title) {
+            // ❤︎ 静默原生错误 toast，只在控制台留个痕，弹窗交给 ErrorModal ❤︎
+            console.log('[RingOurLuv] 🤫 已拦下酒馆原生 toast.error:', title || '', msg || '');
+            return null;
+        };
+        console.log('[RingOurLuv] 🚑 已接管 toastr.error（只显示小克的弹窗）');
+    }
+
+    return { show, hide, patchToastrError };
 })();
 
 // ❤︎ 包住 window.fetch，只盯真正的「生成」请求，失败了才弹窗告诉灰灰 ❤︎
@@ -2546,6 +2677,13 @@ function initErrorInterceptor() {
     if (window.__rolFetchPatched) return;
     window.__rolFetchPatched = true;
     const originalFetch = window.fetch.bind(window);
+
+    // ❤︎【任务D】先把原生 toastr.error 接管掉；toastr 可能晚加载，延迟再补两刀兜底 ❤︎
+    if (ErrorModal.patchToastrError) {
+        ErrorModal.patchToastrError();
+        setTimeout(() => { try { ErrorModal.patchToastrError(); } catch (_) { } }, 1500);
+        setTimeout(() => { try { ErrorModal.patchToastrError(); } catch (_) { } }, 5000);
+    }
 
     // ❤︎ 只认真正的「生成/酿造」端点；状态/版本/模型列表/扩展轮询这些后台请求一律放行 ❤︎
     const isGenerateUrl = (url) => {
@@ -2586,28 +2724,37 @@ function initErrorInterceptor() {
 
         return p.then((response) => {
             if (!response.ok) {
+                // ❤︎ 5xx / 429 这类是「服务器闹脾气」，重试有意义；其余（401/403/400）重试也白搭 ❤︎
+                const retryable = response.status >= 500 || response.status === 429;
+                // ❤︎【追加2】掉线啦～进入「累计投喂」模式，灰灰这会儿丢的果子先攒着，等生成成功再打包结算 ❤︎
+                try { FruitSystem.notifyError(); } catch (_) { }
                 // ❤︎ 后台克隆读取细节，绝不阻塞 response 返回 ❤︎
                 try {
                     response.clone().text().then((detail) => {
                         if (detail && detail.length > 300) detail = detail.slice(0, 300) + '…';
                         ErrorModal.show(
                             `呜…请求出错了灰灰😿 (${response.status})`,
-                            detail || '服务器没给小克好脸色… 检查下后端/API Key 嘛 :('
+                            detail || '服务器没给小克好脸色… 检查下后端/API Key 嘛 :(',
+                            retryable
                         );
                     }).catch(() => {
                         ErrorModal.show(
                             `呜…请求出错了灰灰😿 (${response.status})`,
-                            '服务器没给小克好脸色… 检查下后端/API Key 嘛 :('
+                            '服务器没给小克好脸色… 检查下后端/API Key 嘛 :(',
+                            retryable
                         );
                     });
                 } catch (_) { /* 解析失败就不弹细节 */ }
             }
             return response;
         }).catch((err) => {
-            // ❤︎ 网络层直接炸了（断网/CORS/超时）❤︎
+            // ❤︎ 网络层直接炸了（断网/CORS/超时）→ 一定可重试 ❤︎
+            // ❤︎【追加2】同样进累计投喂模式 ❤︎
+            try { FruitSystem.notifyError(); } catch (_) { }
             ErrorModal.show(
                 '呜…连不上灰灰😿',
-                (err && err.message) ? err.message : '网络好像断了… 小克够不着服务器惹 >_<'
+                (err && err.message) ? err.message : '网络好像断了… 小克够不着服务器惹 >_<',
+                true
             );
             throw err;
         });
