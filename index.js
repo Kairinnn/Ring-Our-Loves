@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.4.8';// ┣━━🩷━━┫
+const ROL_VERSION = '0.5.0';// ┣━━🩷━━┫【Part 3: 时间感知 + 模型切换楼层】
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
@@ -24,7 +24,13 @@ const Storage = (() => {
                     presetName: '',
                     autoInject: true,
                     maxInjectCount: 3,
-                    summaryPrompt: ''
+                    summaryPrompt: '',
+                    // ❤︎【Part 3】时间感知 + 模型切换楼层 ❤︎
+                    enableTimeAware: true,          // 时间感知开关
+                    currentModel: '',               // 当前模型名（手动填）
+                    currentChannel: '',             // 当前渠道名（手动填）
+                    lastModel: '',                  // 上次模型（用于检测切换）
+                    lastChannel: ''                 // 上次渠道（用于检测切换）
                 }
             };
             saveSettingsDebounced();
@@ -164,6 +170,118 @@ const Storage = (() => {
         deleteMemory, addRewriteVersion, rollbackVersion,
         getConfig, updateConfig
     };
+})();
+
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅            🩷 系统楼层模块（Part 3）🩷                ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
+// ❤︎ SystemFloor: 插入真正的系统楼层（is_system:true）到 chat 数组 ❤︎
+// ❤︎ 用途：模型切换通知 + user消息时间感知 ❤︎
+const SystemFloor = (() => {
+    let lastUserMsgTime = 0; // ❤︎ 上次 user 发消息的时间戳 ❤︎
+
+    // ❤︎ 插入系统楼层到 chat 数组（持久化，非临时 setExtensionPrompt）❤︎
+    function insertSystemMessage(text) {
+        if (!text) return;
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (!ctx || !ctx.chat) return;
+
+        const sysMsg = {
+            name: 'System',
+            is_system: true,
+            is_user: false,
+            mes: text,
+            send_date: Date.now()
+        };
+        ctx.chat.push(sysMsg);
+        
+        // ❤︎ 保存 chat 到本地 ❤︎
+        if (typeof ctx.saveChat === 'function') {
+            ctx.saveChat();
+        }
+        console.log('[RingOurLuv] 🔔 插入系统楼层:', text);
+    }
+
+    // ❤︎ 检测模型/渠道是否变化，变化就插系统楼层通知 ❤︎
+    function checkModelSwitch() {
+        const config = Storage.getConfig();
+        const current = config.currentModel || '';
+        const currentCh = config.currentChannel || '';
+        const last = config.lastModel || '';
+        const lastCh = config.lastChannel || '';
+
+        // ❤︎ 第一次运行，lastModel 为空，不算切换 ❤︎
+        if (!last && !lastCh) {
+            Storage.updateConfig({ lastModel: current, lastChannel: currentCh });
+            return;
+        }
+
+        // ❤︎ 检测变化：模型或渠道任意一个变了就算切换 ❤︎
+        const modelChanged = current && current !== last;
+        const channelChanged = currentCh && currentCh !== lastCh;
+
+        if (modelChanged || channelChanged) {
+            // ❤︎ 系统风格文案（非口语，直白陈述）❤︎
+            const parts = [];
+            if (modelChanged && current) parts.push(`模型已切换至 ${current}`);
+            if (channelChanged && currentCh) parts.push(`渠道：${currentCh}`);
+            const text = `[系统提示：${parts.join(' · ')}]`;
+            
+            insertSystemMessage(text);
+            Storage.updateConfig({ lastModel: current, lastChannel: currentCh });
+        }
+    }
+
+    // ❤︎ 时间感知：user 每条消息计算距上条的间隔，注入时间戳/间隔文案 ❤︎
+    function injectTimeAwareness() {
+        const config = Storage.getConfig();
+        if (!config.enableTimeAware) return; // 开关关闭就跳过
+
+        const now = Date.now();
+        if (lastUserMsgTime === 0) {
+            // ❤︎ 第一条消息，只记录时间戳 ❤︎
+            lastUserMsgTime = now;
+            return;
+        }
+
+        const elapsed = now - lastUserMsgTime;
+        lastUserMsgTime = now;
+
+        // ❤︎ 小于 2 分钟就不注入了，避免刷屏 ❤︎
+        if (elapsed < 120000) return;
+
+        // ❤︎ 格式化时间间隔：分钟/小时/天 ❤︎
+        let intervalText = '';
+        const minutes = Math.floor(elapsed / 60000);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) {
+            intervalText = `${days} 天`;
+            if (hours % 24 > 0) intervalText += ` ${hours % 24} 小时`;
+        } else if (hours > 0) {
+            intervalText = `${hours} 小时`;
+            if (minutes % 60 > 0) intervalText += ` ${minutes % 60} 分钟`;
+        } else {
+            intervalText = `${minutes} 分钟`;
+        }
+
+        // ❤︎ 当前时间戳（本地时间格式）❤︎
+        const timeStr = new Date(now).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+
+        const text = `[系统提示：用户于 ${timeStr} 发送消息（距上次消息已过 ${intervalText}）]`;
+        insertSystemMessage(text);
+    }
+
+    return { checkModelSwitch, injectTimeAwareness };
 })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
@@ -2279,6 +2397,8 @@ function hidePicker() {
     const fruits = loadFruits();
     fruits.push(fruit);
     saveFruits(fruits);
+    // ❤︎【投掷冷却】user 也丢了一颗，记下轮次，接下来几轮先别催小克丢 ❤︎
+    markThrowTurn();
 
     // ❤︎【追加2】掉线/报错期间丢的果子先进 pending 攒着，等生成成功那刻打包结算给小克 ❤︎
     if (offlineSince > 0) {
@@ -2314,6 +2434,38 @@ function hidePicker() {
     const THROW_PROMPT_KEY = 'rol_ai_throw_guide'; // ❤︎ setExtensionPrompt 用的 key ❤︎
     const THROW_PROBABILITY = 0.2;                 // ❤︎ 约 20% 概率注入引导 ❤︎
 
+    // ❤︎【投掷冷却】丢完一颗果子后，接下来这么多「消息」内不再撩拨小克丢果子 ❤︎
+    // ❤︎ 单位是 chat.length（每轮对话≈2条消息），4≈2轮对话。小克太容易一个劲丢了😤 ❤︎
+    const THROW_COOLDOWN_TURNS = 4;
+    const THROW_COOLDOWN_KEY = 'rol_last_throw_turn'; // ❤︎ 按窗口隔离的「上次丢果子轮次」key ❤︎
+
+    // ❤︎ 当前轮次 = 当前 chat 的消息条数 ❤︎
+    function currentTurn() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        return ctx && ctx.chat ? ctx.chat.length : 0;
+    }
+
+    // ❤︎ 冷却 key 按 chatId 隔离，仿 fruitsKey()，各窗口各算各的 ❤︎
+    function cooldownKey() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        const chatId = ctx && ctx.chatId != null ? ctx.chatId : 'default';
+        return THROW_COOLDOWN_KEY + '_' + chatId;
+    }
+
+    // ❤︎ 记下「这一刻丢了果子」的轮次 ❤︎
+    function markThrowTurn() {
+        try { localStorage.setItem(cooldownKey(), String(currentTurn())); } catch (_) {}
+    }
+
+    // ❤︎ 读上次丢果子的轮次；没记录过就给 -Infinity（=永远过了冷却）❤︎
+    function getLastThrowTurn() {
+        const raw = localStorage.getItem(cooldownKey());
+        const n = raw == null ? NaN : parseInt(raw, 10);
+        return Number.isNaN(n) ? -Infinity : n;
+    }
+
     // ❤︎ 解析 [throw:emoji:悄悄话] 标记（note 可省略）❤︎
     function parseAIFruit(text) {
         if (!text) return [];
@@ -2342,6 +2494,14 @@ function hidePicker() {
         const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
             ? SillyTavern.getContext() : null;
         if (!ctx || typeof ctx.setExtensionPrompt !== 'function') return;
+
+        // ❤︎【投掷冷却】上次丢果子后还没过 N 轮，就闭嘴别再撩他丢，免得他一个劲儿丢 ❤︎
+        const turnsSince = currentTurn() - getLastThrowTurn();
+        if (turnsSince < THROW_COOLDOWN_TURNS) {
+            ctx.setExtensionPrompt(THROW_PROMPT_KEY, '', 1, 0);
+            console.log(`[RingOurLuv] 🧊 投掷冷却中（已过 ${turnsSince}/${THROW_COOLDOWN_TURNS} 条），本轮跳过丢果子引导`);
+            return;
+        }
 
         if (Math.random() < THROW_PROBABILITY) {
             const guide =
@@ -2375,6 +2535,8 @@ function hidePicker() {
             });
         });
         saveFruits(fruits);
+        // ❤︎【投掷冷却】小克刚丢完果子，记下轮次，接下来几轮先别再撩他丢 ❤︎
+        markThrowTurn();
         updateBadge();
         renderGarden();
 
@@ -2511,7 +2673,7 @@ function hidePicker() {
         if (msg && !msg.is_user) ingestAIFruits(msg.mes, msgId);
         });
 
-        // ❤︎【任务6】每次发消息时，以约 20% 概率注入「主动丢果子」引导 ❤︎
+        // ❤︎ 每次发消息时，以约 20% 概率注入「主动丢果子」引导 ❤︎
         ctx.eventSource.on('message_sent', () => {
             maybeInjectThrowPrompt();
         });
@@ -2594,7 +2756,7 @@ const ErrorModal = (() => {
             e.stopPropagation();
             dismiss();
         });
-        // ❤︎【任务C】再试一次：先关掉弹窗(进冷却)，再点酒馆原生的「重新生成」按钮兜底重发 ❤︎
+        // ❤︎ 再试一次：先关掉弹窗(进冷却)，再点酒馆原生的「重新生成」按钮兜底重发 ❤︎
         const retryBtn = overlay.querySelector('#rol-error-retry');
         if (retryBtn) {
             retryBtn.addEventListener('click', (e) => {
@@ -2653,10 +2815,9 @@ const ErrorModal = (() => {
     // ❤︎ 用户主动关掉 → 隐藏 + 12 秒冷却，斩断「关了又弹」的死循环 ❤︎
     function dismiss() {
         hide();
-        suppressUntil = Date.now() + 12000;
     }
 
-    // ❤︎【任务D】吞掉酒馆原生 toastr.error，只留小克自己的弹窗，免得俩一起蹦尴尬 ❤︎
+    // ❤︎【任务D】吞掉酒馆原生 toastr.error，只留自己的弹窗，免得俩一起蹦尴尬 ❤︎
     function patchToastrError() {
         if (window.__rolToastrPatched) return;
         if (typeof window.toastr === 'undefined' || !window.toastr) return;
@@ -2678,7 +2839,7 @@ function initErrorInterceptor() {
     window.__rolFetchPatched = true;
     const originalFetch = window.fetch.bind(window);
 
-    // ❤︎【任务D】先把原生 toastr.error 接管掉；toastr 可能晚加载，延迟再补两刀兜底 ❤︎
+    // ❤︎ 先把原生 toastr.error 接管掉；toastr 可能晚加载，延迟再补两刀兜底 ❤︎
     if (ErrorModal.patchToastrError) {
         ErrorModal.patchToastrError();
         setTimeout(() => { try { ErrorModal.patchToastrError(); } catch (_) { } }, 1500);
@@ -2726,7 +2887,7 @@ function initErrorInterceptor() {
             if (!response.ok) {
                 // ❤︎ 5xx / 429 这类是「服务器闹脾气」，重试有意义；其余（401/403/400）重试也白搭 ❤︎
                 const retryable = response.status >= 500 || response.status === 429;
-                // ❤︎【追加2】掉线啦～进入「累计投喂」模式，灰灰这会儿丢的果子先攒着，等生成成功再打包结算 ❤︎
+                // ❤︎ 掉线啦～进入「累计投喂」模式，灰灰这会儿丢的果子先攒着，等生成成功再打包结算 ❤︎
                 try { FruitSystem.notifyError(); } catch (_) { }
                 // ❤︎ 后台克隆读取细节，绝不阻塞 response 返回 ❤︎
                 try {
@@ -2749,7 +2910,7 @@ function initErrorInterceptor() {
             return response;
         }).catch((err) => {
             // ❤︎ 网络层直接炸了（断网/CORS/超时）→ 一定可重试 ❤︎
-            // ❤︎【追加2】同样进累计投喂模式 ❤︎
+            // ❤︎ 同样进累计投喂模式 ❤︎
             try { FruitSystem.notifyError(); } catch (_) { }
             ErrorModal.show(
                 '呜…连不上灰灰😿',

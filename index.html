@@ -133,6 +133,21 @@
                     <label class="rol-label">🍰 Rinn的配方</label>
                     <textarea id="rol-summary-prompt" class="rol-input rol-textarea" rows="4" placeholder="{{context}} 代表对话内容"></textarea>
                 </div>
+                <!-- ┣━━⭐️【Part 3】时间感知 + 模型切换楼层━━┫ -->
+                <div class="rol-config-group">
+                    <label class="rol-label">
+                        <span>⏰ 时间感知（给消息加时间戳）</span>
+                        <input type="checkbox" id="rol-enable-time-aware" checked>
+                    </label>
+                </div>
+                <div class="rol-config-group">
+                    <label class="rol-label">🧠 当前模型</label>
+                    <input type="text" id="rol-current-model" class="rol-input" placeholder="例如 claude-opus-4-x">
+                </div>
+                <div class="rol-config-group">
+                    <label class="rol-label">🚪 当前渠道</label>
+                    <input type="text" id="rol-current-channel" class="rol-input" placeholder="例如 官方API / 中转XX">
+                </div>
             </div>
         </div>
     </div>
