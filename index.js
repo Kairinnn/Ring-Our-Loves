@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.4.6';// ┣━━🩷━━┫
+const ROL_VERSION = '0.4.7';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
