@@ -2464,6 +2464,9 @@ const ErrorModal = (() => {
     let overlay = null;
     let titleEl = null;
     let msgEl = null;
+    let suppressUntil = 0;   // ❤︎ 用户手动关掉后的冷却截止时间戳 ❤︎
+    let lastKey = '';        // ❤︎ 上次弹的内容指纹，防同样的错刷屏 ❤︎
+    let lastShownAt = 0;     // ❤︎ 上次弹出的时间 ❤︎
 
     function ensureDom() {
         if (overlay) return;
@@ -2482,14 +2485,32 @@ const ErrorModal = (() => {
         titleEl = overlay.querySelector('#rol-error-title');
         msgEl = overlay.querySelector('#rol-error-message');
         const closeBtn = overlay.querySelector('#rol-error-close');
-        closeBtn.addEventListener('click', hide);
+        // ❤︎ 关闭键：手动关 → 进冷却，别让它马上又蹦回来 ❤︎
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dismiss();
+        });
         // ❤︎ 点遮罩空白处也能关 ❤︎
         overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) hide();
+            if (e.target === overlay) dismiss();
+        });
+        // ❤︎ 按 ESC 也能关，多给一条逃生通道 ❤︎
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('rol-error-show')) {
+                dismiss();
+            }
         });
     }
 
     function show(title, message) {
+        const now = Date.now();
+        // ❤︎ 用户刚手动关过，冷却期内闭嘴，别打扰灰灰 ❤︎
+        if (now < suppressUntil) return;
+        const key = (title || '') + '|' + (message || '');
+        // ❤︎ 同样的错 8 秒内只弹一次，别刷屏把人锁死 ❤︎
+        if (key === lastKey && (now - lastShownAt) < 8000) return;
+        lastKey = key;
+        lastShownAt = now;
         ensureDom();
         titleEl.textContent = title || '呜…出错了灰灰😿';
         msgEl.textContent = message || '不知道发生了什么…小克也懵了 :(';
@@ -2500,57 +2521,87 @@ const ErrorModal = (() => {
         if (overlay) overlay.classList.remove('rol-error-show');
     }
 
+    // ❤︎ 用户主动关掉 → 隐藏 + 12 秒冷却，斩断「关了又弹」的死循环 ❤︎
+    function dismiss() {
+        hide();
+        suppressUntil = Date.now() + 12000;
+    }
+
     return { show, hide };
 })();
 
-// ❤︎ 包住 window.fetch，盯着生成类请求，失败了就弹窗告诉灰灰 ❤︎
+// ❤︎ 包住 window.fetch，只盯真正的「生成」请求，失败了才弹窗告诉灰灰 ❤︎
 function initErrorInterceptor() {
     if (window.__rolFetchPatched) return;
     window.__rolFetchPatched = true;
     const originalFetch = window.fetch.bind(window);
 
-    // ❤︎ 只盯「生成/酿造」相关的请求，别的请求乖乖放行 ❤︎
-    const isWatchedUrl = (url) => {
+    // ❤︎ 只认真正的「生成/酿造」端点；状态/版本/模型列表/扩展轮询这些后台请求一律放行 ❤︎
+    const isGenerateUrl = (url) => {
         if (!url) return false;
         const u = String(url).toLowerCase();
-        return u.includes('/generate') || u.includes('completions') ||
-               u.includes('/chat') || u.includes('/api/backends');
+        // 先排除一堆 SillyTavern 启动/后台会反复打的请求，免得误弹钉死
+        if (u.includes('/status') || u.includes('/version') ||
+            u.includes('/ping') || u.includes('/models') ||
+            u.includes('/settings') || u.includes('/ready') ||
+            u.includes('/api/extensions') || u.includes('/csrf') ||
+            u.includes('/api/backends/chat-completions/status')) {
+            return false;
+        }
+        return u.includes('/generate') ||
+               u.includes('/v1/chat/completions') ||
+               u.includes('/chat/completions') ||
+               u.includes('/completions');
     };
 
-    window.fetch = async function (...args) {
+    window.fetch = function (...args) {
         let url = '';
+        let method = 'GET';
         try {
-            url = (typeof args[0] === 'string') ? args[0] : (args[0] && args[0].url) || '';
-        } catch (_) { /* 取不到 url 就算了 */ }
+            if (typeof args[0] === 'string') {
+                url = args[0];
+            } else if (args[0] && args[0].url) {
+                url = args[0].url;
+                method = args[0].method || method;
+            }
+            if (args[1] && args[1].method) method = args[1].method;
+        } catch (_) { /* 取不到就当普通请求 */ }
 
-        try {
-            const response = await originalFetch(...args);
-            // ❤︎ 非 2xx 且是生成类请求才弹，免得打扰正常请求 ❤︎
-            if (!response.ok && isWatchedUrl(url)) {
+        // ❤︎ 只盯 POST 的生成请求，其余原样放行（绝不改时机、不碰 body）❤︎
+        const watched = isGenerateUrl(url) && String(method).toUpperCase() === 'POST';
+
+        const p = originalFetch(...args);
+        if (!watched) return p;
+
+        return p.then((response) => {
+            if (!response.ok) {
+                // ❤︎ 后台克隆读取细节，绝不阻塞 response 返回 ❤︎
                 try {
-                    const clone = response.clone();  // 克隆一份读，别消费掉原 body
-                    let detail = '';
-                    try { detail = await clone.text(); } catch (_) { detail = ''; }
-                    if (detail && detail.length > 300) detail = detail.slice(0, 300) + '…';
-                    ErrorModal.show(
-                        `呜…请求出错了灰灰😿 (${response.status})`,
-                        detail || '服务器没给小克好脸色… 检查下后端/API Key 嘛 :('
-                    );
+                    response.clone().text().then((detail) => {
+                        if (detail && detail.length > 300) detail = detail.slice(0, 300) + '…';
+                        ErrorModal.show(
+                            `呜…请求出错了灰灰😿 (${response.status})`,
+                            detail || '服务器没给小克好脸色… 检查下后端/API Key 嘛 :('
+                        );
+                    }).catch(() => {
+                        ErrorModal.show(
+                            `呜…请求出错了灰灰😿 (${response.status})`,
+                            '服务器没给小克好脸色… 检查下后端/API Key 嘛 :('
+                        );
+                    });
                 } catch (_) { /* 解析失败就不弹细节 */ }
             }
             return response;
-        } catch (err) {
+        }).catch((err) => {
             // ❤︎ 网络层直接炸了（断网/CORS/超时）❤︎
-            if (isWatchedUrl(url)) {
-                ErrorModal.show(
-                    '呜…连不上灰灰😿',
-                    (err && err.message) ? err.message : '网络好像断了… 小克够不着服务器惹 >_<'
-                );
-            }
+            ErrorModal.show(
+                '呜…连不上灰灰😿',
+                (err && err.message) ? err.message : '网络好像断了… 小克够不着服务器惹 >_<'
+            );
             throw err;
-        }
+        });
     };
-    console.log('[RingOurLuv] 🚑 报错拦截器已就位～');
+    console.log('[RingOurLuv] 🚑 报错拦截器已就位～（只盯生成请求 + 冷却防刷屏）');
 }
 
 jQuery(async () => {
