@@ -1014,6 +1014,35 @@ function startCounter() {
                 Storage.updateConfig({ summaryPrompt: summaryPromptArea.value });
             });
         }
+
+        // ❤︎ 绑定「时间感知」开关 ❤︎
+        const timeAwareCheckbox = document.getElementById('rol-enable-time-aware');
+        if (timeAwareCheckbox) {
+            timeAwareCheckbox.checked = config.enableTimeAware;
+            timeAwareCheckbox.addEventListener('change', (e) => {
+                Storage.updateConfig({ enableTimeAware: e.target.checked });
+            });
+        }
+
+        // ❤︎ 绑定「当前模型」输入框 ❤︎
+        const currentModelInput = document.getElementById('rol-current-model');
+        if (currentModelInput) {
+            currentModelInput.value = config.currentModel || '';
+            currentModelInput.addEventListener('input', (e) => {
+                Storage.updateConfig({ currentModel: e.target.value });
+                SystemFloor.checkModelSwitch();
+            });
+        }
+
+        // ❤︎ 绑定「当前渠道」输入框 ❤︎
+        const currentChannelInput = document.getElementById('rol-current-channel');
+        if (currentChannelInput) {
+            currentChannelInput.value = config.currentChannel || '';
+            currentChannelInput.addEventListener('input', (e) => {
+                Storage.updateConfig({ currentChannel: e.target.value });
+                SystemFloor.checkModelSwitch();
+            });
+        }
     }
 
     function renderPresetOptions() {
@@ -2675,6 +2704,8 @@ function hidePicker() {
 
         // ❤︎ 每次发消息时，以约 20% 概率注入「主动丢果子」引导 ❤︎
         ctx.eventSource.on('message_sent', () => {
+            SystemFloor.injectTimeAwareness();
+            SystemFloor.checkModelSwitch();
             maybeInjectThrowPrompt();
         });
         // ❤︎ 兼容部分版本的生成开始事件，确保引导能赶在请求发出前注入 ❤︎
