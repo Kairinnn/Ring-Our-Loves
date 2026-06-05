@@ -1801,20 +1801,40 @@ if (rolStopBtn) {
         anchor.parentElement?.appendChild(btn);
     }
 
-    return { initUI, renderMemoryList, renderPresetOptions, showToast };
+    return { initUI, renderMemoryList, renderPresetOptions, showToast, rolConfirm };
 })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅              🍎 果子系统 FruitSystem 🍎               ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 const FruitSystem = (() => {
-    // ❤︎ 果园按 chatId 隔离：每个聊天窗口的果子各存各的，绝不串台 ❤︎
-    // ❤︎ key 形如 rol_fruits_<chatId>；拿不到 chatId（如未进聊天）时退回 default ❤︎
-    function fruitsKey() {
+    // ❤︎ 果园按「当前会话」隔离：每个聊天窗口的果子各存各的，绝不串台 ❤︎
+    // ❤︎ 之前只读 ctx.chatId，但很多 ST 版本/群聊场景下它是 undefined → 永远落到 ❤︎
+    // ❤︎ 'default' 一个 key 里，果子全堆一起（BUG5「写了但没生效」根因）。❤︎
+    // ❤︎ 这里改成一条可靠兜底链：getCurrentChatId() → chatId → 群/角色 id → default ❤︎
+    function getChatScope() {
         const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
             ? SillyTavern.getContext() : null;
-        const chatId = ctx && ctx.chatId != null ? ctx.chatId : 'default';
-        return 'rol_fruits_' + chatId;
+        if (!ctx) return 'default';
+        // ① 官方推荐：单聊/群聊都能拿到稳定的当前聊天标识 ❤︎
+        try {
+            if (typeof ctx.getCurrentChatId === 'function') {
+                const id = ctx.getCurrentChatId();
+                if (id != null && id !== '') return String(id);
+            }
+        } catch (_) { /* 某些版本没这个方法，往下兜底 */ }
+        // ② 退一步用 ctx.chatId ❤︎
+        if (ctx.chatId != null && ctx.chatId !== '') return String(ctx.chatId);
+        // ③ 群聊用 groupId、单角色用 characterId 兜底，至少能按角色/群分桶 ❤︎
+        if (ctx.groupId != null && ctx.groupId !== '') return 'group_' + ctx.groupId;
+        if (ctx.characterId != null && ctx.characterId !== '') return 'char_' + ctx.characterId;
+        // ④ 实在啥都没有（没进聊天）才落 default ❤︎
+        return 'default';
+    }
+
+    // ❤︎ key 形如 rol_fruits_<scope>，scope 由 getChatScope() 统一给出 ❤︎
+    function fruitsKey() {
+        return 'rol_fruits_' + getChatScope();
     }
 
     // ❤︎ 掉线累计投喂用的状态 ❤︎
@@ -2021,8 +2041,10 @@ function onEnd() {
     // ❤︎ 编辑按钮可能不存在，用可空保护 ❤︎
     const editBtn = document.getElementById('rol-fruit-edit-btn');
     if (editBtn) editBtn.onclick = () => editFruitNote(fruit.id);
-    document.getElementById('rol-fruit-delete-btn').onclick = () => {
-        if (confirm('真的要扔掉这颗果子吗？')) deleteFruit(fruit.id);
+    document.getElementById('rol-fruit-delete-btn').onclick = async () => {
+        // ❤︎ 换掉浏览器原生 confirm，统一用咱自己的粉色弹窗 ❤︎
+        const yes = await UIController.rolConfirm('🍂', '真的要扔掉这颗果子吗？', '扔掉', '留着');
+        if (yes) deleteFruit(fruit.id);
     };
 
     const popup = document.getElementById('rol-fruit-detail-popup');
@@ -2051,6 +2073,15 @@ function closeFruitDetail() {
         const wrap = document.querySelector('.rol-fruit-picker-scroll-wrap');
         const track = document.getElementById('rol-fruit-picker-track');
         if (!wrap || !track) return;
+
+        // ❤︎ 只动横向 scrollLeft 的居中 helper：不用 scrollIntoView，免得牵动 ❤︎
+        // ❤︎ 父级 .rol-drawer-panel 的纵向滚动把顶部三个 tab 顶出可视区（BUG1）❤︎
+        // ❤︎ 也避开和 scroll-snap mandatory 打架导致末尾两项（🍉/自定义）选不中（BUG2）❤︎
+        function centerOption(opt) {
+            if (!opt) return;
+            const target = opt.offsetLeft + opt.offsetWidth / 2 - wrap.offsetWidth / 2;
+            wrap.scrollTo({ left: target, behavior: 'smooth' });
+        }
 
         function syncSelected() {
             const wrapCenter = wrap.getBoundingClientRect().left + wrap.offsetWidth / 2;
@@ -2084,7 +2115,7 @@ function closeFruitDetail() {
                 if (opt === customOption && customInput) {
                     customInput.focus();
                 }
-                opt.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                centerOption(opt);
             });
         });
 
@@ -2094,11 +2125,11 @@ function closeFruitDetail() {
                 const val = e.target.value.trim();
                 customOption.dataset.emoji = val;
                 // ❤︎ 输入时也居中，让user看到「我打的emoji被选中了」❤︎
-                customOption.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                centerOption(customOption);
             });
             customInput.addEventListener('focus', () => {
                 // ❤︎ focus时居中，配合上面click里的focus，保证点击虚线框→聚焦→滚到正中→能选中 ❤︎
-                customOption.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                centerOption(customOption);
             });
             // ❤︎ 点击 input 本身也阻止冒泡，避免触发父级滚动 ❤︎
             customInput.addEventListener('click', (e) => {
@@ -2446,11 +2477,19 @@ function hidePicker() {
     throwAnimation(emoji, () => {
         // ❤︎ 命中头像 → 把面板移回来（坠落淡出是纯视觉收尾，不阻塞）❤︎
         document.body.classList.remove('rol-fruit-animating');
-        // ❤︎ 给抽屉面板加一段回弹动画（CSS @keyframes rol-panel-restore，450ms 后摘掉 class）❤︎
+        // ❤︎ 回弹动画改用 Web Animations API：直接对元素播一段关键帧，❤︎
+        // ❤︎ 不去碰 className——之前加/摘 .rol-panel-restoring 会让 panel 的 ❤︎
+        // ❤︎ animation 属性变回常驻的 rol-bounce-in，导致入场动画被重播一次（BUG4 回弹两次根因）❤︎
         const panel = document.getElementById('rol-drawer-panel');
-        if (panel) {
-            panel.classList.add('rol-panel-restoring');
-            setTimeout(() => panel.classList.remove('rol-panel-restoring'), 450);
+        if (panel && typeof panel.animate === 'function') {
+            panel.animate(
+                [
+                    { transform: 'scale(0.92)', opacity: 0.4 },
+                    { transform: 'scale(1.04)', opacity: 1, offset: 0.6 },
+                    { transform: 'scale(1)', opacity: 1 }
+                ],
+                { duration: 450, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
+            );
         }
         UIController.showToast(`果子丢出去啦 ${emoji}`);
         renderGarden();
@@ -2475,12 +2514,9 @@ function hidePicker() {
         return ctx && ctx.chat ? ctx.chat.length : 0;
     }
 
-    // ❤︎ 冷却 key 按 chatId 隔离，仿 fruitsKey()，各窗口各算各的 ❤︎
+    // ❤︎ 冷却 key 也按当前会话隔离，复用 getChatScope()，和 fruitsKey 同一套兜底链 ❤︎
     function cooldownKey() {
-        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
-            ? SillyTavern.getContext() : null;
-        const chatId = ctx && ctx.chatId != null ? ctx.chatId : 'default';
-        return THROW_COOLDOWN_KEY + '_' + chatId;
+        return THROW_COOLDOWN_KEY + '_' + getChatScope();
     }
 
     // ❤︎ 记下「这一刻丢了果子」的轮次 ❤︎
