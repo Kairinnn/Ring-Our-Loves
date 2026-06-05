@@ -81,8 +81,10 @@
                         <span class="rol-fruit-picker-title">🍎 丢个果子</span>
                         <button id="rol-fruit-picker-close" class="rol-btn rol-btn-icon">✕</button>
                     </div>
-                    <!-- ┣━━横向滑动选果区━━┫ -->
-                    <div class="rol-fruit-picker-scroll-wrap">
+                    <!-- ┣━━【修复2】可滚动主体：包裹果子轨道+纸条，挤不下时优先滚这里，顶部头和底部按钮永远可见━━┫ -->
+                    <div class="rol-fruit-picker-body">
+                        <!-- ┣━━横向滑动选果区━━┫ -->
+                        <div class="rol-fruit-picker-scroll-wrap">
                         <div id="rol-fruit-picker-track" class="rol-fruit-picker-track">
                             <div class="rol-fruit-option" data-emoji="🍎">🍎</div>
                             <div class="rol-fruit-option" data-emoji="🍊">🍊</div>
@@ -101,10 +103,11 @@
                                 <input type="text" id="rol-fruit-custom-input" class="rol-fruit-custom-input"
                                     maxlength="8" placeholder="✏️" autocomplete="off">
                             </div>
+                            </div>
                         </div>
+                        <!-- ┣━━纸条输入区━━┫ -->
+                        <textarea id="rol-fruit-note" class="rol-input rol-textarea" rows="3" placeholder="附张纸条？（可以空着）"></textarea>
                     </div>
-                    <!-- ┣━━纸条输入区━━┫ -->
-                    <textarea id="rol-fruit-note" class="rol-input rol-textarea" rows="3" placeholder="附张纸条？（可以空着）"></textarea>
                     <!-- ┣━━操作按钮━━┫ -->
                     <div class="rol-fruit-picker-actions">
                         <button id="rol-fruit-throw-btn" class="rol-btn rol-btn-primary">我丢！</button>

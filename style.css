@@ -1601,16 +1601,21 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 }
 
 /* ⬇️┅🍎嵌入式选果栏（在 garden 容器内）/┅┅╗ */
+/* ❤︎【修复2】改成紧凑布局：header + 滚动果子区 + 固定底栏，
+   让「我丢！」和「算了」永远可见，不用滑下去找啦～ ❤︎ */
 .rol-fruit-picker-inline {
     position: relative;
     display: none; /* 默认隐藏 */
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    /* ❤︎ 限高=标题30 + 果子轨道80 + 纸条60 + 按钮48 + gap*3 = 约250px，
+       超出由中间的果子轨道滚动，头尾永远可见 ❤︎ */
+    max-height: 280px;
+    padding: 0;
     background: rgba(255, 248, 252, 0.95);
     border-radius: 12px;
     border: 1px solid rgba(255, 182, 215, 0.3);
     margin-top: 12px;
+    overflow: hidden;
 }
 
 /* ❤︎ picking 模式：隐藏果子画布，显示选果UI ❤︎ */
@@ -1626,6 +1631,9 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    /* ❤︎【修复2】固定在顶部，不滚动 */
+    flex-shrink: 0;
+    padding: 12px 16px 8px;
 }
 
 .rol-fruit-picker-title {
@@ -1635,6 +1643,25 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 }
 
 /* ⬇️┅🍎横向滑动选果轨道/┅┅╗ */
+/* ❤︎【修复2】把它包在可滚动容器里，纸条和按钮挤不下时优先让果子区滚 */
+.rol-fruit-picker-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 16px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(219, 112, 147, 0.3) transparent;
+}
+
+.rol-fruit-picker-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.rol-fruit-picker-body::-webkit-scrollbar-thumb {
+    background: rgba(219, 112, 147, 0.3);
+    border-radius: 2px;
+}
+
 .rol-fruit-picker-scroll-wrap {
     overflow-x: auto;
     overflow-y: hidden;
@@ -1643,7 +1670,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     scroll-snap-type: x mandatory;
     /* ❤︎ 两侧 padding=「容器一半 - 果子一半」，保证任意一颗（含最后的🍉）都能滚到正中心 ❤︎ */
     padding: 8px calc(50% - 26px);
-    margin: 0 -18px;
+    margin: 0 -16px 12px;
     /* ❤︎ 防止纵向滚动链传到页面（点末尾选项时页面别乱跳） */
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -1711,10 +1738,18 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 }
 
 /* ⬇️┅🍎丢果子按钮区/┅┅╗ */
+/* ❤︎【修复2】固定在底部，永远可见不被滚走 */
 .rol-fruit-picker-actions {
     display: flex;
     gap: 10px;
     justify-content: center;
+    flex-shrink: 0;
+    padding: 10px 16px 14px;
+    background: linear-gradient(to bottom, 
+        rgba(255, 248, 252, 0) 0%, 
+        rgba(255, 248, 252, 0.95) 18%, 
+        rgba(255, 248, 252, 0.98) 100%);
+    border-top: 1px solid rgba(255, 182, 215, 0.15);
 }
 
 /* ⬇️┅🍎果子纸条弹窗/┅┅╗ */

@@ -25,12 +25,12 @@ const Storage = (() => {
                     autoInject: true,
                     maxInjectCount: 3,
                     summaryPrompt: '',
-                    // ❤︎【Part 3】时间感知 + 模型切换楼层 ❤︎
+                    // ❤︎ 时间感知 + 模型切换楼层 ❤︎
                     enableTimeAware: true,          // 时间感知开关
-                    currentModel: '',               // 当前模型名（手动填）
-                    currentChannel: '',             // 当前渠道名（手动填）
-                    lastModel: '',                  // 上次模型（用于检测切换）
-                    lastChannel: ''                 // 上次渠道（用于检测切换）
+                    currentModel: '',               // 当前模型（手动）
+                    currentChannel: '',             // 当前渠道（手动）
+                    lastModel: '',                  // 上次模型（检测切换）
+                    lastChannel: ''                 // 上次渠道（检测切换）
                 }
             };
             saveSettingsDebounced();
@@ -222,7 +222,7 @@ const SystemFloor = (() => {
         const channelChanged = currentCh && currentCh !== lastCh;
 
         if (modelChanged || channelChanged) {
-            // ❤︎ 系统风格文案（非口语，直白陈述）❤︎
+            // ❤︎ 文案 ❤︎
             const parts = [];
             if (modelChanged && current) parts.push(`模型已切换至 ${current}`);
             if (channelChanged && currentCh) parts.push(`渠道：${currentCh}`);
@@ -836,7 +836,9 @@ if (!raw) return null;
             } catch (e) { /* 忽略 */ }
         }
 
-        const contextText = messages.map(msg => {
+        // ❤︎ 把记录日期拼到对话片段最前面，让 Claude 写信时知道这段发生在哪天 ❤︎
+        const dateLine = autoDate ? `（记录日期： ${autoDate}）\n\n` : '';
+        const contextText = dateLine + messages.map(msg => {
             const role = msg.is_user ? 'User' : 'Char';
             return `${role}: ${msg.mes}`;
         }).join('\n');
@@ -1597,7 +1599,9 @@ if (rolStopBtn) {
             } catch (e) { /* 忽略 */ }
         }
 
-        const contextText = messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
+        // ❤︎ 把记录日期拼到对话片段最前面，让 Claude 写信时知道这段发生在哪天 ❤︎
+        const dateLine = autoDate ? `（记录日期： ${autoDate}）\n\n` : '';
+        const contextText = dateLine + messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
 
         if (loading) loading.style.display = 'flex';
         if (rolStopBtn) rolStopBtn.style.display = 'block';
@@ -2074,13 +2078,21 @@ function closeFruitDetail() {
         const track = document.getElementById('rol-fruit-picker-track');
         if (!wrap || !track) return;
 
+        // ❤︎【修复3】在track末尾追加透明spacer，让最后两项（🍉/自定义✏️）能滚到正中 ❤︎
+        const spacer = document.createElement('div');
+        spacer.className = 'rol-fruit-picker-spacer';
+        spacer.style.cssText = 'min-width: 50%; flex-shrink: 0; pointer-events: none;';
+        track.appendChild(spacer);
+
         // ❤︎ 只动横向 scrollLeft 的居中 helper：不用 scrollIntoView，免得牵动 ❤︎
         // ❤︎ 父级 .rol-drawer-panel 的纵向滚动把顶部三个 tab 顶出可视区（BUG1）❤︎
-        // ❤︎ 也避开和 scroll-snap mandatory 打架导致末尾两项（🍉/自定义）选不中（BUG2）❤︎
+        // ❤︎【修复3】给scrollLeft加clamp，避免超出范围导致末尾项选不中（BUG2）❤︎
         function centerOption(opt) {
             if (!opt) return;
+            const maxScroll = track.scrollWidth - wrap.clientWidth;
             const target = opt.offsetLeft + opt.offsetWidth / 2 - wrap.offsetWidth / 2;
-            wrap.scrollTo({ left: target, behavior: 'smooth' });
+            const clampedTarget = Math.max(0, Math.min(target, maxScroll));
+            wrap.scrollTo({ left: clampedTarget, behavior: 'smooth' });
         }
 
         function syncSelected() {
@@ -2138,14 +2150,12 @@ function closeFruitDetail() {
             });
         }
 
-        // ❤︎ 先初始化选择：滚到第一颗🍎居中 + 双帧重算确保 rect 准确 ❤︎
+        // ❤︎【修复3】先初始化选择：滚到第一颗🍎居中 + 双帧重算确保 rect 准确 ❤︎
         const initFirst = () => {
             const first = track.querySelector('.rol-fruit-option');
             if (!first) return;
-            // ❤︎ 用 scrollLeft 直接对齐（比 scrollIntoView 更稳，不受父容器滚动干扰）❤︎
-            const wrapCenter = wrap.offsetWidth / 2;
-            const firstCenter = first.offsetLeft + first.offsetWidth / 2;
-            wrap.scrollLeft = firstCenter - wrapCenter;
+            // ❤︎ 改用centerOption统一逻辑，确保clamp生效 ❤︎
+            centerOption(first);
             syncSelected();
         };
         requestAnimationFrame(() => requestAnimationFrame(initFirst));
@@ -2696,6 +2706,23 @@ function hidePicker() {
 
     /* ⬇️┅🔗事件绑定/┅┅╗ */
     function bindEvents() {
+        const ctx = SillyTavern.getContext();
+
+        // ❤︎【修复1】监听聊天切换事件 → 立即刷新果园，让果子跟着窗口走 ❤︎
+        if (ctx.eventSource && ctx.event_types) {
+            // ❤︎ CHAT_CHANGED 或 chatLoaded 事件：切换角色/群组/聊天时触发 ❤︎
+            const chatChangeEvent = ctx.event_types.CHAT_CHANGED || 'chatLoaded';
+            ctx.eventSource.on(chatChangeEvent, () => {
+                console.log('[RingOurLuv] 🍎 检测到对话切换，刷新果园...');
+                updateBadge();
+                // ❤︎ 如果当前正在果园 tab，立刻重新渲染 ❤︎
+                const gardenSection = document.getElementById('rol-section-garden');
+                if (gardenSection && gardenSection.classList.contains('rol-section-active')) {
+                    renderGarden();
+                }
+            });
+        }
+
         // ❤︎ 果园 tab → render ❤︎
         $(document).on('click', '#rol-tab-garden', () => {
             setTimeout(renderGarden, 50);
@@ -2723,8 +2750,7 @@ function hidePicker() {
         });
 
         // ❤︎ 监听 ST 消息生成完成 → check delivery + parse AI fruits ❤︎
-        const ctx = SillyTavern.getContext();
-              ctx.eventSource.on('message_received', (msgId) => {
+        ctx.eventSource.on('message_received', (msgId) => {
         // ❤︎【追加2】上一轮注入的掉线提示已被小克消费，这轮清掉，避免反复唠叨 ❤︎
         if (offlinePromptArmed) {
             if (typeof ctx.setExtensionPrompt === 'function') ctx.setExtensionPrompt(OFFLINE_PROMPT_KEY, '', 1, 0);
