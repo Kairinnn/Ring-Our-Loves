@@ -1808,7 +1808,7 @@ if (rolStopBtn) {
 // ┣━━┅              🍎 果子系统 FruitSystem 🍎               ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 const FruitSystem = (() => {
-    // ❤︎【追加1】果园按 chatId 隔离：每个聊天窗口的果子各存各的，绝不串台 ❤︎
+    // ❤︎ 果园按 chatId 隔离：每个聊天窗口的果子各存各的，绝不串台 ❤︎
     // ❤︎ key 形如 rol_fruits_<chatId>；拿不到 chatId（如未进聊天）时退回 default ❤︎
     function fruitsKey() {
         const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
@@ -1817,7 +1817,7 @@ const FruitSystem = (() => {
         return 'rol_fruits_' + chatId;
     }
 
-    // ❤︎【追加2】掉线累计投喂用的状态 ❤︎
+    // ❤︎ 掉线累计投喂用的状态 ❤︎
     const OFFLINE_PROMPT_KEY = 'rol_offline_throws'; // ❤︎ 掉线投喂结算注入用的 key ❤︎
     let offlineSince = 0;          // ❤︎ 进入掉线模式的时间戳（0=在线）❤︎
     let pendingThrows = [];        // ❤︎ 掉线期间手动丢的果子（只攒不结算）❤︎
@@ -2076,11 +2076,11 @@ function closeFruitDetail() {
 
         track.querySelectorAll('.rol-fruit-option').forEach(opt => {
             opt.addEventListener('click', (e) => {
-                // ❤︎【任务3】防止页面位移：阻止默认行为和冒泡 ❤︎
+                // ❤︎ 防止页面位移：阻止默认行为和冒泡 ❤︎
                 e.preventDefault();
                 e.stopPropagation();
 
-                // ❤︎【任务B】自定义emoji选项也要能居中选中！先focus再居中 ❤︎
+                // ❤︎ 自定义emoji选项也要能居中选中！先focus再居中 ❤︎
                 if (opt === customOption && customInput) {
                     customInput.focus();
                 }
@@ -2088,7 +2088,7 @@ function closeFruitDetail() {
             });
         });
 
-        // ❤︎【任务B】自定义 input：输入/focus时同步emoji到dataset + 自动居中选中 ❤︎
+        // ❤︎ 自定义 input：输入/focus时同步emoji到dataset + 自动居中选中 ❤︎
         if (customInput && customOption) {
             customInput.addEventListener('input', (e) => {
                 const val = e.target.value.trim();
