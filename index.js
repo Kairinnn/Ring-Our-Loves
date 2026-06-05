@@ -5,7 +5,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.5.0';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.0';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
   localStorage.setItem('rol_version', ROL_VERSION);
@@ -875,6 +875,7 @@ const UIController = (() => {
         bindEditorPanel();
         bindAISourcePanel();
         bindLetterPanel();
+        bindWriteSpace();    // ❤︎ 写作角落（FAB → 手动/AI/写信）❤︎
         bindMobileNav();
         renderMemoryList();
         renderPresetOptions();
@@ -1313,6 +1314,135 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         if (panel) { panel.classList.remove('rol-active'); panel.dataset.memId = ''; }
     }
     /* ╚┅┅/ 📙正文预览 /┅┅═╝ */
+
+    /* ⬇️┅🪶写作角落（FAB → 手动酿造 / 让Claude酿造 / 写信）/┅┅╗ */
+    function bindWriteSpace() {
+        const fab = document.getElementById('rol-write-fab');
+        const space = document.getElementById('rol-write-space');
+        const closeBtn = document.getElementById('rol-write-close');
+        const homeView = document.getElementById('rol-write-home');
+        const composeView = document.getElementById('rol-letter-compose');
+
+        const entryManual = document.getElementById('rol-write-manual');
+        const entryAI = document.getElementById('rol-write-ai');
+        const entryLetter = document.getElementById('rol-write-letter');
+
+        const letterBack = document.getElementById('rol-letter-back');
+        const letterCancel = document.getElementById('rol-letter-cancel');
+        const letterSend = document.getElementById('rol-letter-send');
+        const letterAuthor = document.getElementById('rol-letter-author');
+        const letterContent = document.getElementById('rol-letter-content');
+
+        // ❤︎ 显示写作空间（默认回到入口选择视图）❤︎
+        function openSpace() {
+            if (!space) return;
+            showHomeView();
+            space.classList.add('rol-active');
+        }
+        function closeSpace() {
+            if (space) space.classList.remove('rol-active');
+        }
+        // ❤︎ 入口选择视图 ⇄ 写信视图 切换 ❤︎
+        function showHomeView() {
+            if (homeView) homeView.style.display = '';
+            if (composeView) composeView.style.display = 'none';
+        }
+        function showComposeView() {
+            if (homeView) homeView.style.display = 'none';
+            if (composeView) composeView.style.display = '';
+            renderOutbox();
+            if (letterContent) letterContent.value = '';
+            if (letterContent) setTimeout(() => letterContent.focus(), 50);
+        }
+
+        if (fab) fab.addEventListener('click', openSpace);
+        if (closeBtn) closeBtn.addEventListener('click', closeSpace);
+        // ❤︎ 点遮罩空白处也能关 ❤︎
+        if (space) space.addEventListener('click', (e) => { if (e.target === space) closeSpace(); });
+
+        // ❤︎ 手动酿造 → 关掉写作空间，打开恋果编辑器（空白新建）❤︎
+        if (entryManual) entryManual.addEventListener('click', () => {
+            closeSpace();
+            openEditor(null);
+        });
+
+        // ❤︎ 让Claude酿造 → 关掉写作空间，唤起 AI 来源面板 ❤︎
+        if (entryAI) entryAI.addEventListener('click', () => {
+            closeSpace();
+            const sourcePanel = document.getElementById('rol-ai-source-panel');
+            const pasteArea = document.getElementById('rol-ai-paste-area');
+            if (sourcePanel) {
+                sourcePanel.classList.add('rol-active');
+                if (pasteArea) pasteArea.style.display = 'none';
+            }
+        });
+
+        // ❤︎ 写信 → 切到写信视图 ❤︎
+        if (entryLetter) entryLetter.addEventListener('click', showComposeView);
+
+        // ❤︎ 返回 / 算了 → 回到入口视图 ❤︎
+        if (letterBack) letterBack.addEventListener('click', showHomeView);
+        if (letterCancel) letterCancel.addEventListener('click', showHomeView);
+
+        // ❤︎ 寄出 → 写入 LetterSystem，随机楼层送达 ❤︎
+        if (letterSend) letterSend.addEventListener('click', () => {
+            const content = (letterContent?.value || '').trim();
+            const author = letterAuthor?.value || 'user';
+            if (!content) { showToast('💭 还没写内容欸~'); return; }
+            const letter = LetterSystem.addLetter(content, author);
+            if (letter) {
+                showToast('📮 信寄出去啦~会在某一刻悄悄送达');
+                if (letterContent) letterContent.value = '';
+                renderOutbox();
+            } else {
+                showToast('🥀 寄信失败了... :(');
+            }
+        });
+
+        // ❤︎ 首次渲染一次寄出列表 ❤︎
+        renderOutbox();
+    }
+
+    // ❤︎ 渲染「寄出的信」列表：显示送达状态 + 可删除 ❤︎
+    function renderOutbox() {
+        const list = document.getElementById('rol-letter-outbox-list');
+        if (!list) return;
+        const letters = (typeof LetterSystem !== 'undefined' && LetterSystem.getLetters)
+            ? LetterSystem.getLetters() : [];
+        list.innerHTML = '';
+        if (!letters.length) {
+            list.innerHTML = '<div class="rol-letter-outbox-empty">还没有寄出的信呢~</div>';
+            return;
+        }
+        // ❤︎ 最新写的排在最上面 ❤︎
+        [...letters].reverse().forEach(l => {
+            const item = document.createElement('div');
+            item.className = 'rol-letter-outbox-item' + (l.delivered ? ' rol-letter-delivered' : '');
+            const authorLabel = l.author === 'claude' ? '🧡 Claude' : '🩷 Rinn';
+            const statusLabel = l.delivered ? '✅ 已送达' : '🕊️ 投递中';
+            const preview = escapeHtml((l.content || '').slice(0, 40)) + ((l.content || '').length > 40 ? '...' : '');
+            item.innerHTML = `
+                <div class="rol-letter-outbox-main">
+                    <div class="rol-letter-outbox-meta">
+                        <span class="rol-letter-outbox-author">${authorLabel}</span>
+                        <span class="rol-letter-outbox-status">${statusLabel}</span>
+                    </div>
+                    <div class="rol-letter-outbox-preview">${preview}</div>
+                </div>
+                <button class="rol-letter-outbox-del" title="撕掉这封信">🍃</button>
+            `;
+            item.querySelector('.rol-letter-outbox-del').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const yes = await rolConfirm('🍃', '撕掉这封信嘛？', '撕掉', '留着');
+                if (yes) {
+                    LetterSystem.deleteLetter(l.id);
+                    renderOutbox();
+                }
+            });
+            list.appendChild(item);
+        });
+    }
+    /* ╚┅┅/ 🪶写作角落 /┅┅═╝ */
 
     /* ⬇️┅📝编辑面板/┅┅╗ */
     function bindEditorPanel() {
@@ -1846,6 +1976,9 @@ const FruitSystem = (() => {
     let offlineSince = 0;          // ❤︎ 进入掉线模式的时间戳（0=在线）❤︎
     let pendingThrows = [];        // ❤︎ 掉线期间手动丢的果子（只攒不结算）❤︎
     let offlinePromptArmed = false;// ❤︎ 掉线提示已注入、待下一轮清除的标记 ❤︎
+    // ❤︎【用完即清】本轮投递注入的「果子 prompt」key，等下一次 message_received 统一擦掉，绝不赖着每轮跟 ❤︎
+    let pendingFruitPromptKeys = [];
+
 
     // ❤︎ 存储助手 ❤︎
     function loadFruits() {
@@ -2655,14 +2788,18 @@ function hidePicker() {
                 const note = f.message ? `（附言：${f.message}）` : '';
                 const sysMsg = `[系统] Rinn偷偷丢来了一颗 ${f.emoji}${note}`;
                 if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
-        const ctx = SillyTavern.getContext();
-              ctx.setExtensionPrompt(
-                  'rol_fruit_' + f.id,
-                  `[系统提示：Rinn 偷偷丢来了一颗 ${f.emoji}${note}，在接下来的对话中自然地回应这颗果子吧]`,
-                 1, 0
-         );
-    }
+                    const ctx = SillyTavern.getContext();
+                    const fruitKey = 'rol_fruit_' + f.id;
+                    ctx.setExtensionPrompt(
+                        fruitKey,
+                        `[系统提示：Rinn 偷偷丢来了一颗 ${f.emoji}${note}，在接下来的对话中自然地回应这颗果子吧]`,
+                        1, 0
+                    );
+                    // ❤︎【用完即清】记下这个 key，下一轮 message_received 统一擦掉，绝不赖着每轮跟 ❤︎
+                    if (!pendingFruitPromptKeys.includes(fruitKey)) pendingFruitPromptKeys.push(fruitKey);
+                }
                 console.log(`[RingOurLuv] 🍎 果子投递：${sysMsg}`);
+
             }
         });
         if (changed) saveFruits(fruits);
@@ -2751,11 +2888,19 @@ function hidePicker() {
 
         // ❤︎ 监听 ST 消息生成完成 → check delivery + parse AI fruits ❤︎
         ctx.eventSource.on('message_received', (msgId) => {
+        // ❤︎【用完即清·核心】上一轮注入的「记忆恋果」+「果子投递」prompt 已经被小克这轮消费掉了，❤︎
+        // ❤︎ 这里统一擦干净，绝不让任何注入赖在原地、每轮都跟着上下文飘。有敢留下的，杀杀杀！❤︎
+        if (typeof ctx.setExtensionPrompt === 'function') {
+            ctx.setExtensionPrompt(extensionName, '', 1, 0);          // 清掉记忆恋果注入
+            pendingFruitPromptKeys.forEach(k => ctx.setExtensionPrompt(k, '', 1, 0)); // 清掉本轮投递的果子
+        }
+        pendingFruitPromptKeys = [];
         // ❤︎【追加2】上一轮注入的掉线提示已被小克消费，这轮清掉，避免反复唠叨 ❤︎
         if (offlinePromptArmed) {
             if (typeof ctx.setExtensionPrompt === 'function') ctx.setExtensionPrompt(OFFLINE_PROMPT_KEY, '', 1, 0);
             offlinePromptArmed = false;
         }
+
         // ❤︎【追加2】生成成功了 = 掉线恢复，把这段时间攒的果子打包结算 ❤︎
         if (offlineSince > 0) settlePendingThrows();
               checkDelivery();
@@ -2795,9 +2940,148 @@ function hidePicker() {
 })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅              💌 写信系统 LetterSystem 💌              ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
+// ❤︎ 写一封信/小日记，攒着——等聊到「随机的某一楼」时，把信悄悄塞进那一轮的上下文捎给小克 ❤︎
+// ❤︎ 关键：只在送达那一轮临时注入，被消费完立刻擦掉，绝不赖在原地每轮跟。有敢留下的，杀杀杀！❤︎
+const LetterSystem = (() => {
+    // ❤︎ 信件也按「当前会话」隔离，复用和 FruitSystem 同一套可靠兜底链 ❤︎
+    function getChatScope() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (!ctx) return 'default';
+        try {
+            if (typeof ctx.getCurrentChatId === 'function') {
+                const id = ctx.getCurrentChatId();
+                if (id != null && id !== '') return String(id);
+            }
+        } catch (_) { /* 老版本没这方法，往下兜底 */ }
+        if (ctx.chatId != null && ctx.chatId !== '') return String(ctx.chatId);
+        if (ctx.groupId != null && ctx.groupId !== '') return 'group_' + ctx.groupId;
+        if (ctx.characterId != null && ctx.characterId !== '') return 'char_' + ctx.characterId;
+        return 'default';
+    }
+
+    function lettersKey() {
+        return 'rol_letters_' + getChatScope();
+    }
+
+    // ❤︎【用完即清】本轮送达注入的「信件 prompt」key，等下一次 message_received 统一擦掉 ❤︎
+    let pendingLetterPromptKeys = [];
+
+    /* ⬇️┅💾存储助手/┅┅╗ */
+    function loadLetters() {
+        return JSON.parse(localStorage.getItem(lettersKey()) || '[]');
+    }
+    function saveLetters(arr) {
+        localStorage.setItem(lettersKey(), JSON.stringify(arr));
+    }
+    function generateId() {
+        return 'ltr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    }
+
+    /* ⬇️┅✍️写信入库/┅┅╗ */
+    // ❤︎ 写完一封信：随机挑一个「久一点」的楼层送达（当前楼 +10~60），不绑世界书、不绑触发词 ❤︎
+    function addLetter(content, author) {
+        const text = (content || '').trim();
+        if (!text) return null;
+        const msgCount = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? (SillyTavern.getContext().chat?.length || 0) : 0;
+        const deliverAt = msgCount + Math.floor(Math.random() * 51) + 10; // ❤︎ +10~60 楼，久一点久一点🥺 ❤︎
+        const letter = {
+            id: generateId(),
+            content: text,
+            author: author || 'user',
+            createdAt: new Date().toISOString(),
+            deliverAt,
+            delivered: false
+        };
+        const arr = loadLetters();
+        arr.push(letter);
+        saveLetters(arr);
+        console.log(`[RingOurLuv] 💌 写好一封信，将在第 ${deliverAt} 楼送达（当前 ${msgCount} 楼）`);
+        return letter;
+    }
+
+    function getLetters() {
+        return loadLetters();
+    }
+    function deleteLetter(id) {
+        const arr = loadLetters().filter(l => l.id !== id);
+        saveLetters(arr);
+    }
+
+    /* ⬇️┅📮到楼送达检查/┅┅╗ */
+    function checkLetterDelivery() {
+        if (typeof SillyTavern === 'undefined' || !SillyTavern.getContext) return;
+        const ctx = SillyTavern.getContext();
+        const msgCount = ctx.chat?.length || 0;
+        const letters = loadLetters();
+        let changed = false;
+        letters.forEach(l => {
+            if (!l.delivered && l.deliverAt <= msgCount) {
+                l.delivered = true;
+                changed = true;
+                const who = l.author === 'claude' ? '你（Claude）之前写下' : 'Rinn 给你写';
+                const letterKey = 'rol_letter_' + l.id;
+                if (typeof ctx.setExtensionPrompt === 'function') {
+                    ctx.setExtensionPrompt(
+                        letterKey,
+                        `[系统提示：${who}的一封信悄悄送到了——\n「${l.content}」\n请在接下来的对话里自然地把这封信读进心里、并温柔地回应它吧~]`,
+                        1, 0
+                    );
+                    // ❤︎【用完即清】记下这个 key，下一轮 message_received 统一擦掉 ❤︎
+                    if (!pendingLetterPromptKeys.includes(letterKey)) pendingLetterPromptKeys.push(letterKey);
+                }
+                console.log(`[RingOurLuv] 💌 信件送达第 ${l.deliverAt} 楼：${l.content.slice(0, 20)}...`);
+            }
+        });
+        if (changed) saveLetters(letters);
+    }
+
+    /* ⬇️┅🔗事件绑定/┅┅╗ */
+    function bindEvents() {
+        if (typeof SillyTavern === 'undefined' || !SillyTavern.getContext) return;
+        const ctx = SillyTavern.getContext();
+        if (!ctx.eventSource) return;
+
+        // ❤︎【用完即清·核心】上一轮送达的信件 prompt 已被小克这轮消费掉了，统一擦干净，绝不赖着每轮飘 ❤︎
+        ctx.eventSource.on('message_received', () => {
+            if (typeof ctx.setExtensionPrompt === 'function') {
+                pendingLetterPromptKeys.forEach(k => ctx.setExtensionPrompt(k, '', 1, 0));
+            }
+            pendingLetterPromptKeys = [];
+            // ❤︎ AI 回完一轮，楼层 +1，顺手检查有没有信件到楼 ❤︎
+            checkLetterDelivery();
+        });
+
+        // ❤︎ user 发消息也检查一次，让送达尽量赶在请求发出前注入 ❤︎
+        ctx.eventSource.on('message_sent', () => checkLetterDelivery());
+        if (ctx.event_types && ctx.event_types.GENERATION_STARTED) {
+            ctx.eventSource.on(ctx.event_types.GENERATION_STARTED, () => checkLetterDelivery());
+        }
+
+        // ❤︎ MutationObserver 监听消息数量变化，延迟送达也能兜住 ❤︎
+        const chatEl = document.getElementById('chat');
+        if (chatEl) {
+            const obs = new MutationObserver(() => checkLetterDelivery());
+            obs.observe(chatEl, { childList: true });
+        }
+    }
+
+    function init() {
+        bindEvents();
+        console.log('[RingOurLuv] 💌 LetterSystem 已就绪');
+    }
+
+    return { init, addLetter, getLetters, deleteLetter, checkLetterDelivery };
+})();
+
+// ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                   🩷 核心组成 🩷                      ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 function injectMemoryToContext(memories, injectionText) {
+
     if (!injectionText) return;
     const context = getContext();
     if (context.setExtensionPrompt) {
@@ -3038,11 +3322,13 @@ jQuery(async () => {
         const editorPanel = temp.querySelector('#rol-editor-panel');
         const aiSourcePanel = temp.querySelector('#rol-ai-source-panel');
         const letterPanel = temp.querySelector('#rol-letter-panel');
+        const writeSpace = temp.querySelector('#rol-write-space');
 
         if (drawerOverlay) document.body.appendChild(drawerOverlay);
         if (editorPanel) document.body.appendChild(editorPanel);
         if (aiSourcePanel) document.body.appendChild(aiSourcePanel);
         if (letterPanel) document.body.appendChild(letterPanel);
+        if (writeSpace) document.body.appendChild(writeSpace);
 
         const confirmModal = temp.querySelector('#rol-confirm-modal');
         if (confirmModal) document.body.appendChild(confirmModal);
@@ -3055,7 +3341,9 @@ jQuery(async () => {
 
     UIController.initUI();
     FruitSystem.init();
+    LetterSystem.init();
     Trigger.setupTriggerListener(injectMemoryToContext);
+
     const context = getContext();
     if (context.eventSource) {
         context.eventSource.on('chatLoaded', () => UIController.renderMemoryList());

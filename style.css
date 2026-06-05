@@ -1877,6 +1877,7 @@ body.rol-fruit-animating .rol-drawer-overlay,
 body.rol-fruit-animating #rol-drawer-panel,
 body.rol-fruit-animating .rol-editor-panel,
 body.rol-fruit-animating .rol-letter-panel,
+body.rol-fruit-animating .rol-write-space,
 body.rol-fruit-animating .rol-ai-source-panel {
     opacity: 0 !important;
     pointer-events: none !important;
@@ -2041,6 +2042,351 @@ body.rol-fruit-animating .rol-ai-source-panel {
     transform: translateY(0);
 }
 /* ┗━━━━━━/ 😿报错拦截弹窗😿 /━━━━━━┛ */
+
+/* ➤━━━━━━━ ▍🪶写作空间 + FAB 🪶 ▍━━━━━━━┓ */
+
+/* ⬇️┅✍️写作 FAB：圆形外发光按钮，钉在 .rol-home 右下角/┅┅╗ */
+/* ❤︎ .rol-home 已有 position: relative + overflow: visible，FAB 用绝对定位贴右下，
+   稍微探出边缘一点点，外圈带呼吸光晕，戳一下就展开写作空间 ❤︎ */
+.rol-write-fab {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    background: linear-gradient(135deg, #ffb3df, #ffd08a);
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 8;
+    box-shadow: 0 3px 12px rgba(255, 130, 190, 0.45);
+    /* ❤︎ 呼吸光晕动画 ❤︎ */
+    animation: rol-fab-glow 2.4s ease-in-out infinite;
+    transition: transform 0.2s ease;
+}
+.rol-write-fab:hover {
+    transform: scale(1.12) rotate(-6deg);
+}
+.rol-write-fab:active {
+    transform: scale(0.94);
+}
+
+/* ❤︎ FAB 一圈忽明忽暗的粉橘光晕 ❤︎ */
+@keyframes rol-fab-glow {
+    0%, 100% {
+        box-shadow: 0 3px 12px rgba(255, 130, 190, 0.45),
+                    0 0 0 0 rgba(255, 170, 210, 0.5);
+    }
+    50% {
+        box-shadow: 0 3px 14px rgba(255, 130, 190, 0.55),
+                    0 0 18px 6px rgba(255, 190, 220, 0.35);
+    }
+}
+
+/* ⬇️┅🪶写作空间遮罩层（镜像 .rol-ai-source-panel 强制定位）/┅┅╗ */
+.rol-write-space {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+.rol-write-space.rol-active {
+    /* ❤︎ 强制覆盖 ST 注入的定位/尺寸样式，防止面板乱飞 */
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    overflow: hidden !important;
+}
+
+/* ⬇️┅🪶写作空间内部卡片（比编辑面板更大更舒展）/┅┅╗ */
+.rol-write-inner {
+    position: relative;
+    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 */
+    background-color: #16161a;
+    background-image: linear-gradient(
+        var(--SmartThemeChatTintColor, transparent),
+        var(--SmartThemeChatTintColor, transparent)
+    );
+    border-radius: 18px;
+    padding: 26px 24px 24px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 86vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 44px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.rol-write-inner::-webkit-scrollbar { width: 6px; }
+.rol-write-inner::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+.rol-write-inner::-webkit-scrollbar-track { background: transparent; }
+
+/* ⬇️┅🪶写作空间头部/┅┅╗ */
+.rol-write-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.rol-write-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--rol-accent, #ffb3df);
+    text-shadow: 0 0 6px rgba(255, 130, 190, 0.4);
+}
+.rol-write-header .rol-btn-icon {
+    font-size: 16px;
+    color: #ffcbef;
+}
+
+/* ⬇️┅🪶入口选择视图/┅┅╗ */
+.rol-write-desc {
+    font-size: 13px;
+    color: var(--SmartThemeBodyColor, #bbb);
+    margin: 0 0 16px;
+    text-align: center;
+}
+.rol-write-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ❤︎ 单个入口卡片：图标 + 标题 + 小提示 ❤︎ */
+.rol-write-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding: 16px 18px;
+    border: 1.6px solid rgba(255, 182, 215, 0.35);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+.rol-write-entry:hover {
+    border-color: #ffb3df;
+    background: rgba(255, 179, 223, 0.1);
+    transform: translateY(-2px);
+}
+.rol-write-entry:active {
+    transform: translateY(0) scale(0.99);
+}
+.rol-write-entry-icon {
+    font-size: 26px;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+.rol-write-entry-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--SmartThemeBodyColor, #f0e6ec);
+    margin-bottom: 3px;
+}
+.rol-write-entry-hint {
+    font-size: 11.5px;
+    color: #999;
+    line-height: 1.5;
+}
+
+/* ⬇️┅💌写信子视图/┅┅╗ */
+.rol-compose-back-row {
+    margin-bottom: 8px;
+}
+.rol-compose-back {
+    font-size: 13px !important;
+    color: #ffb3df !important;
+    padding: 2px 4px !important;
+}
+.rol-compose-back:hover { opacity: 0.8; }
+
+/* ❤︎ 写信用的大号文本域 ❤︎ */
+.rol-write-space .rol-textarea-lg {
+    min-height: 180px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.7;
+}
+
+.rol-letter-tip {
+    font-size: 11.5px;
+    color: #9a8b7a;
+    line-height: 1.6;
+    margin: 4px 0 14px;
+    padding: 8px 12px;
+    background: rgba(255, 179, 223, 0.08);
+    border-left: 3px solid rgba(255, 179, 223, 0.5);
+    border-radius: 0 8px 8px 0;
+}
+
+.rol-compose-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* ⬇️┅🕊️已寄出的信（outbox）/┅┅╗ */
+.rol-letter-outbox {
+    border-top: 1px dashed rgba(255, 182, 215, 0.3);
+    padding-top: 16px;
+}
+.rol-letter-outbox-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--rol-accent, #ffb3df);
+    margin-bottom: 10px;
+}
+.rol-letter-outbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.rol-letter-outbox-empty {
+    text-align: center;
+    font-size: 12px;
+    color: #888;
+    padding: 16px 0;
+}
+
+/* ❤︎ 单封已寄出的信 ❤︎ */
+.rol-letter-outbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.4px solid rgba(255, 182, 215, 0.28);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    transition: opacity 0.2s, border-color 0.2s;
+}
+.rol-letter-outbox-item.rol-letter-delivered {
+    opacity: 0.6;
+    border-color: rgba(180, 200, 160, 0.3);
+}
+.rol-letter-outbox-main {
+    flex: 1;
+    min-width: 0;
+}
+.rol-letter-outbox-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.rol-letter-outbox-author {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--SmartThemeBodyColor, #e8d8e2);
+}
+.rol-letter-outbox-status {
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 8px;
+    background: rgba(255, 179, 223, 0.18);
+    color: #ffb3df;
+    white-space: nowrap;
+}
+.rol-letter-delivered .rol-letter-outbox-status {
+    background: rgba(160, 200, 130, 0.2);
+    color: #9fc77f;
+}
+.rol-letter-outbox-preview {
+    font-size: 12px;
+    color: #aaa;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.rol-letter-outbox-del {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.6;
+    padding: 4px 6px;
+    transition: opacity 0.2s, transform 0.15s;
+}
+.rol-letter-outbox-del:hover {
+    opacity: 1;
+    transform: scale(1.15) rotate(-8deg);
+}
+
+/* ⬇️┅☀️日间模式：写作空间字色/底色/┅┅╗ */
+body.rol-light-mode .rol-write-inner {
+    background-color: #fff5f8;
+    background-image: none;
+}
+body.rol-light-mode .rol-write-inner,
+body.rol-light-mode .rol-write-inner * {
+    color: #7a4060;
+}
+body.rol-light-mode .rol-write-entry {
+    background: rgba(255, 240, 245, 0.7);
+    border-color: rgba(219, 112, 147, 0.22);
+}
+body.rol-light-mode .rol-write-entry:hover {
+    border-color: #db7093;
+    background: rgba(255, 220, 235, 0.6);
+}
+body.rol-light-mode .rol-write-space .rol-textarea-lg,
+body.rol-light-mode .rol-write-inner input,
+body.rol-light-mode .rol-write-inner textarea,
+body.rol-light-mode .rol-write-inner select {
+    color: #c75b73 !important;
+    background: rgba(255, 240, 245, 0.7) !important;
+    border-color: rgba(255, 150, 170, 0.3) !important;
+}
+body.rol-light-mode .rol-letter-outbox-item {
+    background: rgba(255, 240, 245, 0.7);
+    border-color: rgba(219, 112, 147, 0.2);
+}
+
+/* ⬇️┅🍥移动端：写作空间紧凑化/┅┅╗ */
+@media (max-width: 768px) {
+    .rol-write-inner {
+        max-width: 100%;
+        padding: 18px 16px 16px;
+        border-radius: 12px;
+        max-height: 88vh;
+    }
+    .rol-write-space .rol-textarea-lg { min-height: 150px; }
+    .rol-write-fab {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+}
+/* ┗━━━━━━/ 🪶写作空间 + FAB 🪶 /━━━━━━┛ */
 
 
 
