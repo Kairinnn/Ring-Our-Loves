@@ -231,14 +231,14 @@ body.rol-light-mode .rol-editor-panel {
     box-shadow: 0 8px 32px rgba(255, 166, 216, 0.35);
     z-index: 9991;
     overflow-y: auto;
-    /* ❤︎【任务F】隐藏纵向滚动条：让三个 Tab 切换时内容区始终是「满宽」(=果园那个更宽的宽度)，
+    /* ❤︎ 隐藏纵向滚动条：让三个 Tab 切换时内容区始终是「满宽」(=果园那个更宽的宽度)，
        不再因为某个 Tab 出现滚动条而少掉十几像素、显得忽宽忽窄 ❤︎ */
     scrollbar-width: none;
     -ms-overflow-style: none;
     display: flex;
     flex-direction: column;
 }
-/* ❤︎【任务F】webkit 内核也隐藏滚动条，配合上面的 scrollbar-width:none 统一面板宽度 ❤︎ */
+/* ❤︎ webkit 内核也隐藏滚动条，配合上面的 scrollbar-width:none 统一面板宽度 ❤︎ */
 #rol-drawer-panel::-webkit-scrollbar { display: none; }
 .rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
     /* ❤︎ 强制覆盖 ST 注入的定位/尺寸样式，恢复居中浮窗（别再变窄竖条贴右边了TT） */
@@ -306,7 +306,7 @@ body.rol-light-mode .rol-editor-panel {
     flex: 1;
     padding: 8px 12px;
     border: none;
-    /* ❤︎ 未选中tab给个可见底色 */
+    /* ❤︎ 未选中tab给个可见底色 ❤︎ */
     background: rgb(225 255 133 / 40%);
     color: rgb(255 249 195);
     box-shadow: 0px 0px 5px 0px #ffbbe2;
@@ -333,7 +333,7 @@ body.rol-light-mode .rol-editor-panel {
     gap: 8px;
     margin-bottom: 12px;
     flex-wrap: wrap;
-    /* ❤︎ 粉色光晕 */
+    /* ❤︎ 粉色光晕 ❤︎ */
     box-shadow: 0 2px 12px #ffaedf80;
     padding: 8px;
     border-radius: 10px;
@@ -402,7 +402,7 @@ body.rol-light-mode .rol-editor-panel {
   gap: 16px;
   position: relative;
   overflow: visible;
-  /* ❤︎ 磨砂白框 + 粉色光晕 */
+  /* ❤︎ 磨砂白框 + 粉色光晕 ❤︎ */
   background: rgba(255, 255, 255, 0.5);
   border-radius: 16px;
   backdrop-filter: blur(3px);
@@ -424,7 +424,7 @@ body.rol-light-mode .rol-editor-panel {
   border-radius: 50%;
   object-fit: cover;
   border: none;
-  /* ❤︎ 中心扩散粉色光晕 + 外圈淡白渐变环 */
+  /* ❤︎ 中心扩散粉色光晕 + 外圈淡白渐变环 ❤︎ */
   box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.35), 0 0 11px 4px rgba(255, 179, 223, 0.4), 0 0 15px 0px rgb(255 173 199 / 15%);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -438,11 +438,11 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-avatar {
-  /* ❤︎ flex列布局让名字居中对齐头像 */
+  /* ❤︎ flex列布局让名字居中对齐头像 ❤︎ */
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* ❤︎【任务G】固定宽度=头像宽，让左右两个头像块完全等宽，整行才能严格对称居中，
+  /* ❤︎ 固定宽度=头像宽，让左右两个头像块完全等宽，整行才能严格对称居中，
      不会被「Claude」「Rinn」名字长短不同带偏，从而和下面的天数/时间戳对齐 ❤︎ */
   width: 56px;
 }
@@ -469,7 +469,7 @@ body.rol-light-mode .rol-editor-panel {
 
 .rol-home-heart {
   font-size: 20px;
-  /* ❤︎【任务H】让蝴蝶结🎀在两个头像中间严格垂直居中：
+  /* ❤︎ 让蝴蝶结🎀在两个头像中间严格垂直居中：
      用 align-self:center 在 flex row 中垂直居中自己，再用 margin-bottom:22px 上移
      (头像56px + name约18px = 74px竖高，22px让它对齐头像中心约28px处)
      ⚠️ 不能用 transform 定位，会被下面的 rol-heartbeat 动画里的 transform:scale 覆盖掉！ ❤︎ */
@@ -487,7 +487,7 @@ body.rol-light-mode .rol-editor-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  perspective: 400px; /* ❤︎ 翻页动画需要的透视距离 */
+  perspective: 400px; /* ❤︎ 翻页动画需要的透视距离 ❤︎ */
 }
 
 /* ⬇️┅🩷天数翻页动画/┅┅╗ */
@@ -540,6 +540,7 @@ body.rol-light-mode .rol-editor-panel {
   letter-spacing: 2px;
   font-weight: 500;
 }
+/* ╚┅┅/ 🗓️天数翻页动画窗 /┅┅═╝ */
 
 /* ⬇️┅🍎果篮/┅┅╗ */
 .rol-fruit-garden {
@@ -633,7 +634,7 @@ body.rol-light-mode .rol-editor-panel {
     position: relative;
     transition: opacity 0.2s;
     cursor: pointer;
-    /* ❤︎ 粉色光晕 */
+    /* ❤︎ 粉色光晕 ❤︎ */
     box-shadow: 3px 3px 1px 1px #ffb3dc40;
 }
 #rol-drawer-panel .rol-memory-card:active { opacity: 0.85; }
@@ -694,7 +695,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-card-mood {
     color: #d87757;
-    /* ❤︎ 行内圆角底色，换行后每段独立圆角 */
+    /* ❤︎ 行内圆角底色，换行后每段独立圆角 ❤︎ */
     background-color: #fff0f8;
     padding: 1px 6px;
     border-radius: 6px;
@@ -746,6 +747,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 .rol-toggle-wrap input:checked + .rol-toggle-slider {background: rgb(255 207 232);}
 .rol-toggle-wrap input:checked + .rol-toggle-slider::before { transform: translateX(16px); }
+/* ╚┅┅/ 💌记忆卡片列表 /┅┅═╝ */
 
 /* ⬇️┅🏷️标签┅┅╗ */
 .rol-card-triggers {
@@ -794,6 +796,7 @@ body.rol-light-mode .rol-editor-panel {
     border-radius: 8px;
     color: #f0c060;
 }
+/* ╚┅┅/ 🏷️标签 /┅┅═╝ */
 /* ┗━━━━━━/ 💌卡片列表内容💌 /━━━━━━┛ */
 
 /* ➤━━━━━━ ▍🗄️编辑面板（遮罩层）🗄️ ▍━━━━━━┓ */
@@ -808,7 +811,7 @@ body.rol-light-mode .rol-editor-panel {
 }
 
 .rol-editor-panel.rol-active {
-    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 ❤︎ */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -831,7 +834,7 @@ body.rol-light-mode .rol-editor-panel {
 /* ⬇️┅┅🗄️编辑面板内部卡片/┅┅╗ */
 .rol-editor-inner {
     position: relative;
-    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 */
+    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 ❤︎ */
     background-color: #16161a;
     background-image: linear-gradient(
         var(--SmartThemeChatTintColor, transparent),
@@ -861,10 +864,10 @@ body.rol-light-mode .rol-editor-inner::before {
 }
 
 body.rol-light-mode .rol-editor-panel .rol-editor-inner {
-  background-color: #ffffff;  /* ❤︎ 垫一层纯白 */
+  background-color: #ffffff;  /* ❤︎ 垫一层纯白 ❤︎ */
   background-image: url('https://i.postimg.cc/SRmYmwFB/heart.png');
   background-size: cover;
-  background-blend-mode: overlay;  /* ❤︎ 图片和白底混合，图就会变浅 */
+  background-blend-mode: overlay;  /* ❤︎ 图片和白底混合，图就会变浅 ❤︎ */
 }
 
 /* ⬇️┅☀️日间模式字体颜色/┅┅╗ */
@@ -1047,7 +1050,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     padding: 16px;
 }
 .rol-letter-panel.rol-active {
-    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 ❤︎ */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -1195,7 +1198,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     padding: 16px;
 }
 .rol-ai-source-panel.rol-active {
-    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 ❤︎ */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -1215,7 +1218,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     overflow: hidden !important;
 }
 .rol-ai-source-inner {
-    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 */
+    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 ❤︎ */
     background-color: #1a1a2e;
     background-image: linear-gradient(
         var(--SmartThemeChatTintColor, transparent),
@@ -1451,7 +1454,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     line-height: 1;
 }
 
-/* ⬇️┅🍎果园面板/┅┅╗ */
+/* ⬇️┅🌳果园面板/┅┅╗ */
 .rol-garden-header {
     display: flex;
     align-items: center;
@@ -1491,7 +1494,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     z-index: 10;
 }
 
-/* ⬇️┅🍎未读果子：呼吸光圈 + NEW 角标，一眼区分已读/未读/┅┅╗ */
+/* ⬇️┅❓️未读果子样式┅┅╗ */
 /* ⚠️ 千万别用 transform 给未读果子做脉冲！果子本体带行内 rotate(随机散落角度)，
    会被 animation 的 transform 覆盖掉，乱乱的可爱感就没了。
    所以呼吸光圈交给 ::before 独立图层去缩放，角标交给 ::after，互不打架 ❤︎ */
@@ -1527,7 +1530,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     50%       { transform: translate(-50%, -50%) scale(1.3);  opacity: 1; }
 }
 
-/* ❤︎ NEW 角标：右上角粉色小标，明示「这颗还没拆」❤︎ */
+/* ❤︎ NEW 角标：右上角粉色小标 ❤︎ */
 .rol-fruit-item.rol-fruit-unread::after {
     content: 'NEW';
     position: absolute;
@@ -1553,9 +1556,10 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     60%  { transform: scale(1.25); opacity: 1; }
     100% { transform: scale(1);    opacity: 1; }
 }
-/* ╚┅┅/ 🍎未读果子样式 /┅┅═╝ */
+/* ╚┅┅/ ❓️未读果子样式 /┅┅═╝ */
 
-/* ❤︎ 果子飞行（位移由 JS 控制，CSS 只管旋转和缩放） */
+/* ⬇️┅🥏果子飞行动画/┅┅╗ */
+/* ❤︎ 果子飞行（位移由 JS 控制，CSS 只管旋转和缩放）❤︎ */
 .rol-fruit-flying {
     position: fixed;
     pointer-events: none;
@@ -1563,7 +1567,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     z-index: 99999;
     transition: left 0.6s cubic-bezier(0.2, 0.8, 0.3, 1),
                 top 0.6s cubic-bezier(0.5, -0.3, 0.7, 0.3);
-    /* ❤︎ left 用缓出让水平匀速偏减速，top 用自定义曲线模拟抛物线上升再下落 */
+    /* ❤︎ left 用缓出让水平匀速偏减速，top 用自定义曲线模拟抛物线上升再下落 ❤︎ */
 }
 
 .rol-fruit-flying.rol-fruit-spin {
@@ -1575,12 +1579,12 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     to   { transform: rotate(360deg) scale(0.85); }
 }
 
-/* ❤︎ 砸中后弹跳 */
+/* ❤︎ 砸中后弹跳 ❤︎ */
 .rol-fruit-flying.rol-fruit-bounce {
     transition: top 0.15s cubic-bezier(0.1, 0.8, 0.3, 1);
 }
 
-/* ❤︎ 最后掉落 */
+/* ❤︎ 最后掉落 ❤︎ */
 .rol-fruit-flying.rol-fruit-fall {
     transition: top 0.4s cubic-bezier(0.6, 0, 1, 0.4),
                 opacity 0.4s ease 0.2s;
@@ -1599,9 +1603,10 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 .rol-avatar-shaking img {
     animation: rol-avatar-shake 0.35s ease both;
 }
+/* ╚┅┅/ 🥏果子飞行动画 /┅┅═╝ */
 
-/* ⬇️┅🍎嵌入式选果栏（在 garden 容器内）/┅┅╗ */
-/* ❤︎【修复2】改成紧凑布局：header + 滚动果子区 + 固定底栏，
+/* ➤━━━━━━━ ▍🎚️嵌入式选果栏🎚️ ▍━━━━━━━┓ */
+/* ❤︎ 改成紧凑布局：header + 滚动果子区 + 固定底栏，
    让「我丢！」和「算了」永远可见，不用滑下去找啦～ ❤︎ */
 .rol-fruit-picker-inline {
     position: relative;
@@ -1619,10 +1624,10 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 }
 
 /* ❤︎ picking 模式：隐藏果子画布，显示选果UI ❤︎ */
-#rol-section-garden.rol-garden-picking #rol-garden-canvas {
+.rol-garden-picking .rol-garden-header,
+.rol-garden-picking .rol-garden-canvas {
     display: none;
 }
-
 #rol-section-garden.rol-garden-picking .rol-fruit-picker-inline {
     display: flex;
 }
@@ -1631,7 +1636,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    /* ❤︎【修复2】固定在顶部，不滚动 */
+    /* ❤︎ 固定在顶部，不滚动 ❤︎ */
     flex-shrink: 0;
     padding: 12px 16px 8px;
 }
@@ -1642,8 +1647,8 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     color: var(--rol-accent, rgb(219, 112, 147));
 }
 
-/* ⬇️┅🍎横向滑动选果轨道/┅┅╗ */
-/* ❤︎【修复2】把它包在可滚动容器里，纸条和按钮挤不下时优先让果子区滚 */
+/* ⬇️┅🎚️横向滑动选果轨道/┅┅╗ */
+/* ❤︎ 把它包在可滚动容器里，纸条和按钮挤不下时优先让果子区滚 ❤︎ */
 .rol-fruit-picker-body {
     flex: 1;
     overflow-y: auto;
@@ -1667,11 +1672,10 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    scroll-snap-type: x proximity;
     /* ❤︎ 两侧 padding=「容器一半 - 果子一半」，保证任意一颗（含最后的🍉）都能滚到正中心 ❤︎ */
     padding: 8px calc(50% - 26px);
     margin: 0 -16px 12px;
-    /* ❤︎ 防止纵向滚动链传到页面（点末尾选项时页面别乱跳） */
+    /* ❤︎ 防止纵向滚动链传到页面（点末尾选项时页面别乱跳）❤︎ */
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
 }
@@ -1682,7 +1686,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     display: flex;
     gap: 4px;
     align-items: center;
-    /* ❤︎ 绝对不换行，保持单行横向滚动 */
+    /* ❤︎ 绝对不换行，保持单行横向滚动 ❤︎ */
     flex-wrap: nowrap;
 }
 
@@ -1709,9 +1713,9 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     box-shadow: 0 0 0 3px rgba(219, 112, 147, 0.25);
 }
 
-/* ⬇️┅✏️自定义 emoji 选项（让 user 输入自己的表情当果子丢）/┅┅╗ */
+/* ⬇️┅✏️自定义 emoji 选项/┅┅╗ */
 .rol-fruit-option-custom {
-    /* ❤︎ 默认半透明缩小，和其它果子一致；选中时由 .rol-selected 放大 */
+    /* ❤︎ 默认半透明缩小，和其它果子一致；选中时由 .rol-selected 放大  */
     background: rgba(255, 240, 248, 0.6);
     border: 1.5px dashed rgba(219, 112, 147, 0.5);
 }
@@ -1736,9 +1740,10 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     font-size: 20px;
     opacity: 0.5;
 }
+/* ┗━━━━━━/ 🎚️嵌入式选果栏 /━━━━━━┛ */
 
 /* ⬇️┅🍎丢果子按钮区/┅┅╗ */
-/* ❤︎【修复2】固定在底部，永远可见不被滚走 */
+/* ❤︎ 固定在底部，永远可见不被滚走 ❤︎ */
 .rol-fruit-picker-actions {
     display: flex;
     gap: 10px;
@@ -1752,112 +1757,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     border-top: 1px solid rgba(255, 182, 215, 0.15);
 }
 
-/* ⬇️┅🍎果子纸条弹窗/┅┅╗ */
-/* ❤︎ 已在 JS 里 appendChild 到 document.body，这里用 fixed 全屏 flex 居中，
-   再加 !important 兜底，防止 ST 给容器注入定位/尺寸样式把弹窗顶出屏幕（移动端尤其） */
-.rol-fruit-detail-popup {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
-    transform: none !important;
-    z-index: 999999 !important;
-    /* ⚠️ display 千万别加 !important！否则会盖过行内 display:none，导致弹窗刷新就钉死、关也关不掉。
-       显隐交给行内样式(none/flex)和下面的 .rol-detail-show 类来管 */
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 16px;
-    box-sizing: border-box;
-    background: rgba(180, 80, 120, 0.12);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    animation: rol-fadein 0.2s ease both;
-}
-
-/* ⬇️┅😻显示态：加 .rol-detail-show 才弹出/┅┅╗ */
-/* ❤︎ 只有这个类带 display:flex !important（高优先级盖过 ST 注入）；
-   隐藏时移除此类，回落到行内 display:none，绝不会再钉死 ❤︎ */
-.rol-fruit-detail-popup.rol-detail-show {
-    display: flex !important;
-}
-
-/* ❤︎ 详情弹窗淡入（之前引用了但没定义，补上） */
-@keyframes rol-fadein {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-
-
-.rol-fruit-detail-inner {
-    position: relative;
-    background: rgba(255, 248, 252, 0.98);
-    border-radius: 20px;
-    padding: 28px 24px 24px;
-    max-width: 300px;
-    width: 88vw;
-    box-shadow: 0 8px 40px rgba(200, 80, 130, 0.18);
-    border: 1px solid rgba(255, 182, 215, 0.4);
-    text-align: center;
-    animation: rol-popup-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes rol-popup-in {
-    from { transform: scale(0.7) translateY(20px); opacity: 0; }
-    to   { transform: scale(1) translateY(0);      opacity: 1; }
-}
-
-.rol-fruit-detail-close {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    font-size: 13px;
-    color: rgba(180, 80, 120, 0.5);
-    padding: 4px 8px;
-}
-
-.rol-fruit-detail-emoji {
-    font-size: 56px;
-    line-height: 1;
-    margin-bottom: 10px;
-    filter: drop-shadow(0 4px 8px rgba(180, 80, 120, 0.2));
-}
-
-.rol-fruit-detail-from {
-    font-size: 12px;
-    color: rgba(180, 80, 120, 0.6);
-    margin-bottom: 8px;
-    font-style: italic;
-}
-
-.rol-fruit-detail-note {
-    font-size: 14px;
-    color: var(--rol-text, rgb(80, 60, 70));
-    line-height: 1.7;
-    min-height: 20px;
-    margin-bottom: 12px;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-.rol-fruit-detail-time {
-    font-size: 11px;
-    color: rgba(180, 80, 120, 0.4);
-}
-
-/* ❤︎ 详情弹窗：限制最大高度，超出滚动 */
-.rol-fruit-detail-inner {
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-/* ⬇️┅🍎果子外发光 - 按来源区分/┅┅╗ */
+/* ⬇️┅✨️果子外发光/┅┅╗ */
 .rol-fruit-item.rol-fruit-from-claude {
     filter: drop-shadow(0 0 8px rgba(255, 160, 60, 0.8)) drop-shadow(0 0 3px rgba(255, 120, 30, 0.6));
 }
@@ -1871,8 +1771,9 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 .rol-fruit-item.rol-fruit-from-user:hover {
     filter: drop-shadow(0 0 12px rgba(255, 130, 200, 1)) drop-shadow(0 4px 8px rgba(180, 80, 120, 0.35));
 }
+/* ╚┅┅/ ✨️果子外发光 /┅┅═╝ */
 
-/* ⬇️┅🍎飞行动画期间临时隐藏所有面板/┅┅╗ */
+/* ⬇️┅🥏飞行动画期间临时隐藏所有面板/┅┅╗ */
 body.rol-fruit-animating .rol-drawer-overlay,
 body.rol-fruit-animating #rol-drawer-panel,
 body.rol-fruit-animating .rol-editor-panel,
@@ -1884,7 +1785,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
     transition: opacity 0.18s ease !important;
 }
 
-/* ⬇️┅🍎面板弹性弹回（任务E）/┅┅╗ */
+/* ⬇️┅🥏面板弹性弹回/┅┅╗ */
 /* ❤︎ 丢完果子、面板从「隐身让位」状态回来时，给它一个 Q 弹的回弹，
    比原来生硬地 opacity 跳回来更丝滑可爱~ ❤︎ */
 @keyframes rol-panel-restore {
@@ -1896,6 +1797,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
     animation: rol-panel-restore 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 /* ┗━━━━━━/ 🍎果子系统🍎 /━━━━━━┛ */
+
 
 /* ➤━━━━━━━ ▍😿报错拦截弹窗😿 ▍━━━━━━━┓ */
 /* ❤︎ 类名严格对应 index.js 里 ErrorModal 的 DOM 结构 ❤︎ */
@@ -1915,26 +1817,26 @@ body.rol-fruit-animating .rol-ai-source-panel {
     justify-content: center;
     padding: 20px;
     box-sizing: border-box;
-    /* ❤︎ 比飞行动画 z-index(999999) 还高，确保报错永远盖最上面 */
+    /* ❤︎ 比飞行动画 z-index(999999) 还高，确保报错永远盖最上面 ❤︎ */
     z-index: 1000000;
     background: rgba(120, 40, 70, 0.35);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
-    /* ❤︎ 默认隐藏：透明 + 不可见 + 不吃点击 */
+    /* ❤︎ 默认隐藏：透明 + 不可见 + 不吃点击 ❤︎ */
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition: opacity 0.22s ease, visibility 0.22s ease;
 }
 
-/* ⬇️┅😿加上 .rol-error-show 才显示/┅┅╗ */
+/* ❤︎ 加上 .rol-error-show 才显示 ❤︎ */
 .rol-error-overlay.rol-error-show {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
 }
 
-/* ⬇️┅😿弹窗卡片（草莓暖色）/┅┅╗ */
+/* ⬇️┅💌弹窗卡片（草莓暖色）/┅┅╗ */
 .rol-error-modal {
     position: relative;
     background: rgba(255, 248, 252, 0.98);
@@ -1947,7 +1849,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
     overflow-y: auto;
     text-align: center;
     box-shadow: 0 10px 42px rgba(200, 80, 130, 0.22);
-    /* ❤︎ 弹入动画，参考已有 rol-popup-in 风格 */
+    /* ❤︎ 弹入动画，参考已有 rol-popup-in 风格 ❤︎ */
     animation: rol-error-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -1956,7 +1858,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
     to   { transform: scale(1) translateY(0);       opacity: 1; }
 }
 
-/* ⬇️┅😿大号哭脸图标/┅┅╗ */
+/* ❤︎ 大号哭脸图标 ❤︎ */
 .rol-error-icon {
     font-size: 44px;
     line-height: 1;
@@ -1964,15 +1866,14 @@ body.rol-fruit-animating .rol-ai-source-panel {
     filter: drop-shadow(0 4px 8px rgba(180, 80, 120, 0.2));
 }
 
-/* ⬇️┅😿标题（accent 粉）/┅┅╗ */
+/* ❤︎ 标题 ❤︎ */
 .rol-error-title {
     font-size: 16px;
     font-weight: 700;
     color: var(--rol-accent, rgb(219, 112, 147));
     margin-bottom: 10px;
 }
-
-/* ⬇️┅😿正文（灰色小字，保留换行）/┅┅╗ */
+/* ❤︎ 正文（灰色小字，保留换行）❤︎ */
 .rol-error-message {
     font-size: 13px;
     line-height: 1.7;
@@ -1983,7 +1884,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
     text-align: left;
 }
 
-/* ⬇️┅😿关闭按钮（粉色实心）/┅┅╗ */
+/* ❤︎ 关闭按钮（粉色实心）❤︎ */
 .rol-error-close {
     display: inline-block;
     padding: 9px 24px;
@@ -2016,7 +1917,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
     flex-wrap: wrap;
 }
 
-/* ⬇️┅🔄再试一次按钮（任务C：点了直接触发重新生成）/┅┅╗ */
+/* ⬇️┅🔄再试一次按钮/┅┅╗ */
 /* ❤︎ 用更暖的橘粉实心，和粉色的「知道惹」区分开，一眼看出哪个是「重试」 ❤︎ */
 .rol-error-retry {
     display: inline-block;
@@ -2102,7 +2003,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
     padding: 16px;
 }
 .rol-write-space.rol-active {
-    /* ❤︎ 强制覆盖 ST 注入的定位/尺寸样式，防止面板乱飞 */
+    /* ❤︎ 强制覆盖 ST 注入的定位/尺寸样式，防止面板乱飞 ❤︎ */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -2125,7 +2026,7 @@ body.rol-fruit-animating .rol-ai-source-panel {
 /* ⬇️┅🪶写作空间内部卡片（比编辑面板更大更舒展）/┅┅╗ */
 .rol-write-inner {
     position: relative;
-    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 */
+    /* ❤︎ 实色兜底 + ST色叠加，确保不透明 ❤︎ */
     background-color: #16161a;
     background-image: linear-gradient(
         var(--SmartThemeChatTintColor, transparent),
@@ -2388,5 +2289,25 @@ body.rol-light-mode .rol-letter-outbox-item {
 }
 /* ┗━━━━━━/ 🪶写作空间 + FAB 🪶 /━━━━━━┛ */
 
-
+/* ⬇️┅⏰️user消息时间戳/┅┅╗ */
+.mes.rol-floor-msg {
+    text-align: center;
+    background: none !important;
+    box-shadow: none !important;
+}
+.mes.rol-floor-msg .avatar,
+.mes.rol-floor-msg .name_text,
+.mes.rol-floor-msg .mes_buttons { display: none !important; }
+.mes.rol-floor-msg .mes_text {
+    display: inline-block;
+    font-size: 0.78em;
+    opacity: 0.6;
+    padding: 2px 14px;
+    border-radius: 12px;
+    background: rgba(255,182,193,0.18);
+}
+.mes.rol-floor-msg[data-rol-floor="model"] .mes_text {
+    background: rgba(186,160,255,0.2);   /* 模型切换用紫调，跟时间戳区分 */
+}
+/* ╚┅┅/ ⏰️user消息时间戳 /┅┅═╝ */
 
