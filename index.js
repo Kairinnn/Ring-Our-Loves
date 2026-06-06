@@ -1658,10 +1658,13 @@ if (rolStopBtn) {
   rolStopBtn.addEventListener('click', () => {
     if (rolAbortController) {
       rolAbortController.abort();
+      // ❤︎【修复】光 abort 自己的 controller 停不掉 ST 的 /gen，必须 emit GENERATION_STOPPED 事件 ❤︎
+      try { eventSource.emit(event_types.GENERATION_STOPPED); } catch (e) { console.warn('[RingOurLuv] emit STOP 失败', e); }
       console.log('[RingOurLuv] 🛑 手动停止');
     }
     rolStopBtn.style.display = 'none';
   });
+
 }
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
@@ -2188,6 +2191,7 @@ function onEnd() {
     // ❤︎ 显隐统一走 class：显示时去掉行内 none + 加显示态类（带 !important 盖过 ST 注入）❤︎
     if (popup) {
         popup.style.display = '';                 // 清掉行内 none，交给 class 控制
+        document.body.appendChild(popup);         // 每次都移回 body 顶层，防手机端被父容器影响飘移
         popup.classList.add('rol-detail-show');
     }
 
@@ -2212,10 +2216,6 @@ function closeFruitDetail() {
         if (!wrap || !track) return;
 
         // ❤︎【修复3】在track末尾追加透明spacer，让最后两项（🍉/自定义✏️）能滚到正中 ❤︎
-        const spacer = document.createElement('div');
-        spacer.className = 'rol-fruit-picker-spacer';
-        spacer.style.cssText = 'min-width: 50%; flex-shrink: 0; pointer-events: none;';
-        track.appendChild(spacer);
 
         // ❤︎ 只动横向 scrollLeft 的居中 helper：不用 scrollIntoView，免得牵动 ❤︎
         // ❤︎ 父级 .rol-drawer-panel 的纵向滚动把顶部三个 tab 顶出可视区（BUG1）❤︎
@@ -2223,7 +2223,7 @@ function closeFruitDetail() {
         function centerOption(opt) {
             if (!opt) return;
             const maxScroll = track.scrollWidth - wrap.clientWidth;
-            const target = opt.offsetLeft + opt.offsetWidth / 2 - wrap.offsetWidth / 2;
+            const target = opt.offsetLeft + opt.offsetWidth / 2 - wrap.clientWidth / 2;
             const clampedTarget = Math.max(0, Math.min(target, maxScroll));
             wrap.scrollTo({ left: clampedTarget, behavior: 'smooth' });
         }

@@ -1667,7 +1667,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
     /* ❤︎ 两侧 padding=「容器一半 - 果子一半」，保证任意一颗（含最后的🍉）都能滚到正中心 ❤︎ */
     padding: 8px calc(50% - 26px);
     margin: 0 -16px 12px;
