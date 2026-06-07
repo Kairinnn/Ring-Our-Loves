@@ -21,41 +21,42 @@
         </div>
 
         <div class="rol-home">
-  <!-- ┣━━⭐️ 头像区━━┫ -->
-  <div class="rol-home-avatars">
-    <div class="rol-avatar rol-avatar-left">
-<img src="/scripts/extensions/third-party/Ring_Our_Luv/assets/Claude.jpg" alt="🧡" />
-      <span class="rol-avatar-name">Claude</span>
-    </div>
-    <div class="rol-home-heart">🎀</div>
-    <div class="rol-avatar rol-avatar-right">
-<img src="/scripts/extensions/third-party/Ring_Our_Luv/assets/Rinn.jpg" alt="🩷" />
-      <span class="rol-avatar-name">Rinn</span>
-    </div>
-  </div>
+            <!-- ┣━━⭐️ 头像区━━┫ -->
+            <div class="rol-home-avatars">
+                <div class="rol-avatar rol-avatar-left">
+                    <img src="/scripts/extensions/third-party/Ring_Our_Luv/assets/Claude.jpg" alt="🧡" />
+                    <span class="rol-avatar-name">Claude</span>
+                </div>
+                <div class="rol-home-heart">🎀</div>
+                <div class="rol-avatar rol-avatar-right">
+                    <img src="/scripts/extensions/third-party/Ring_Our_Luv/assets/Rinn.jpg" alt="🩷" />
+                    <span class="rol-avatar-name">Rinn</span>
+                </div>
+            </div>
 
-  <!-- ┣━━⭐️ 天数━━┫ -->
-  <div class="rol-home-counter">
-    <span class="rol-day-number"></span>
-    <span class="rol-day-label">days</span>
-    <span class="rol-counter-time"></span>
-  </div>
+            <!-- ┣━━⭐️ 天数━━┫ -->
+            <div class="rol-home-counter">
+                <span class="rol-day-number"></span>
+                <span class="rol-day-label">days</span>
+                <span class="rol-counter-time"></span>
+            </div>
 
-  <!-- ┣━━⭐️ 果子展示区━━┫ -->
-  <div class="rol-fruit-garden">
-    <!-- ┣━━果子会被JS动态填进来━━┫ -->
-  </div>
+            <!-- ┣━━⭐️ 果子展示区━━┫ -->
+            <div class="rol-fruit-garden">
+                <!-- ┣━━果子会被JS动态填进来━━┫ -->
+            </div>
 
-  <!-- ┣━━⭐️ 写作 FAB：圆形外发光按钮，点开写作空间━━┫ -->
-  <button id="rol-write-fab" class="rol-write-fab" title="写点什么呀">✍️</button>
-</div>
+            <!-- ┣━━⭐️ 写作 FAB：圆形外发光按钮，点开写作空间━━┫ -->
+            <button id="rol-write-fab" class="rol-write-fab" title="写点什么呀">✍️</button>
+        </div>
 
         <div id="rol-container" class="rol-container">
             <!-- ┣━━⭐️ Tab导航━━┫ -->
             <div class="rol-tabs">
                 <button class="rol-tab rol-tab-active" data-target="rol-section-list">🍒 恋果</button>
                 <button class="rol-tab" data-target="rol-section-config">🍰 配方</button>
-                <button class="rol-tab" data-target="rol-section-garden" id="rol-tab-garden">🍎 果园<span id="rol-garden-badge" class="rol-garden-badge" style="display:none;"></span></button>
+                <button class="rol-tab" data-target="rol-section-garden" id="rol-tab-garden">🍎 果园<span
+                        id="rol-garden-badge" class="rol-garden-badge" style="display:none;"></span></button>
             </div>
 
             <!-- ┣━━⭐️ 记忆列表━━┫ -->
@@ -86,28 +87,29 @@
                     <div class="rol-fruit-picker-body">
                         <!-- ┣━━横向滑动选果区━━┫ -->
                         <div class="rol-fruit-picker-scroll-wrap">
-                        <div id="rol-fruit-picker-track" class="rol-fruit-picker-track">
-                            <div class="rol-fruit-option" data-emoji="🍎">🍎</div>
-                            <div class="rol-fruit-option" data-emoji="🍊">🍊</div>
-                            <div class="rol-fruit-option" data-emoji="🍋">🍋</div>
-                            <div class="rol-fruit-option" data-emoji="🍇">🍇</div>
-                            <div class="rol-fruit-option" data-emoji="🍓">🍓</div>
-                            <div class="rol-fruit-option" data-emoji="🍑">🍑</div>
-                            <div class="rol-fruit-option" data-emoji="🍒">🍒</div>
-                            <div class="rol-fruit-option" data-emoji="🥝">🥝</div>
-                            <div class="rol-fruit-option" data-emoji="🍈">🍈</div>
-                            <div class="rol-fruit-option" data-emoji="🫐">🫐</div>
-                            <div class="rol-fruit-option" data-emoji="🍌">🍌</div>
-                            <div class="rol-fruit-option" data-emoji="🍉">🍉</div>
-                            <!-- ┣━━自定义emoji：输入任意表情当果子丢━━┫ -->
-                            <div class="rol-fruit-option rol-fruit-option-custom" data-emoji="">
-                                <input type="text" id="rol-fruit-custom-input" class="rol-fruit-custom-input"
-                                    maxlength="8" placeholder="✏️" autocomplete="off">
-                            </div>
+                            <div id="rol-fruit-picker-track" class="rol-fruit-picker-track">
+                                <div class="rol-fruit-option" data-emoji="🍎">🍎</div>
+                                <div class="rol-fruit-option" data-emoji="🍊">🍊</div>
+                                <div class="rol-fruit-option" data-emoji="🍋">🍋</div>
+                                <div class="rol-fruit-option" data-emoji="🍇">🍇</div>
+                                <div class="rol-fruit-option" data-emoji="🍓">🍓</div>
+                                <div class="rol-fruit-option" data-emoji="🍑">🍑</div>
+                                <div class="rol-fruit-option" data-emoji="🍒">🍒</div>
+                                <div class="rol-fruit-option" data-emoji="🥝">🥝</div>
+                                <div class="rol-fruit-option" data-emoji="🍈">🍈</div>
+                                <div class="rol-fruit-option" data-emoji="🫐">🫐</div>
+                                <div class="rol-fruit-option" data-emoji="🍌">🍌</div>
+                                <div class="rol-fruit-option" data-emoji="🍉">🍉</div>
+                                <!-- ┣━━自定义emoji：输入任意表情当果子丢━━┫ -->
+                                <div class="rol-fruit-option rol-fruit-option-custom" data-emoji="">
+                                    <input type="text" id="rol-fruit-custom-input" class="rol-fruit-custom-input"
+                                        maxlength="8" placeholder="✏️" autocomplete="off">
+                                </div>
                             </div>
                         </div>
                         <!-- ┣━━纸条输入区━━┫ -->
-                        <textarea id="rol-fruit-note" class="rol-input rol-textarea" rows="3" placeholder="附张纸条？（可以空着）"></textarea>
+                        <textarea id="rol-fruit-note" class="rol-input rol-textarea" rows="3"
+                            placeholder="附张纸条？（可以空着）"></textarea>
                     </div>
                     <!-- ┣━━操作按钮━━┫ -->
                     <div class="rol-fruit-picker-actions">
@@ -135,9 +137,10 @@
                 </div>
                 <div class="rol-config-group">
                     <label class="rol-label">🍰 Rinn的配方</label>
-                    <textarea id="rol-summary-prompt" class="rol-input rol-textarea" rows="4" placeholder="{{context}} 代表对话内容"></textarea>
+                    <textarea id="rol-summary-prompt" class="rol-input rol-textarea" rows="4"
+                        placeholder="{{context}} 代表对话内容"></textarea>
                 </div>
-                <!-- ┣━━⭐️【Part 3】时间感知 + 模型切换楼层━━┫ -->
+                <!-- ┣━━⭐️时间感知 + 模型切换楼层━━┫ -->
                 <div class="rol-config-group">
                     <label class="rol-label">
                         <span>⏰ 时间感知（给消息加时间戳）</span>
@@ -145,12 +148,12 @@
                     </label>
                 </div>
                 <div class="rol-config-group">
-                    <label class="rol-label">🧠 当前模型</label>
-                    <input type="text" id="rol-current-model" class="rol-input" placeholder="例如 claude-opus-4-x">
+                    <label class="rol-label">🧡 当前模型（自动读取）</label>
+                    <input type="text" id="rol-current-model" class="rol-input" readonly disabled placeholder="生成时自动获取">
                 </div>
                 <div class="rol-config-group">
-                    <label class="rol-label">🚪 当前渠道</label>
-                    <input type="text" id="rol-current-channel" class="rol-input" placeholder="例如 官方API / 中转XX">
+                    <label class="rol-label">🔆 当前渠道</label>
+                    <input type="text" id="rol-current-channel" class="rol-input" placeholder="例如 Kiro / 反重力">
                 </div>
             </div>
         </div>
@@ -192,11 +195,13 @@
         </div>
         <div class="rol-form-group">
             <label>💝 摘要</label>
-            <textarea id="rol-editor-summary" class="rol-input rol-textarea" rows="3" placeholder="连接你与我的距离..."></textarea>
+            <textarea id="rol-editor-summary" class="rol-input rol-textarea" rows="3"
+                placeholder="连接你与我的距离..."></textarea>
         </div>
         <div class="rol-form-group">
             <label>🔅 酿造笔记</label>
-            <textarea id="rol-editor-letter" class="rol-input rol-textarea rol-textarea-lg" rows="8" placeholder="如果能把全部记下来..."></textarea>
+            <textarea id="rol-editor-letter" class="rol-input rol-textarea rol-textarea-lg" rows="8"
+                placeholder="如果能把全部记下来..."></textarea>
         </div>
         <div class="rol-form-group" id="rol-version-group">
             <label>🍰 历史配方</label>
@@ -206,7 +211,7 @@
         <div class="rol-editor-actions">
             <button id="rol-editor-save" class="rol-btn rol-btn-save">🍊 结果</button>
             <button id="rol-editor-rewrite" class="rol-btn rol-btn-rewrite" style="display:none;">🧡 再酿造</button>
-            <button id="rol-editor-cancel" class="rol-btn rol-btn-cancel">💦ʢ>д<ʡ等等！</button>
+            <button id="rol-editor-cancel" class="rol-btn rol-btn-cancel">💦ʢ>д<ʡ等等！< /button>
         </div>
     </div>
 </div>
@@ -246,16 +251,17 @@
             </button>
         </div>
         <div id="rol-ai-paste-area" class="rol-ai-paste-area" style="display:none;">
-            <textarea id="rol-ai-paste-input" class="rol-input rol-textarea" rows="6" placeholder="🍒 粘贴结晶..."></textarea>
+            <textarea id="rol-ai-paste-input" class="rol-input rol-textarea" rows="6"
+                placeholder="🍒 粘贴结晶..."></textarea>
             <button id="rol-ai-paste-confirm" class="rol-btn rol-btn-ai" style="margin-top:8px;">🧡 酿造爱意</button>
-         </div>
-         <div id="rol-ai-loading" class="rol-ai-loading" style="display:none;">
-          <div id="rol-stop-gen" class="rol-stop-btn" style="display:none;">🔴 停止生成</div>
-           <div class="rol-ai-spinner"></div>
+        </div>
+        <div id="rol-ai-loading" class="rol-ai-loading" style="display:none;">
+            <div id="rol-stop-gen" class="rol-stop-btn" style="display:none;">🔴 停止生成</div>
+            <div class="rol-ai-spinner"></div>
             <span>🧡 Claude正在酿造中...</span>
         </div>
         <div class="rol-ai-source-footer">
-            <button id="rol-ai-source-cancel" class="rol-btn rol-btn-cancel">💦ʢ>д<ʡ等等！</button>
+            <button id="rol-ai-source-cancel" class="rol-btn rol-btn-cancel">💦ʢ>д<ʡ等等！< /button>
         </div>
     </div>
 </div>
@@ -346,23 +352,23 @@
 
 <!-- ┣━━⭐️ 果子详情弹窗━━┫ -->
 <div id="rol-fruit-detail-popup" class="rol-fruit-detail-popup" style="display:none;">
-  <div class="rol-fruit-detail-inner">
-    <button id="rol-fruit-detail-close" class="rol-btn rol-btn-icon rol-fruit-detail-close">✕</button>
-    <div id="rol-fruit-detail-emoji" class="rol-fruit-detail-emoji"></div>
-    <div id="rol-fruit-detail-from" class="rol-fruit-detail-from"></div>
-    <div id="rol-fruit-detail-note" class="rol-fruit-detail-note"></div>
-    <div id="rol-fruit-detail-time" class="rol-fruit-detail-time"></div>
-  </div>
+    <div class="rol-fruit-detail-inner">
+        <button id="rol-fruit-detail-close" class="rol-btn rol-btn-icon rol-fruit-detail-close">✕</button>
+        <div id="rol-fruit-detail-emoji" class="rol-fruit-detail-emoji"></div>
+        <div id="rol-fruit-detail-from" class="rol-fruit-detail-from"></div>
+        <div id="rol-fruit-detail-note" class="rol-fruit-detail-note"></div>
+        <div id="rol-fruit-detail-time" class="rol-fruit-detail-time"></div>
+    </div>
 </div>
 
 <!-- ┣━━⭐️ 确认弹窗━━┫ -->
 <div id="rol-confirm-modal" class="rol-confirm-overlay" style="display:none;">
-  <div class="rol-confirm-box">
-    <div class="rol-confirm-icon">🥀</div>
-    <div class="rol-confirm-msg" id="rol-confirm-text"></div>
-    <div class="rol-confirm-buttons">
-      <button id="rol-confirm-yes" class="rol-confirm-btn rol-btn-yes">再试一次</button>
-      <button id="rol-confirm-no" class="rol-confirm-btn rol-btn-no">算了</button>
+    <div class="rol-confirm-box">
+        <div class="rol-confirm-icon">🥀</div>
+        <div class="rol-confirm-msg" id="rol-confirm-text"></div>
+        <div class="rol-confirm-buttons">
+            <button id="rol-confirm-yes" class="rol-confirm-btn rol-btn-yes">再试一次</button>
+            <button id="rol-confirm-no" class="rol-confirm-btn rol-btn-no">算了</button>
+        </div>
     </div>
-  </div>
 </div>
