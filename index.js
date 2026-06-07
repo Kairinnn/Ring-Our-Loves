@@ -1,3 +1,10 @@
+window.addEventListener('error', (e) => {
+    document.title = '💀 ' + e.message + ' | 行' + (e.lineno || '?');
+});
+window.addEventListener('unhandledrejection', (e) => {
+    document.title = '💀 Promise: ' + (e.reason?.message || e.reason || '未知');
+});
+
 import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders } from '../../../../script.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { getPresetManager } from '../../../preset-manager.js';
@@ -210,8 +217,6 @@ function insertSystemFloor(text, floorType) {
 
     if (typeof ctx.saveChat === 'function') ctx.saveChat();
 }
-
-const { eventSource, event_types } = SillyTavern.getContext();
 
 /* ⬇️┅🧡模型名映射表/┅┅╗ */
 function mapModelName(raw) {
