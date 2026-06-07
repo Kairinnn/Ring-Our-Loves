@@ -1850,6 +1850,64 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     word-break: break-word;
 }
 
+/* ⬇️┅✏️编辑纸条弹窗/┅┅╗ */
+.rol-note-edit-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(180, 80, 120, 0.12);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: rol-fadein 0.2s ease both;
+}
+.rol-note-edit-box {
+    background: rgba(255, 248, 252, 0.98);
+    border-radius: 18px;
+    padding: 24px 20px;
+    max-width: 280px;
+    width: 85vw;
+    box-shadow: 0 8px 36px rgba(200, 80, 130, 0.18);
+    border: 1px solid rgba(255, 182, 215, 0.35);
+    animation: rol-popup-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.rol-note-edit-textarea {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid rgba(219, 112, 147, 0.25);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    background: rgba(255, 240, 245, 0.5);
+    color: rgb(80, 60, 70);
+    box-sizing: border-box;
+}
+.rol-note-edit-textarea:focus {
+    border-color: rgba(219, 112, 147, 0.5);
+}
+.rol-note-btn {
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.rol-note-btn-save {
+    background: rgba(219, 112, 147, 0.15);
+    color: rgb(219, 112, 147);
+    border-color: rgba(219, 112, 147, 0.3);
+}
+.rol-note-btn-cancel {
+    background: transparent;
+    color: rgba(150, 120, 130, 0.7);
+    border-color: rgba(150, 120, 130, 0.2);
+}
+/* ╚┅┅/ ✏️编辑纸条弹窗 /┅┅═╝ */
+
 .rol-fruit-detail-time {
     font-size: 11px;
     color: rgba(180, 80, 120, 0.4);
@@ -2420,21 +2478,21 @@ body.rol-light-mode .rol-letter-outbox-item {
 /* ⬇️┅✨版本浮窗/┅┅╗ */
 #rol-version-badge {
     position: fixed;
-    bottom: 60px;
-    right: 12px;
-    z-index: 9999;
-    padding: 4px 10px;
-    border-radius: 10px;
-    font-size: 0.72em;
-    background: rgba(186, 160, 255, 0.25);
-    color: rgba(220, 200, 255, 0.9);
+    top: 8px;
+    right: 8px;
+    z-index: 99999;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 0.68em;
+    background: rgba(186, 160, 255, 0.3);
+    color: rgba(220, 200, 255, 0.95);
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     cursor: pointer;
     transition: opacity 0.3s;
     pointer-events: auto;
 }
-#rol-version-badge.rol-badge-hidden {
+#rol-version-badge.rol-badge-dim {
     opacity: 0.15;
-    pointer-events: none;
 }
 /* ┗━━━━━━/ ⚙️版本&时间认知⚙️ /━━━━━━┛ */

@@ -326,7 +326,7 @@ function renderVersionBadge(model, channel) {
         badge = document.createElement('div');
         badge.id = 'rol-version-badge';
         badge.addEventListener('click', () => {
-            badge.classList.toggle('rol-badge-hidden');
+            badge.classList.toggle('rol-badge-dim');   // 改成只调暗，不锁死
         });
         document.body.appendChild(badge);
     }
@@ -1109,7 +1109,6 @@ const UIController = (() => {
             currentModelInput.value = config.currentModel || '';
             currentModelInput.addEventListener('input', (e) => {
                 Storage.updateConfig({ currentModel: e.target.value });
-                SystemFloor.checkModelSwitch();
             });
         }
 
@@ -1119,7 +1118,6 @@ const UIController = (() => {
             currentChannelInput.value = config.currentChannel || '';
             currentChannelInput.addEventListener('input', (e) => {
                 Storage.updateConfig({ currentChannel: e.target.value });
-                SystemFloor.checkModelSwitch();
             });
         }
     }
@@ -2392,41 +2390,54 @@ const FruitSystem = (() => {
         UIController.showToast('果子扔掉了 🗑️');
     }
 
-    /* ⬇️┅📝编辑纸条/┅┅╗ */
+    /* ⬇️┅✏️编辑果子纸条弹窗/┅┅╗ */
     function editFruitNote(fruitId) {
-        const fruits = loadFruits();
-        const fruit = fruits.find(f => f.id === fruitId);
-        if (!fruit) return;
+    closeFruitDetail();
+    const fruits = loadFruits();
+    const fruit = fruits.find(f => f.id === fruitId);
+    if (!fruit) return;
 
-        const noteEl = document.getElementById('rol-fruit-detail-note');
-        if (!noteEl) return;
-
-        // ❤︎ 把文本变成输入框 ❤︎
-        const input = document.createElement('textarea');
-        input.className = 'rol-fruit-edit-input';
-        input.value = fruit.message || '';
-        input.placeholder = '写点什么…';
-        input.style.cssText = 'width:100%;min-height:60px;border:1px solid rgba(219,112,147,0.3);border-radius:8px;padding:8px;font-size:13px;resize:none;background:rgba(255,240,245,0.6);';
-
-        noteEl.replaceWith(input);
-        input.focus();
-
-        // ❤︎ 保存按钮 ❤︎
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = '保存 ✓';
-        saveBtn.style.cssText = 'margin-top:8px;padding:4px 12px;border-radius:6px;border:none;background:rgba(219,112,147,0.8);color:#fff;font-size:12px;cursor:pointer;';
-        input.after(saveBtn);
-
-        saveBtn.onclick = () => {
-            fruit.message = input.value.trim();
-            const idx = fruits.findIndex(f => f.id === fruitId);
-            if (idx !== -1) fruits[idx] = fruit;
-            saveFruits(fruits);
-
-            showDetail(fruit);
-            UIController.showToast('纸条改好了 📝');
-        };
+    let overlay = document.getElementById('rol-note-edit-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'rol-note-edit-overlay';
+        overlay.className = 'rol-note-edit-overlay';
+        overlay.innerHTML = `
+            <div class="rol-note-edit-box">
+                <div style="font-size:32px;text-align:center;margin-bottom:8px;" id="rol-note-edit-emoji"></div>
+                <textarea id="rol-note-edit-input" class="rol-note-edit-textarea"
+                    placeholder="写点什么附在果子上…" maxlength="200"></textarea>
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+                    <button id="rol-note-save-btn" class="rol-note-btn rol-note-btn-save">保存 💌</button>
+                    <button id="rol-note-cancel-btn" class="rol-note-btn rol-note-btn-cancel">算了</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
     }
+
+    document.getElementById('rol-note-edit-emoji').textContent = fruit.emoji;
+    const input = document.getElementById('rol-note-edit-input');
+    input.value = fruit.message || '';
+    overlay.style.display = 'flex';
+
+    document.getElementById('rol-note-save-btn').onclick = () => {
+        const newMsg = input.value.trim();
+        const fresh = loadFruits();
+        const idx = fresh.findIndex(f => f.id === fruitId);
+        if (idx !== -1) {
+            fresh[idx].message = newMsg;
+            saveFruits(fresh);
+        }
+        overlay.style.display = 'none';
+    };
+    document.getElementById('rol-note-cancel-btn').onclick = () => {
+        overlay.style.display = 'none';
+    };
+    overlay.onclick = (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+    };
+}
+/* ╚┅┅/ ✏️编辑果子纸条弹窗 /┅┅═╝ */
 
     /* ⬇️┅🍎✨️显示/隐藏选果栏（内联在果园容器里，靠 .rol-garden-picking 切换）/┅┅╗ */
     function showPicker() {
