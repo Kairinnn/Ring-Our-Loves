@@ -241,56 +241,115 @@ function mapModelName(raw) {
 }
 
 /* ⬇️┅每轮回复完成后，检查模型切换/┅┅╗ */
-eventSource.on(event_types.MESSAGE_RECEIVED, () => {
-    const ctx = SillyTavern.getContext();
-    const chat = ctx.chat || [];
-    const lastAi = [...chat].reverse().find(m => !m.is_user && !m.is_system && !m.extra?.rol_floor);
-    const raw = lastAi?.extra?.model || '';
-    if (!raw) return;                       // 中转没返回model，跳过
-
-    const pretty = mapModelName(raw);
+/* ⬇️┅🧡手动切换模型时触发/┅┅╗ */
+function checkModelSwitch() {
     const cfg = Storage.getConfig();
-    if (pretty !== cfg.lastDetectedModel) {
-        insertSystemFloor(`✦ 当前对话使用的 Claude 版本：${pretty} ✦`, 'model');
-        Storage.updateConfig({ lastDetectedModel: pretty, currentModel: pretty });
-    }
-});
+    const model = (cfg.currentModel || '').trim();
+    if (!model) return;
+    const pretty = mapModelName(model);
+    const channel = (cfg.currentChannel || '').trim();
+    const label = channel ? `${pretty}·${channel}` : pretty;
+    if (label === cfg.lastDetectedModel) return;
+    Storage.updateConfig({ lastDetectedModel: label });
+    renderVersionBadge(pretty, channel);
+}
+
+/* ⬇️┅🧡版本注入（每次生成前覆盖写入）/┅┅╗ */
+function injectVersionPrompt() {
+    const ctx = SillyTavern.getContext();
+    const cfg = Storage.getConfig();
+    const model = (cfg.currentModel || '').trim();
+    if (!model) return;
+    const pretty = mapModelName(model);
+    const channel = (cfg.currentChannel || '').trim();
+    ctx.setExtensionPrompt('rol_version',
+        `[系统：当前运行版本为 Claude ${pretty}${channel ? `，接入渠道「${channel}」` : ''}。]`, 1, 0);
+}
 
 /* ⬇️┅⏰️时间感知/┅┅╗ */
-function fmtInterval(ms) {
-    const m = Math.floor(ms / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
-    if (d > 0) return `${d}天${h % 24 ? h % 24 + '小时' : ''}`;
-    if (h > 0) return `${h}小时${m % 60 ? m % 60 + '分钟' : ''}`;
-    return `${m}分钟`;
-}
-function fmtTime(ms) {
-    return new Date(ms).toLocaleString('zh-CN',
-        { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+function fmtRelativeTime(timestamp) {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const h = String(then.getHours()).padStart(2, '0');
+    const m = String(then.getMinutes()).padStart(2, '0');
+    const time = `${h}:${m}`;
+
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const thatDay = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+    const diffDays = Math.floor((today - thatDay) / 86400000);
+
+    if (diffDays === 0) return time;
+    if (diffDays === 1) return `昨天 ${time}`;
+    if (diffDays === 2) return `前天 ${time}`;
+    const mm = String(then.getMonth() + 1).padStart(2, '0');
+    const dd = String(then.getDate()).padStart(2, '0');
+    if (then.getFullYear() === now.getFullYear()) return `${mm}/${dd} ${time}`;
+    const yy = String(then.getFullYear()).slice(-2);
+    return `'${yy}/${mm}/${dd} ${time}`;
 }
 
-// ❤︎ user发消息时调用：间隔超过30分钟，才插一条可见的时间分隔 ❤︎
-function maybeInsertTimeFloor() {
-    const cfg = Storage.getConfig();
-    if (!cfg.enableTimeAware) return;
-    const now = Date.now(), last = cfg.lastUserMsgTime || 0;
-    Storage.updateConfig({ lastUserMsgTime: now });
-    if (last === 0 || now - last < 30 * 60000) return;   // 半小时内不插，免得刷屏
-    insertSystemFloor(`🕒 ${fmtTime(now)} · 距上次 ${fmtInterval(now - last)}`, 'time');
-}
-
-// ❤︎ 生成前调用：告诉模型此刻的真实时间，治"把半小时前当昨天" ❤︎
-function injectNowPrompt() {
+/* ⬇️┅⏰️给user消息打时间戳/┅┅╗ */
+eventSource.on(event_types.MESSAGE_SENT, () => {
     const ctx = SillyTavern.getContext();
-    const cfg = Storage.getConfig();
-    const now = Date.now(), last = cfg.lastUserMsgTime || now;
-    const gap = now - last > 60000 ? `，距上一条已过 ${fmtInterval(now - last)}` : '';
-    ctx.setExtensionPrompt('rol_time_now', `[当前真实时间：${fmtTime(now)}${gap}]`, 1, 0);
+    const chat = ctx.chat;
+    const lastMsg = chat[chat.length - 1];
+    if (lastMsg && lastMsg.is_user) {
+        lastMsg.extra = lastMsg.extra || {};
+        lastMsg.extra.rol_timestamp = Date.now();
+    }
+    if (typeof ctx.saveChat === 'function') ctx.saveChat();
+});
+
+/* ⬇️┅⏰️生成前注入时间上下文/┅┅╗ */
+function injectTimeContext() {
+    const ctx = SillyTavern.getContext();
+    const chat = ctx.chat || [];
+    // 取最近10条user消息的时间
+    const userMsgs = chat.filter(m => m.is_user && m.extra?.rol_timestamp).slice(-10);
+    if (userMsgs.length === 0) return;
+
+    const latest = userMsgs[userMsgs.length - 1];
+    const nowStr = fmtRelativeTime(latest.extra.rol_timestamp);
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+
+    ctx.setExtensionPrompt('rol_time_now',
+        `[当前真实时间：${h}:${m}｜user最后发言：${nowStr}]`, 1, 0);
 }
 /* ╚┅┅/ ⏰️时间感知 /┅┅═╝ */
 
+/* ⬇️┅✨版本浮窗/┅┅╗ */
+function renderVersionBadge(model, channel) {
+    let badge = document.getElementById('rol-version-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'rol-version-badge';
+        badge.addEventListener('click', () => {
+            badge.classList.toggle('rol-badge-hidden');
+        });
+        document.body.appendChild(badge);
+    }
+    const text = channel ? `${model} · ${channel}` : model;
+    badge.textContent = `✦ ${text}`;
+    badge.classList.remove('rol-badge-hidden');
+}
+
+// 页面加载时如果config里有模型就渲染
+function initVersionBadge() {
+    const cfg = Storage.getConfig();
+    const model = (cfg.currentModel || '').trim();
+    if (!model) return;
+    const pretty = mapModelName(model);
+    const channel = (cfg.currentChannel || '').trim();
+    renderVersionBadge(pretty, channel);
+}
+
 // ❤︎ 绑定 ❤︎
-eventSource.on(event_types.MESSAGE_SENT, maybeInsertTimeFloor);
-eventSource.on(event_types.GENERATION_STARTED, injectNowPrompt);
+eventSource.on(event_types.GENERATION_STARTED, () => {
+    injectTimeContext();
+    injectVersionPrompt();
+});
 /* ┗━━━━━━/ ⚙️插入系统提示楼层⚙️ /━━━━━━┛ */
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
@@ -2964,6 +3023,7 @@ const FruitSystem = (() => {
 
     return { init, renderGarden, updateBadge, ingestAIFruits, showDetail, notifyError };
 })();
+/* ┗━━━━━━/ 🍎果子系统🍎 /━━━━━━┛ */
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅              💌 写信系统 LetterSystem 💌              ┅
@@ -3370,6 +3430,7 @@ jQuery(async () => {
     UIController.initUI();
     FruitSystem.init();
     LetterSystem.init();
+    initVersionBadge();
     Trigger.setupTriggerListener(injectMemoryToContext);
 
     const context = getContext();

@@ -1757,6 +1757,111 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     border-top: 1px solid rgba(255, 182, 215, 0.15);
 }
 
+/* ⬇️┅📜果子纸条详情弹窗/┅┅╗ */
+/* ❤︎ 已在 JS 里 appendChild 到 document.body，这里用 fixed 全屏 flex 居中，
+   再加 !important 兜底，防止 ST 给容器注入定位/尺寸样式把弹窗顶出屏幕（移动端尤其） */
+.rol-fruit-detail-popup {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 999999 !important;
+    /* ⚠️ display 千万别加 !important！否则会盖过行内 display:none，导致弹窗刷新就钉死、关也关不掉。
+       显隐交给行内样式(none/flex)和下面的 .rol-detail-show 类来管 */
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px;
+    box-sizing: border-box;
+    background: rgba(180, 80, 120, 0.12);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: rol-fadein 0.2s ease both;
+}
+
+/* ⬇️┅😻显示态：加 .rol-detail-show 才弹出/┅┅╗ */
+/* ❤︎ 只有这个类带 display:flex !important（高优先级盖过 ST 注入）；
+   隐藏时移除此类，回落到行内 display:none，绝不会再钉死 ❤︎ */
+.rol-fruit-detail-popup.rol-detail-show {
+    display: flex !important;
+}
+
+/* ❤︎ 详情弹窗淡入（之前引用了但没定义，补上） */
+@keyframes rol-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.rol-fruit-detail-inner {
+    position: relative;
+    background: rgba(255, 248, 252, 0.98);
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    max-width: 300px;
+    width: 88vw;
+    box-shadow: 0 8px 40px rgba(200, 80, 130, 0.18);
+    border: 1px solid rgba(255, 182, 215, 0.4);
+    text-align: center;
+    animation: rol-popup-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes rol-popup-in {
+    from { transform: scale(0.7) translateY(20px); opacity: 0; }
+    to   { transform: scale(1) translateY(0);      opacity: 1; }
+}
+
+.rol-fruit-detail-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 13px;
+    color: rgba(180, 80, 120, 0.5);
+    padding: 4px 8px;
+}
+
+.rol-fruit-detail-emoji {
+    font-size: 56px;
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 8px rgba(180, 80, 120, 0.2));
+}
+
+.rol-fruit-detail-from {
+    font-size: 12px;
+    color: rgba(180, 80, 120, 0.6);
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.rol-fruit-detail-note {
+    font-size: 14px;
+    color: var(--rol-text, rgb(80, 60, 70));
+    line-height: 1.7;
+    min-height: 20px;
+    margin-bottom: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.rol-fruit-detail-time {
+    font-size: 11px;
+    color: rgba(180, 80, 120, 0.4);
+}
+
+/* ❤︎ 详情弹窗：限制最大高度，超出滚动 */
+.rol-fruit-detail-inner {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+/* ╚┅┅/ 📜果子纸条详情弹窗 /┅┅═╝ */
+
 /* ⬇️┅✨️果子外发光/┅┅╗ */
 .rol-fruit-item.rol-fruit-from-claude {
     filter: drop-shadow(0 0 8px rgba(255, 160, 60, 0.8)) drop-shadow(0 0 3px rgba(255, 120, 30, 0.6));
@@ -2289,6 +2394,7 @@ body.rol-light-mode .rol-letter-outbox-item {
 }
 /* ┗━━━━━━/ 🪶写作空间 + FAB 🪶 /━━━━━━┛ */
 
+/* ➤━━━━━━━ ▍⚙️版本&时间认知⚙️ ▍━━━━━━━┓ */
 /* ⬇️┅⏰️user消息时间戳/┅┅╗ */
 .mes.rol-floor-msg {
     text-align: center;
@@ -2311,3 +2417,24 @@ body.rol-light-mode .rol-letter-outbox-item {
 }
 /* ╚┅┅/ ⏰️user消息时间戳 /┅┅═╝ */
 
+/* ⬇️┅✨版本浮窗/┅┅╗ */
+#rol-version-badge {
+    position: fixed;
+    bottom: 60px;
+    right: 12px;
+    z-index: 9999;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 0.72em;
+    background: rgba(186, 160, 255, 0.25);
+    color: rgba(220, 200, 255, 0.9);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    transition: opacity 0.3s;
+    pointer-events: auto;
+}
+#rol-version-badge.rol-badge-hidden {
+    opacity: 0.15;
+    pointer-events: none;
+}
+/* ┗━━━━━━/ ⚙️版本&时间认知⚙️ /━━━━━━┛ */
