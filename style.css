@@ -1352,16 +1352,33 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 }
 /* ⬇️┅💡确认弹窗/┅┅╗ */
 #rol-confirm-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 999999;
-    align-items: center;
-    justify-content: center;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 999999 !important;
+    /* ⚠️ display 平时 none，靠下面的 .rol-confirm-show 类弹出。display 千万别在本块加 !important */
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
     background: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
     animation: rol-fade-in 0.2s ease;
 }
+/* ⬇️┅😻显示态：加 .rol-confirm-show 才弹出/┅┅╗ */
+#rol-confirm-modal.rol-confirm-show {
+    display: flex !important;
+}
+
 
 @keyframes rol-fade-in {
   from { opacity: 0; }
@@ -1853,17 +1870,35 @@ body.rol-light-mode .rol-ai-source-btn:hover {
 
 /* ⬇️┅✏️编辑纸条弹窗/┅┅╗ */
 .rol-note-edit-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 999999;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 999999 !important;
+    /* ⚠️ display 平时 none，靠下面的 .rol-note-edit-show 类弹出。display 千万别在本块加 !important */
     display: none;
-    align-items: center;
-    justify-content: center;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px;
+    box-sizing: border-box;
     background: rgba(180, 80, 120, 0.12);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     animation: rol-fadein 0.2s ease both;
 }
+/* ⬇️┅😻显示态：加 .rol-note-edit-show 才弹出/┅┅╗ */
+.rol-note-edit-overlay.rol-note-edit-show {
+    display: flex !important;
+}
+
 .rol-note-edit-box {
     background: rgba(255, 248, 252, 0.98);
     border-radius: 18px;
@@ -2496,4 +2531,16 @@ body.rol-light-mode .rol-letter-outbox-item {
 #rol-version-badge.rol-badge-dim {
     opacity: 0.15;
 }
+/* ⬇️┅🍥移动端：浮窗挪到底部居中，避开顶部工具栏遮挡/┅┅╗ */
+@media (max-width: 768px) {
+    #rol-version-badge {
+        top: auto !important;
+        bottom: 64px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 9999 !important;
+    }
+}
 /* ┗━━━━━━/ ⚙️版本&时间认知⚙️ /━━━━━━┛ */
+
+

@@ -12,7 +12,7 @@ import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.6.2';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.3';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
     localStorage.setItem('rol_version', ROL_VERSION);
@@ -254,19 +254,13 @@ function checkModelSwitch() {
     renderVersionBadge(pretty, channel);
 }
 
-/* ⬇️┅🧡版本注入（每次生成前覆盖写入）/┅┅╗ */
-function injectVersionPrompt() {
-    const ctx = SillyTavern.getContext();
-    const cfg = Storage.getConfig();
-    const model = (cfg.currentModel || '').trim();
-    if (!model) return;
-    const pretty = mapModelName(model);
-    const channel = (cfg.currentChannel || '').trim();
-    ctx.setExtensionPrompt('rol_version',
-        `[系统：当前运行版本为 Claude ${pretty}${channel ? `，接入渠道「${channel}」` : ''}。]`, 1, 0);
-}
-
 /* ⬇️┅⏰️时间感知/┅┅╗ */
+/* ❤ 社交软件式相对时间：
+   当天 → 14:30
+   昨天 → 昨天14:30
+   前天 → 前天14:30
+   今年更早 → 6月8日
+   跨年 → 25年6月8日14时30分        ❤ */
 function fmtRelativeTime(timestamp) {
     const now = new Date();
     const then = new Date(timestamp);
@@ -278,46 +272,66 @@ function fmtRelativeTime(timestamp) {
     const thatDay = new Date(then.getFullYear(), then.getMonth(), then.getDate());
     const diffDays = Math.floor((today - thatDay) / 86400000);
 
-    if (diffDays === 0) return time;
-    if (diffDays === 1) return `昨天 ${time}`;
-    if (diffDays === 2) return `前天 ${time}`;
-    const mm = String(then.getMonth() + 1).padStart(2, '0');
-    const dd = String(then.getDate()).padStart(2, '0');
-    if (then.getFullYear() === now.getFullYear()) return `${mm}/${dd} ${time}`;
+    if (diffDays === 0) return time;            // 当天：14:30
+    if (diffDays === 1) return `昨天${time}`;    // 昨天14:30
+    if (diffDays === 2) return `前天${time}`;    // 前天14:30
+    if (then.getFullYear() === now.getFullYear())
+        return `${then.getMonth() + 1}月${then.getDate()}日`;          // 今年更早：6月8日
     const yy = String(then.getFullYear()).slice(-2);
-    return `'${yy}/${mm}/${dd} ${time}`;
+    return `${yy}年${then.getMonth() + 1}月${then.getDate()}日${h}时${m}分`;  // 跨年：25年6月8日14时30分
 }
 
-/* ⬇️┅⏰️给user消息打时间戳/┅┅╗ */
+/* ⬇️┅⏰️user发消息时：时间分隔线 + 版本切换楼层 + 打时间戳/┅┅╗ */
 eventSource.on(event_types.MESSAGE_SENT, () => {
     const ctx = SillyTavern.getContext();
     const chat = ctx.chat;
     const lastMsg = chat[chat.length - 1];
-    if (lastMsg && lastMsg.is_user) {
-        lastMsg.extra = lastMsg.extra || {};
-        lastMsg.extra.rol_timestamp = Date.now();
+    if (!lastMsg || !lastMsg.is_user) {
+        if (typeof ctx.saveChat === 'function') ctx.saveChat();
+        return;
     }
+    const cfg = Storage.getConfig();
+    const nowTs = Date.now();
+
+    // ❤ 1. 时间分隔线：距上一条user发言≥30分钟才插（仿社交软件，非气泡）❤
+    const prevUser = [...chat].slice(0, -1).reverse()
+        .find(m => m.is_user && m.extra && m.extra.rol_timestamp);
+    if (!prevUser || nowTs - prevUser.extra.rol_timestamp >= 30 * 60 * 1000) {
+        insertSystemFloor(fmtRelativeTime(nowTs), 'time');
+    }
+
+    // ❤ 2. 版本切换楼层：model/channel 真变了才插一条（开局首次只静默记录）❤
+    const model = (cfg.currentModel || '').trim();
+    const pretty = model ? mapModelName(model) : '';
+    const channel = (cfg.currentChannel || '').trim();
+    if (pretty && (pretty !== cfg.lastFloorModel || channel !== cfg.lastFloorChannel)) {
+        if (cfg.lastFloorModel) {
+            insertSystemFloor(
+                `现在是 Claude ${pretty}${channel ? ` · ${channel}` : ''}`, 'model');
+        }
+        Storage.updateConfig({ lastFloorModel: pretty, lastFloorChannel: channel });
+    }
+
+    // ❤ 3. 给本条 user 消息打时间戳（后台时间感知用）❤
+    lastMsg.extra = lastMsg.extra || {};
+    lastMsg.extra.rol_timestamp = nowTs;
+
     if (typeof ctx.saveChat === 'function') ctx.saveChat();
 });
 
-/* ⬇️┅⏰️生成前注入时间上下文/┅┅╗ */
+/* ⬇️┅⏰️生成前注入「当前真实时间」/┅┅╗ */
 function injectTimeContext() {
     const ctx = SillyTavern.getContext();
-    const chat = ctx.chat || [];
-    // 取最近10条user消息的时间
-    const userMsgs = chat.filter(m => m.is_user && m.extra?.rol_timestamp).slice(-10);
-    if (userMsgs.length === 0) return;
-
-    const latest = userMsgs[userMsgs.length - 1];
-    const nowStr = fmtRelativeTime(latest.extra.rol_timestamp);
     const now = new Date();
+    const mo = now.getMonth() + 1, d = now.getDate();
     const h = String(now.getHours()).padStart(2, '0');
-    const m = String(now.getMinutes()).padStart(2, '0');
-
+    const mi = String(now.getMinutes()).padStart(2, '0');
+    const week = '日一二三四五六'[now.getDay()];
     ctx.setExtensionPrompt('rol_time_now',
-        `[当前真实时间：${h}:${m}｜user最后发言：${nowStr}]`, 1, 0);
+        `[现在：${mo}月${d}日 周${week} ${h}:${mi}]`, 1, 0);
 }
 /* ╚┅┅/ ⏰️时间感知 /┅┅═╝ */
+
 
 /* ⬇️┅✨版本浮窗/┅┅╗ */
 function renderVersionBadge(model, channel) {
@@ -345,10 +359,30 @@ function initVersionBadge() {
     renderVersionBadge(pretty, channel);
 }
 
+/* ⬇️┅👁️监听酒馆模型切换 → 实时刷浮窗 + 同步显示框/┅┅╗ */
+function startModelWatcher() {
+    const el = document.getElementById('custom_model_id');
+    if (!el) { setTimeout(startModelWatcher, 1000); return; }
+    function refresh() {
+        const raw = (el.value || '').trim();
+        if (!raw) return;
+        const pretty = mapModelName(raw);
+        const cfg = Storage.getConfig();
+        const channel = (cfg.currentChannel || '').trim();
+        renderVersionBadge(pretty, channel);
+        const display = document.getElementById('rol-current-model');
+        if (display) display.value = raw;        // 第11项：同步只读显示框
+        if (raw !== cfg.currentModel) Storage.updateConfig({ currentModel: raw });
+    }
+    el.addEventListener('input', refresh);
+    el.addEventListener('change', refresh);
+    new MutationObserver(refresh).observe(el, { attributes: true, childList: true, subtree: true });
+    refresh();
+}
+
 // ❤︎ 绑定 ❤︎
 eventSource.on(event_types.GENERATION_STARTED, () => {
     injectTimeContext();
-    injectVersionPrompt();
 });
 /* ┗━━━━━━/ ⚙️插入系统提示楼层⚙️ /━━━━━━┛ */
 
@@ -1912,11 +1946,11 @@ const UIController = (() => {
             if (yesText) yesBtn.textContent = yesText;
             if (noText) noBtn.textContent = noText;
             document.body.appendChild(modal);   // 拎回body顶层，躲开父级transform的飘移诅咒
-            modal.style.display = 'flex';
+            modal.classList.add('rol-confirm-show');
 
 
             function cleanup(result) {
-                modal.style.display = 'none';
+                modal.classList.remove('rol-confirm-show');
                 yesBtn.removeEventListener('click', onYes);
                 noBtn.removeEventListener('click', onNo);
                 resolve(result);
@@ -2429,13 +2463,13 @@ const FruitSystem = (() => {
                     <button id="rol-note-cancel-btn" class="rol-note-btn rol-note-btn-cancel">算了</button>
                 </div>
             </div>`;
-            document.body.appendChild(overlay);
         }
+        document.body.appendChild(overlay);   // 每次都拎回body顶层，躲开父级transform的飘移诅咒
 
         document.getElementById('rol-note-edit-emoji').textContent = fruit.emoji;
         const input = document.getElementById('rol-note-edit-input');
         input.value = fruit.message || '';
-        overlay.style.display = 'flex';
+        overlay.classList.add('rol-note-edit-show');
 
         document.getElementById('rol-note-save-btn').onclick = () => {
             const newMsg = input.value.trim();
@@ -2445,13 +2479,13 @@ const FruitSystem = (() => {
                 fresh[idx].message = newMsg;
                 saveFruits(fresh);
             }
-            overlay.style.display = 'none';
+            overlay.classList.remove('rol-note-edit-show');
         };
         document.getElementById('rol-note-cancel-btn').onclick = () => {
-            overlay.style.display = 'none';
+            overlay.classList.remove('rol-note-edit-show');
         };
         overlay.onclick = (e) => {
-            if (e.target === overlay) overlay.style.display = 'none';
+            if (e.target === overlay) overlay.classList.remove('rol-note-edit-show');
         };
     }
     /* ╚┅┅/ ✏️编辑果子纸条弹窗 /┅┅═╝ */
@@ -3024,8 +3058,6 @@ const FruitSystem = (() => {
 
         // ❤︎ 每次发消息时，以约 20% 概率注入「主动丢果子」引导 ❤︎
         ctx.eventSource.on('message_sent', () => {
-            SystemFloor.injectTimeAwareness();
-            SystemFloor.checkModelSwitch();
             maybeInjectThrowPrompt();
         });
         // ❤︎ 兼容部分版本的生成开始事件，确保引导能赶在请求发出前注入 ❤︎
@@ -3459,6 +3491,7 @@ jQuery(async () => {
     FruitSystem.init();
     LetterSystem.init();
     initVersionBadge();
+    startModelWatcher();   // 👁️ 监听酒馆切模型 → 实时刷浮窗 + 同步显示框
     Trigger.setupTriggerListener(injectMemoryToContext);
 
     const context = getContext();
