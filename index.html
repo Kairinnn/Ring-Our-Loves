@@ -140,11 +140,23 @@
                     <textarea id="rol-summary-prompt" class="rol-input rol-textarea" rows="4"
                         placeholder="{{context}} 代表对话内容"></textarea>
                 </div>
-                <!-- ┣━━⭐️时间感知 + 模型切换楼层━━┫ -->
+                <!-- ┣━━⭐️时间检测 + 模型检测 + 版本注入（三个独立开关）━━┫ -->
                 <div class="rol-config-group">
                     <label class="rol-label">
-                        <span>⏰ 时间感知（给消息加时间戳）</span>
+                        <span>⏰ 时间检测（间隔感知 + 时间分隔线）</span>
                         <input type="checkbox" id="rol-enable-time-aware" checked>
+                    </label>
+                </div>
+                <div class="rol-config-group">
+                    <label class="rol-label">
+                        <span>🧡 模型检测（向上下文注入当前版本）</span>
+                        <input type="checkbox" id="rol-enable-model-detect" checked>
+                    </label>
+                </div>
+                <div class="rol-config-group">
+                    <label class="rol-label">
+                        <span>🙈 隐藏前端版本号显示</span>
+                        <input type="checkbox" id="rol-hide-version">
                     </label>
                 </div>
                 <div class="rol-config-group">

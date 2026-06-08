@@ -9,10 +9,11 @@ import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders } fr
 import { extension_settings, getContext } from '../../../extensions.js';
 import { getPresetManager } from '../../../preset-manager.js';
 import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
+import { getChatCompletionModel } from '../../../openai.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.6.3';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.4';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
     localStorage.setItem('rol_version', ROL_VERSION);
@@ -32,12 +33,14 @@ const Storage = (() => {
                     autoInject: true,
                     maxInjectCount: 3,
                     summaryPrompt: '',
-                    // ❤︎ 时间感知 + 模型切换楼层 ❤︎
-                    enableTimeAware: true,          // 时间感知开关
-                    currentModel: '',               // 当前模型（手动）
-                    currentChannel: '',             // 当前渠道（手动）
-                    lastModel: '',                  // 上次模型（检测切换）
-                    lastChannel: ''                 // 上次渠道（检测切换）
+                    // ❤︎ 时间检测 + 模型版本注入 ❤︎
+                    enableTimeAware: true,          // 时间检测开关
+                    enableModelDetect: true,        // 模型检测开关（与时间检测独立）
+                    hideVersionBadge: false,        // 隐藏前端版本号显示
+                    currentModel: '',               // 当前模型
+                    currentChannel: '',             // 当前渠道
+                    lastModel: '',                  // 上次模型
+                    lastChannel: ''                 // 上次渠道
                 }
             };
             saveSettingsDebounced();
@@ -188,35 +191,7 @@ const Storage = (() => {
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                 🩷 系统楼层模块 🩷                    ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
-/* ➤━━━━━━━ ▍⚙️插入系统提示楼层⚙️ ▍━━━━━━━┓ */
-function insertSystemFloor(text, floorType) {
-    if (!text) return;
-    const ctx = SillyTavern.getContext();
-    if (!ctx || !ctx.chat) return;
-
-    const sysMsg = {
-        name: 'System',
-        is_user: false,
-        is_system: false,
-        mes: text,
-        send_date: Date.now(),
-        extra: {
-            rol_floor: true,
-            rol_floor_type: floorType   // 'model' | 'time'
-        }
-    };
-    ctx.chat.push(sysMsg);
-    ctx.addOneMessage(sysMsg);           // 立刻前端渲染，不用刷新才看见
-
-    // ❤ 给这条消息的DOM打标，CSS负责变成居中灰字时间戳 ❤
-    const mesId = ctx.chat.length - 1;
-    requestAnimationFrame(() => {
-        const $m = $(`.mes[mesid="${mesId}"]`);
-        $m.addClass('rol-floor-msg').attr('data-rol-floor', floorType);
-    });
-
-    if (typeof ctx.saveChat === 'function') ctx.saveChat();
-}
+/* ➤━━━━━━━ ▍⚙️版本注入 + 时间感知⚙️ ▍━━━━━━━┓ */
 
 /* ⬇️┅🧡模型名映射表/┅┅╗ */
 function mapModelName(raw) {
@@ -240,18 +215,59 @@ function mapModelName(raw) {
     return raw;   // 没匹配上原样返回，至少不丢信息
 }
 
-/* ⬇️┅每轮回复完成后，检查模型切换/┅┅╗ */
-/* ⬇️┅🧡手动切换模型时触发/┅┅╗ */
-function checkModelSwitch() {
+/* ⬇️┅🧡读当前模型：优先 getChatCompletionModel，兜底从 DOM/┅┅╗ */
+function rolReadModel() {
+    try {
+        const m = getChatCompletionModel();
+        if (m) return String(m).trim();
+    } catch (_) { /* 某些版本/模式取不到，往下兜底 */ }
+    const el = document.getElementById('custom_model_id');
+    return el ? (el.value || '').trim() : '';
+}
+
+/* ⬇️┅🧡版本注入：CHAT_COMPLETION_PROMPT_READY 时把版本常驻进上下文，仅在模型/渠道变化时更新/┅┅╗ */
+let _rolLastInjectedVersion = null;   // 记上次注入的 label，没变就不动，避免渠道死了反复插
+const ROL_VERSION_KEY = 'rol_version';
+
+function injectVersionPrompt() {
+    const ctx = SillyTavern.getContext();
+    if (!ctx || typeof ctx.setExtensionPrompt !== 'function') return;
     const cfg = Storage.getConfig();
-    const model = (cfg.currentModel || '').trim();
-    if (!model) return;
-    const pretty = mapModelName(model);
+
+    // ❤ 模型检测关掉 → 清空注入并返回 ❤
+    if (cfg.enableModelDetect === false) {
+        removeVersionInject();
+        return;
+    }
+
+    const raw = rolReadModel();
+    if (!raw) return;
+    const pretty = mapModelName(raw);
     const channel = (cfg.currentChannel || '').trim();
     const label = channel ? `${pretty}·${channel}` : pretty;
-    if (label === cfg.lastDetectedModel) return;
-    Storage.updateConfig({ lastDetectedModel: label });
+
+    // ❤ 实时刷新卡片版本号显示 ❤
     renderVersionBadge(pretty, channel);
+
+    // ❤ 只在「模型/渠道变化」时更新注入内容，没变就不动 ❤
+    if (label === _rolLastInjectedVersion) return;
+    _rolLastInjectedVersion = label;
+
+    ctx.setExtensionPrompt(ROL_VERSION_KEY,
+        `[系统：当前运行版本为 Claude ${pretty}${channel ? `，接入渠道「${channel}」` : ''}。]`,
+        1, 0);
+
+    Storage.updateConfig({ currentModel: raw, lastModel: pretty, lastChannel: channel });
+    console.log('[RingOurLuv] 🧡 版本注入更新:', label);
+}
+
+// ❤︎ 删除入口：调 setExtensionPrompt 传空清掉 ❤︎
+function removeVersionInject() {
+    const ctx = SillyTavern.getContext();
+    if (ctx && typeof ctx.setExtensionPrompt === 'function') {
+        ctx.setExtensionPrompt(ROL_VERSION_KEY, '', 1, 0);
+    }
+    _rolLastInjectedVersion = '';
 }
 
 /* ⬇️┅⏰️时间感知/┅┅╗ */
@@ -281,7 +297,36 @@ function fmtRelativeTime(timestamp) {
     return `${yy}年${then.getMonth() + 1}月${then.getDate()}日${h}时${m}分`;  // 跨年：25年6月8日14时30分
 }
 
-/* ⬇️┅⏰️user发消息时：时间分隔线 + 版本切换楼层 + 打时间戳/┅┅╗ */
+/* ⬇️┅⏰️把毫秒间隔格式化成人话/┅┅╗ */
+function fmtInterval(ms) {
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return '不到 1 分钟';
+    if (min < 60) return `${min} 分钟`;
+    const h = Math.floor(min / 60);
+    if (h < 24) {
+        const rm = min % 60;
+        return rm ? `${h} 小时 ${rm} 分钟` : `${h} 小时`;
+    }
+    const d = Math.floor(h / 24);
+    const rh = h % 24;
+    return rh ? `${d} 天 ${rh} 小时` : `${d} 天`;
+}
+
+/* ⬇️┅⏰️前端时间分隔线：createElement 独立 div，绝不用 addOneMessage/┅┅╗ */
+function appendTimeDivider(text, mesId) {
+    const chatEl = document.getElementById('chat');
+    if (!chatEl) return;
+    if (chatEl.querySelector(`.rol-time-divider[data-rol-for="${mesId}"]`)) return; // 防重复
+    const div = document.createElement('div');
+    div.className = 'rol-time-divider';
+    div.dataset.rolFor = String(mesId);
+    div.textContent = text;
+    const target = chatEl.querySelector(`.mes[mesid="${mesId}"]`);
+    if (target) chatEl.insertBefore(div, target);   // 落在这条新消息上方
+    else chatEl.appendChild(div);
+}
+
+/* ⬇️┅⏰️user发消息：prompt注入间隔 + ≥20分钟加分隔线 + 打时间戳/┅┅╗ */
 eventSource.on(event_types.MESSAGE_SENT, () => {
     const ctx = SillyTavern.getContext();
     const chat = ctx.chat;
@@ -293,23 +338,24 @@ eventSource.on(event_types.MESSAGE_SENT, () => {
     const cfg = Storage.getConfig();
     const nowTs = Date.now();
 
-    // ❤ 1. 时间分隔线：距上一条user发言≥30分钟才插（仿社交软件，非气泡）❤
-    const prevUser = [...chat].slice(0, -1).reverse()
-        .find(m => m.is_user && m.extra && m.extra.rol_timestamp);
-    if (!prevUser || nowTs - prevUser.extra.rol_timestamp >= 30 * 60 * 1000) {
-        insertSystemFloor(fmtRelativeTime(nowTs), 'time');
-    }
+    // ❤ 时间检测开关 ❤
+    if (cfg.enableTimeAware !== false) {
+        const prevUser = [...chat].slice(0, -1).reverse()
+            .find(m => m.is_user && m.extra && m.extra.rol_timestamp);
+        const interval = prevUser ? nowTs - prevUser.extra.rol_timestamp : null;
 
-    // ❤ 2. 版本切换楼层：model/channel 真变了才插一条（开局首次只静默记录）❤
-    const model = (cfg.currentModel || '').trim();
-    const pretty = model ? mapModelName(model) : '';
-    const channel = (cfg.currentChannel || '').trim();
-    if (pretty && (pretty !== cfg.lastFloorModel || channel !== cfg.lastFloorChannel)) {
-        if (cfg.lastFloorModel) {
-            insertSystemFloor(
-                `现在是 Claude ${pretty}${channel ? ` · ${channel}` : ''}`, 'model');
+        // ❤ 1. prompt 层注入「距上条间隔多久」❤
+        if (interval != null && typeof ctx.setExtensionPrompt === 'function') {
+            ctx.setExtensionPrompt('rol_time_interval',
+                `[距上一条消息间隔约 ${fmtInterval(interval)}]`, 1, 0);
         }
-        Storage.updateConfig({ lastFloorModel: pretty, lastFloorChannel: channel });
+
+        // ❤ 2. 间隔≥20分钟才在前端加分隔线 ❤
+        if (!prevUser || interval >= 20 * 60 * 1000) {
+            const text = fmtRelativeTime(nowTs);
+            const mesId = chat.length - 1;
+            requestAnimationFrame(() => appendTimeDivider(text, mesId));
+        }
     }
 
     // ❤ 3. 给本条 user 消息打时间戳（后台时间感知用）❤
@@ -321,6 +367,8 @@ eventSource.on(event_types.MESSAGE_SENT, () => {
 
 /* ⬇️┅⏰️生成前注入「当前真实时间」/┅┅╗ */
 function injectTimeContext() {
+    const cfg = Storage.getConfig();
+    if (cfg.enableTimeAware === false) return;   // 时间检测关掉就不注入
     const ctx = SillyTavern.getContext();
     const now = new Date();
     const mo = now.getMonth() + 1, d = now.getDate();
@@ -333,45 +381,43 @@ function injectTimeContext() {
 /* ╚┅┅/ ⏰️时间感知 /┅┅═╝ */
 
 
-/* ⬇️┅✨版本浮窗/┅┅╗ */
+/* ⬇️┅✨版本号显示：挪到卡片里 Claude 头像上方/┅┅╗ */
 function renderVersionBadge(model, channel) {
-    let badge = document.getElementById('rol-version-badge');
-    if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'rol-version-badge';
-        badge.addEventListener('click', () => {
-            badge.classList.toggle('rol-badge-dim');   // 改成只调暗，不锁死
-        });
-        document.body.appendChild(badge);
+    const cfg = Storage.getConfig();
+    const left = document.querySelector('.rol-avatar-left');
+    if (!left) return;
+    let label = left.querySelector('.rol-version-label');
+    if (!label) {
+        label = document.createElement('div');
+        label.className = 'rol-version-label';
+        left.prepend(label);   // 头像上方
     }
     const text = channel ? `${model} · ${channel}` : model;
-    badge.textContent = `✦ ${text}`;
-    badge.classList.remove('rol-badge-hidden');
+    label.textContent = `✦ ${text}`;
+    label.style.display = cfg.hideVersionBadge ? 'none' : '';   // 隐藏开关
 }
 
-// 页面加载时如果config里有模型就渲染
+// 页面加载时能读到模型就渲染卡片版本号
 function initVersionBadge() {
     const cfg = Storage.getConfig();
-    const model = (cfg.currentModel || '').trim();
-    if (!model) return;
-    const pretty = mapModelName(model);
-    const channel = (cfg.currentChannel || '').trim();
-    renderVersionBadge(pretty, channel);
+    const raw = rolReadModel() || (cfg.currentModel || '').trim();
+    if (!raw) return;
+    renderVersionBadge(mapModelName(raw), (cfg.currentChannel || '').trim());
 }
 
-/* ⬇️┅👁️监听酒馆模型切换 → 实时刷浮窗 + 同步显示框/┅┅╗ */
+/* ⬇️┅👁️监听酒馆模型切换 → 实时刷卡片版本号 + 同步显示框/┅┅╗ */
 function startModelWatcher() {
     const el = document.getElementById('custom_model_id');
     if (!el) { setTimeout(startModelWatcher, 1000); return; }
     function refresh() {
-        const raw = (el.value || '').trim();
+        const raw = rolReadModel();
         if (!raw) return;
         const pretty = mapModelName(raw);
         const cfg = Storage.getConfig();
         const channel = (cfg.currentChannel || '').trim();
         renderVersionBadge(pretty, channel);
         const display = document.getElementById('rol-current-model');
-        if (display) display.value = raw;        // 第11项：同步只读显示框
+        if (display) display.value = raw;        // 同步只读显示框
         if (raw !== cfg.currentModel) Storage.updateConfig({ currentModel: raw });
     }
     el.addEventListener('input', refresh);
@@ -384,7 +430,13 @@ function startModelWatcher() {
 eventSource.on(event_types.GENERATION_STARTED, () => {
     injectTimeContext();
 });
-/* ┗━━━━━━/ ⚙️插入系统提示楼层⚙️ /━━━━━━┛ */
+// ❤︎ 版本注入：绑生成前最后一刻的 CHAT_COMPLETION_PROMPT_READY ❤︎
+if (event_types.CHAT_COMPLETION_PROMPT_READY) {
+    eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, () => {
+        injectVersionPrompt();
+    });
+}
+/* ┗━━━━━━/ ⚙️版本注入 + 时间感知⚙️ /━━━━━━┛ */
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                  🩷 触发器模块 🩷                     ┅
@@ -1128,39 +1180,38 @@ const UIController = (() => {
             });
         }
 
-        // ❤︎ 绑定「时间感知」开关 ❤︎
+        // ❤︎ 绑定「时间检测」开关 ❤︎
         const timeAwareCheckbox = document.getElementById('rol-enable-time-aware');
         if (timeAwareCheckbox) {
-            timeAwareCheckbox.checked = config.enableTimeAware;
+            timeAwareCheckbox.checked = config.enableTimeAware !== false;
             timeAwareCheckbox.addEventListener('change', (e) => {
                 Storage.updateConfig({ enableTimeAware: e.target.checked });
             });
         }
 
-        // ❤︎ 绑定「当前模型」输入框 ❤︎
-        /* ⬇️┅🧡从酒馆DOM直接读当前模型/┅┅╗ */
-        function readModelFromST() {
-            const el = document.getElementById('custom_model_id');
-            return el ? el.value.trim() : '';
+        // ❤︎ 绑定「模型检测」开关（和时间检测完全独立，不能一关全关）❤︎
+        const modelDetectCheckbox = document.getElementById('rol-enable-model-detect');
+        if (modelDetectCheckbox) {
+            modelDetectCheckbox.checked = config.enableModelDetect !== false;
+            modelDetectCheckbox.addEventListener('change', (e) => {
+                Storage.updateConfig({ enableModelDetect: e.target.checked });
+                if (!e.target.checked) {
+                    removeVersionInject();             // 关掉就清空注入
+                } else {
+                    _rolLastInjectedVersion = null;    // 重新开启 → 下一轮重新注入
+                }
+            });
         }
 
-        /* ⬇️┅🧡版本注入（生成时实时读取，零延迟）/┅┅╗ */
-        function injectVersionPrompt() {
-            const ctx = SillyTavern.getContext();
-            const raw = readModelFromST();
-            if (!raw) return;
-            const pretty = mapModelName(raw);
-            const cfg = Storage.getConfig();
-            const channel = (cfg.currentChannel || '').trim();
-
-            ctx.setExtensionPrompt('rol_version',
-                `[系统：当前运行版本为 Claude ${pretty}${channel ? `，接入渠道「${channel}」` : ''}。]`, 1, 0);
-
-            // 顺便更新浮窗
-            if (pretty !== cfg.lastDetectedModel) {
-                Storage.updateConfig({ lastDetectedModel: pretty, currentModel: raw });
-                renderVersionBadge(pretty, channel);
-            }
+        // ❤︎ 绑定「隐藏前端版本号」开关 ❤︎
+        const hideVersionCheckbox = document.getElementById('rol-hide-version');
+        if (hideVersionCheckbox) {
+            hideVersionCheckbox.checked = !!config.hideVersionBadge;
+            hideVersionCheckbox.addEventListener('change', (e) => {
+                Storage.updateConfig({ hideVersionBadge: e.target.checked });
+                const label = document.querySelector('.rol-version-label');
+                if (label) label.style.display = e.target.checked ? 'none' : '';
+            });
         }
 
         // ❤︎ 绑定「当前渠道」输入框 ❤︎
@@ -1169,6 +1220,7 @@ const UIController = (() => {
             currentChannelInput.value = config.currentChannel || '';
             currentChannelInput.addEventListener('input', (e) => {
                 Storage.updateConfig({ currentChannel: e.target.value });
+                _rolLastInjectedVersion = null;    // 渠道改了 → 下一轮重新注入
             });
         }
     }

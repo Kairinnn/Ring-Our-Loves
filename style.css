@@ -2489,57 +2489,59 @@ body.rol-light-mode .rol-letter-outbox-item {
 /* ┗━━━━━━/ 🪶写作空间 + FAB 🪶 /━━━━━━┛ */
 
 /* ➤━━━━━━━ ▍⚙️版本&时间认知⚙️ ▍━━━━━━━┓ */
-/* ⬇️┅⏰️user消息时间戳/┅┅╗ */
-.mes.rol-floor-msg {
+/* ⬇️┅⏰️时间分隔线（独立 div，仿社交软件居中灰字，绝不是气泡）/┅┅╗ */
+.rol-time-divider {
+    width: 100%;
     text-align: center;
+    margin: 14px 0 10px;
+    /* ❤︎ 清掉一切气泡感，纯纯一行小字 ❤︎ */
     background: none !important;
     box-shadow: none !important;
+    border: none !important;
+    pointer-events: none;
+    /* ❤︎ flex 让中间小药丸水平居中 ❤︎ */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.mes.rol-floor-msg .avatar,
-.mes.rol-floor-msg .name_text,
-.mes.rol-floor-msg .mes_buttons { display: none !important; }
-.mes.rol-floor-msg .mes_text {
-    display: inline-block;
-    font-size: 0.78em;
-    opacity: 0.6;
-    padding: 2px 14px;
-    border-radius: 12px;
-    background: rgba(255,182,193,0.18);
+.rol-time-divider::before,
+.rol-time-divider::after {
+    /* ❤︎ 两侧淡淡的横线，中间夹时间 ❤︎ */
+    content: '';
+    flex: 0 0 22%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,182,193,0.35), transparent);
+    margin: 0 10px;
 }
-.mes.rol-floor-msg[data-rol-floor="model"] .mes_text {
-    background: rgba(186,160,255,0.2);   /* 模型切换用紫调，跟时间戳区分 */
+.rol-time-divider {
+    /* ❤︎ 文本本身：灰粉小字 ❤︎ */
+    font-size: 0.74em;
+    opacity: 0.7;
+    color: rgba(200, 150, 175, 0.95);
+    letter-spacing: 0.5px;
 }
-/* ╚┅┅/ ⏰️user消息时间戳 /┅┅═╝ */
 
-/* ⬇️┅✨版本浮窗/┅┅╗ */
-#rol-version-badge {
-    position: fixed;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);    /* 水平居中，不跟任何角落抢位置 */
-    z-index: 99999;
-    padding: 3px 10px;
+/* ⬇️┅✨卡片内版本号：挪到 Claude 头像上方/┅┅╗ */
+.rol-avatar-left .rol-version-label {
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1.2;
+    margin-bottom: 5px;
+    padding: 1px 8px;
     border-radius: 8px;
-    font-size: 0.68em;
-    background: rgba(186, 160, 255, 0.3);
-    color: rgba(220, 200, 255, 0.95);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    cursor: pointer;
-    transition: opacity 0.3s;
+    color: #fff6cf;
+    background: rgba(186, 160, 255, 0.28);
+    text-shadow: 0 0 4px rgba(186, 130, 255, 0.6) !important;
+    white-space: nowrap;
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
 }
-#rol-version-badge.rol-badge-dim {
-    opacity: 0.15;
-}
-/* ⬇️┅🍥移动端：浮窗挪到底部居中，避开顶部工具栏遮挡/┅┅╗ */
-@media (max-width: 768px) {
-    #rol-version-badge {
-        top: auto !important;
-        bottom: 64px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        z-index: 9999 !important;
-    }
+body.rol-light-mode .rol-avatar-left .rol-version-label {
+    color: #8b5fb0;
+    background: rgba(186, 160, 255, 0.18);
+    text-shadow: none !important;
 }
 /* ┗━━━━━━/ ⚙️版本&时间认知⚙️ /━━━━━━┛ */
 
