@@ -207,6 +207,10 @@ function mapModelName(raw) {
         [/opus[.\-_]?4|4.*opus/, '4.0 Opus'],
         [/3[.\-_]?7/, '3.7 Sonnet'],
         [/3[.\-_]?5/, '3.5'],
+        // ❤ 兜底：只写了 opus/sonnet/haiku 没带版本号的也认出来 ❤
+        [/opus/, 'Opus'],
+        [/sonnet/, 'Sonnet'],
+        [/haiku/, 'Haiku'],
     ];
     if (/thinking/.test(s)) {
         for (const [re, name] of rules) if (re.test(s)) return name + ' thinking';
@@ -251,13 +255,34 @@ function injectVersionPrompt() {
 
     // ❤ 只在「模型/渠道变化」时更新注入内容，没变就不动 ❤
     if (label === _rolLastInjectedVersion) return;
+    const prevLabel = _rolLastInjectedVersion;   // 切换前的 label（首次加载为 null）
     _rolLastInjectedVersion = label;
 
-    ctx.setExtensionPrompt(ROL_VERSION_KEY,
-        `[系统：当前运行版本为 Claude ${pretty}${channel ? `，接入渠道「${channel}」` : ''}。]`,
-        1, 0);
+    // ❤ 通用版文案：常驻的当前版本说明 ❤
+    const baseText = `[系统：当前运行版本为 Claude ${pretty}${channel ? `，接入渠道「${channel}」` : ''}。]`;
+
+    // ❤ 判断是否为本会话内的真实切换（首次加载不算）❤
+    const lastPretty = (cfg.lastModel || '').trim();
+    const isSwitch = prevLabel != null && prevLabel !== '' && lastPretty && lastPretty !== pretty;
+
+    let injectText;
+    if (isSwitch) {
+        // ❤ 切换高权重版：一级标题 + flag 词 + emoji，怎么显眼怎么来 ❤
+        injectText =
+            `# ⚠️【模型切换通知 / MODEL SWITCH】⚠️\n` +
+            `> **注意：模型已从「Claude ${lastPretty}」切换至「Claude ${pretty}」！**\n` +
+            `> （请立即以新版本「Claude ${pretty}」的身份继续，旧版本设定作废。）\n\n` +
+            baseText;
+    } else {
+        injectText = baseText;
+    }
+
+    // ❤ position=1(IN_CHAT) + depth=1 → 钉在「最后一条 user 消息之前」做永久锚点 ❤
+    //    （ephemeral 注入不写进 chat 数组，/hide 隐藏楼层抹不掉它，性质同世界书固定深度）
+    ctx.setExtensionPrompt(ROL_VERSION_KEY, injectText, 1, 1);
 
     Storage.updateConfig({ currentModel: raw, lastModel: pretty, lastChannel: channel });
+
     console.log('[RingOurLuv] 🧡 版本注入更新:', label);
 }
 
@@ -344,11 +369,13 @@ eventSource.on(event_types.MESSAGE_SENT, () => {
             .find(m => m.is_user && m.extra && m.extra.rol_timestamp);
         const interval = prevUser ? nowTs - prevUser.extra.rol_timestamp : null;
 
-        // ❤ 1. prompt 层注入「距上条间隔多久」❤
+        // ❤ 1. prompt 层注入「距上条间隔多久」→ depth=1 落在 user 消息之前 ❤
+        //    （语义：是「沉默了 n 久之后才说了这句」，不是「说完这句又消失 n 久」）
         if (interval != null && typeof ctx.setExtensionPrompt === 'function') {
             ctx.setExtensionPrompt('rol_time_interval',
-                `[距上一条消息间隔约 ${fmtInterval(interval)}]`, 1, 0);
+                `[距上一条消息间隔约 ${fmtInterval(interval)}]`, 1, 1);
         }
+
 
         // ❤ 2. 间隔≥20分钟才在前端加分隔线 ❤
         if (!prevUser || interval >= 20 * 60 * 1000) {
@@ -375,29 +402,41 @@ function injectTimeContext() {
     const h = String(now.getHours()).padStart(2, '0');
     const mi = String(now.getMinutes()).padStart(2, '0');
     const week = '日一二三四五六'[now.getDay()];
+    // ❤ depth=1 → 跟版本/间隔注入一套，钉在「user 消息之前」做固定锚点 ❤
+    //    （「现在几点」若飘在 user 发言之后，Claude 同样会读拧时序）
     ctx.setExtensionPrompt('rol_time_now',
-        `[现在：${mo}月${d}日 周${week} ${h}:${mi}]`, 1, 0);
+        `[现在：${mo}月${d}日 周${week} ${h}:${mi}]`, 1, 1);
+
 }
 /* ╚┅┅/ ⏰️时间感知 /┅┅═╝ */
 
 
-/* ⬇️┅✨版本号显示：挪到卡片里 Claude 头像上方/┅┅╗ */
+/* ⬇️┅✨版本号显示：挂到聊天区「最新一条 assistant 消息」头像框上方/┅┅╗ */
+// ❤ 只标最新一条，先清掉旧标签，不给历史消息逐条补，省性能 ❤
 function renderVersionBadge(model, channel) {
     const cfg = Storage.getConfig();
-    const left = document.querySelector('.rol-avatar-left');
-    if (!left) return;
-    let label = left.querySelector('.rol-version-label');
-    if (!label) {
-        label = document.createElement('div');
-        label.className = 'rol-version-label';
-        left.prepend(label);   // 头像上方
-    }
+
+    // 先移除页面上已有的版本标签（保证全局只有最新一条）
+    document.querySelectorAll('.rol-version-tag').forEach(el => el.remove());
+
+    if (cfg.hideVersionBadge) return;                 // 隐藏开关：直接不画
+    if (!model) return;
+
+    // 取最新一条 assistant 消息
+    const msgs = document.querySelectorAll('#chat .mes[is_user="false"]');
+    const lastMsg = msgs[msgs.length - 1];
+    if (!lastMsg) return;                             // 还没有 AI 消息，等下一轮
+    const wrapper = lastMsg.querySelector('.mesAvatarWrapper');
+    if (!wrapper) return;
+
+    const tag = document.createElement('div');
+    tag.className = 'rol-version-tag';
     const text = channel ? `${model} · ${channel}` : model;
-    label.textContent = `✦ ${text}`;
-    label.style.display = cfg.hideVersionBadge ? 'none' : '';   // 隐藏开关
+    tag.textContent = `✦ ${text}`;
+    wrapper.parentElement.insertBefore(tag, wrapper); // 头像框上方
 }
 
-// 页面加载时能读到模型就渲染卡片版本号
+// 页面加载时能读到模型就尝试渲染一次
 function initVersionBadge() {
     const cfg = Storage.getConfig();
     const raw = rolReadModel() || (cfg.currentModel || '').trim();
@@ -1209,18 +1248,35 @@ const UIController = (() => {
             hideVersionCheckbox.checked = !!config.hideVersionBadge;
             hideVersionCheckbox.addEventListener('change', (e) => {
                 Storage.updateConfig({ hideVersionBadge: e.target.checked });
-                const label = document.querySelector('.rol-version-label');
-                if (label) label.style.display = e.target.checked ? 'none' : '';
+                initVersionBadge();   // 重绘标签（hideVersionBadge=true 时内部直接 return 不渲染）
             });
         }
 
-        // ❤︎ 绑定「当前渠道」输入框 ❤︎
+        // ❤︎ 绑定「当前渠道」输入框 + 保存按钮（手填渠道，点保存才生效，换渠道更有底）❤︎
         const currentChannelInput = document.getElementById('rol-current-channel');
+        const saveChannelBtn = document.getElementById('rol-save-channel');
         if (currentChannelInput) {
             currentChannelInput.value = config.currentChannel || '';
-            currentChannelInput.addEventListener('input', (e) => {
-                Storage.updateConfig({ currentChannel: e.target.value });
-                _rolLastInjectedVersion = null;    // 渠道改了 → 下一轮重新注入
+
+            const doSaveChannel = () => {
+                const val = currentChannelInput.value.trim();
+                Storage.updateConfig({ currentChannel: val });
+                _rolLastInjectedVersion = null;    // 渠道变了 → 下一轮重新注入
+                initVersionBadge();                 // 立刻刷新头像上方版本号标签
+                if (typeof toastr !== 'undefined') {
+                    toastr.success(val ? `渠道已保存：${val} 💾` : '渠道已清空 💾', 'Ring Our Luv');
+                }
+            };
+
+            if (saveChannelBtn) {
+                saveChannelBtn.addEventListener('click', doSaveChannel);
+            }
+            // ❤ 输入框里按回车也能存，省得每次都去点按钮 ❤
+            currentChannelInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doSaveChannel();
+                }
             });
         }
     }
