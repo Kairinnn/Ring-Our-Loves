@@ -2524,8 +2524,11 @@ body.rol-light-mode .rol-letter-outbox-item {
 /* ⬇️┅✨版本号小标签：贴在聊天区 assistant 头像框上方/┅┅╗ */
 /* ❤︎ JS 把它 insertBefore 到 .mesAvatarWrapper 前面，所以让头像那列变纵向排，标签居中浮在头像上方 ❤︎ */
 #chat .mes[is_user="false"] .mesAvatarWrapper {
-    /* ❤︎ 不破坏酒馆原有横向布局，仅在有标签时靠 .rol-version-tag 自己的 margin 顶开 ❤︎ */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+    /* ❤︎ 不破坏酒馆原有横向布局，仅在有标签时靠 .rol-version-tag 自己的 margin 顶开 ❤︎ */
 .rol-version-tag {
     display: inline-block;
     width: fit-content;

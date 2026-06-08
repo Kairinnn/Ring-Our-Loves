@@ -433,7 +433,7 @@ function renderVersionBadge(model, channel) {
     tag.className = 'rol-version-tag';
     const text = channel ? `${model} · ${channel}` : model;
     tag.textContent = `✦ ${text}`;
-    wrapper.parentElement.insertBefore(tag, wrapper); // 头像框上方
+    wrapper.insertBefore(tag, wrapper.firstChild); // 头像框上方
 }
 
 // 页面加载时能读到模型就尝试渲染一次
