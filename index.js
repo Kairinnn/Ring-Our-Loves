@@ -353,11 +353,30 @@ function appendTimeDivider(text, mesId) {
 
 /* ⬇️┅⏰️每条 user 消息自带的小时间戳：包成独立 div(.rol-msg-time)，落在「自己」气泡正上方/┅┅╗ */
 // ❤ 跟上面的「间隔分割线 .rol-time-divider」完全两码事：这个是每条都带的小药丸 ❤
-function appendMsgTimestamp(text, mesId) {
+// ❤ 带重试 + user 校验：MESSAGE_SENT 触发时 DOM 可能还没更新完 / mesId 对不上，
+//   直接挂会挂错到 character 方消息上。所以：找不到目标 or 目标不是 user 消息 →
+//   每 100ms 重试，最多 5 次；5 次还不行就放弃（console.warn）❤
+function appendMsgTimestamp(text, mesId, attempt = 0) {
+    const MAX_RETRY = 5;
     const chatEl = document.getElementById('chat');
     if (!chatEl) return;
     const target = chatEl.querySelector(`.mes[mesid="${mesId}"]`);
-    if (!target) return;                                   // 这条消息 DOM 还没好就跳过
+
+    // ❤ 校验：目标必须存在，且必须是「user 消息」（is_user="true" / .is_user class），
+    //   不是 user 消息绝不挂，防止挂到 character 方气泡上 ❤
+    const isUserMes = !!target &&
+        (target.getAttribute('is_user') === 'true' || target.classList.contains('is_user'));
+
+    if (!isUserMes) {
+        if (attempt < MAX_RETRY) {
+            // ❤ DOM 还没好 / 还没标成 user → 100ms 后再试 ❤
+            setTimeout(() => appendMsgTimestamp(text, mesId, attempt + 1), 100);
+        } else {
+            console.warn(`[RingOurLuv] ⏰️ 时间戳挂载放弃：找不到 mesId=${mesId} 的 user 消息 DOM（已重试 ${MAX_RETRY} 次）`);
+        }
+        return;
+    }
+
     if (target.querySelector('.rol-msg-time')) return;     // 防重复
     // ❤ 塞进 .mes_block 顶部，让小药丸贴在「这条消息气泡」正上方 ❤
     const block = target.querySelector('.mes_block') || target;
@@ -366,6 +385,7 @@ function appendMsgTimestamp(text, mesId) {
     span.textContent = text;
     block.insertBefore(span, block.firstChild);
 }
+
 
 
 /* ⬇️┅⏰️user发消息：prompt注入间隔 + ≥20分钟加分隔线 + 打时间戳/┅┅╗ */
