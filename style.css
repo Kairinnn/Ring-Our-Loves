@@ -1691,7 +1691,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     scrollbar-width: none;
     -ms-overflow-style: none;
     /* ❤︎ 两侧 padding=「容器一半 - 果子一半」，保证任意一颗（含最后的🍉）都能滚到正中心 ❤︎ */
-    padding: 8px calc(50% - 26px);
+    padding: 8px 0;
     margin: 0 -16px 12px;
     /* ❤︎ 防止纵向滚动链传到页面（点末尾选项时页面别乱跳）❤︎ */
     overscroll-behavior: contain;

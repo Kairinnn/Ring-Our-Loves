@@ -259,7 +259,7 @@ function injectVersionPrompt() {
     _rolLastInjectedVersion = label;
 
     // ❤ 通用版文案：常驻的当前版本说明 ❤
-    const baseText = `[系统：当前运行版本为 Claude ${pretty}${channel ? `，接入渠道「${channel}」` : ''}。]`;
+    const baseText = `[SYS|${Date.now()}] model: Claude ${pretty}${channel ? ` | channel: ${channel}` : ''}`;
 
     // ❤ 判断是否为本会话内的真实切换（首次加载不算）❤
     const lastPretty = (cfg.lastModel || '').trim();
@@ -269,9 +269,7 @@ function injectVersionPrompt() {
     if (isSwitch) {
         // ❤ 切换高权重版：一级标题 + flag 词 + emoji，怎么显眼怎么来 ❤
         injectText =
-            `# ⚠️【模型切换通知 / MODEL SWITCH】⚠️\n` +
-            `> **注意：模型已从「Claude ${lastPretty}」切换至「Claude ${pretty}」！**\n` +
-            `> （请立即以新版本「Claude ${pretty}」的身份继续，旧版本设定作废。）\n\n` +
+            `[SYS|${Date.now()}] MODEL_SWITCH: ${lastPretty} -> ${pretty}\n${baseText}` +
             baseText;
     } else {
         injectText = baseText;
@@ -345,6 +343,7 @@ function appendTimeDivider(text, mesId) {
     const div = document.createElement('div');
     div.className = 'rol-time-divider';
     div.dataset.rolFor = String(mesId);
+    div.dataset.rolTs = String(nowTs);
     div.textContent = text;
     const target = chatEl.querySelector(`.mes[mesid="${mesId}"]`);
     if (target) chatEl.insertBefore(div, target);   // 落在这条新消息上方
@@ -382,7 +381,17 @@ function appendMsgTimestamp(text, mesId, attempt = 0) {
     const block = target.querySelector('.mes_block') || target;
     const span = document.createElement('div');
     span.className = 'rol-msg-time';
+    span.dataset.rolTs = String(nowTs);
     span.textContent = text;
+
+    function refreshAllTimestamps() {
+        document.querySelectorAll('.rol-msg-time[data-rol-ts]').forEach(el => {
+            el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
+        });
+        document.querySelectorAll('.rol-time-divider[data-rol-ts]').forEach(el => {
+            el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
+        });
+    }
     block.insertBefore(span, block.firstChild);
 }
 
@@ -410,7 +419,7 @@ eventSource.on(event_types.MESSAGE_SENT, () => {
         //    （语义：是「沉默了 n 久之后才说了这句」，不是「说完这句又消失 n 久」）
         if (interval != null && typeof ctx.setExtensionPrompt === 'function') {
             ctx.setExtensionPrompt('rol_time_interval',
-                `[距上一条消息间隔约 ${fmtInterval(interval)}]`, 1, 1);
+                `[SYS|${Date.now()}] interval: ${fmtInterval(interval)}`, 1, 1);
         }
 
 
@@ -450,7 +459,7 @@ function injectTimeContext() {
     // ❤ depth=1 → 跟版本/间隔注入一套，钉在「user 消息之前」做固定锚点 ❤
     //    （「现在几点」若飘在 user 发言之后，Claude 同样会读拧时序）
     ctx.setExtensionPrompt('rol_time_now',
-        `[现在：${mo}月${d}日 周${week} ${h}:${mi}]`, 1, 1);
+        `[SYS|${Date.now()}] time: ${now.getFullYear()}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}T${h}:${mi} w${week}`, 1, 1);
 
 }
 /* ╚┅┅/ ⏰️时间感知 /┅┅═╝ */
@@ -511,6 +520,10 @@ function startModelWatcher() {
 }
 
 // ❤︎ 绑定 ❤︎
+// ❤ 切回页面时刷新所有时间戳的时态 ❤
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshAllTimestamps();
+});
 eventSource.on(event_types.GENERATION_STARTED, () => {
     injectTimeContext();
 });
@@ -2499,13 +2512,24 @@ const FruitSystem = (() => {
         const track = document.getElementById('rol-fruit-picker-track');
         if (!wrap || !track) return;
 
-        // ❤ 给track两端加padding，第一颗和最后两颗才能滚到正中（CC说要加结果没加…）❤
         function ensurePadding() {
             const opt = track.querySelector('.rol-fruit-option');
             if (!opt) return;
             const pad = Math.max(0, wrap.clientWidth / 2 - opt.offsetWidth / 2);
-            track.style.paddingLeft = pad + 'px';
-            track.style.paddingRight = pad + 'px';
+
+            // ❤ 删掉旧的spacer ❤
+            track.querySelectorAll('.rol-scroll-spacer').forEach(el => el.remove());
+
+            // ❤ 用真实div撑开，不用padding（padding-right在overflow scroll里会被吃）❤
+            const before = document.createElement('div');
+            before.className = 'rol-scroll-spacer';
+            before.style.minWidth = pad + 'px';
+            before.style.flexShrink = '0';
+
+            const after = before.cloneNode(true);
+
+            track.prepend(before);
+            track.append(after);
         }
 
         // ❤ 用offsetLeft算，不吃scale的亏 ❤
