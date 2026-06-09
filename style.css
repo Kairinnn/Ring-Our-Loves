@@ -2521,7 +2521,32 @@ body.rol-light-mode .rol-letter-outbox-item {
     letter-spacing: 0.5px;
 }
 
+/* ⬇️┅⏰️每条消息自带的小时间戳药丸（独立于上面的 .rol-time-divider 间隔线，绝不互相影响）/┅┅╗ */
+/* ❤︎ JS 把它 insertBefore 到本条消息 .mes_block 顶部，块级 + margin auto 让它在气泡正上方水平居中 ❤︎ */
+.rol-msg-time {
+    display: block;
+    width: fit-content;
+    /* ❤︎ 水平居中 + 跟下面气泡留 4px 间距 ❤︎ */
+    margin: 0 auto 4px;
+    padding: 1px 9px;
+    /* ❤︎ 半透明灰底 + 圆角 pill ❤︎ */
+    background: rgba(150, 150, 160, 0.12);
+    border-radius: 10px;
+    /* ❤︎ 半透明灰字，别太深 ❤︎ */
+    color: rgba(140, 140, 150, 0.85);
+    font-size: 0.7em;
+    letter-spacing: 0.3px;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+}
+body.rol-light-mode .rol-msg-time {
+    background: rgba(219, 112, 147, 0.1);
+    color: rgba(170, 120, 140, 0.9);
+}
+
 /* ⬇️┅✨版本号小标签：贴在聊天区 assistant 头像框上方/┅┅╗ */
+
 /* ❤︎ JS 把它 insertBefore 到 .mesAvatarWrapper 前面，所以让头像那列变纵向排，标签居中浮在头像上方 ❤︎ */
 #chat .mes[is_user="false"] .mesAvatarWrapper {
     position: relative;

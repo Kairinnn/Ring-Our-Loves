@@ -351,6 +351,23 @@ function appendTimeDivider(text, mesId) {
     else chatEl.appendChild(div);
 }
 
+/* ⬇️┅⏰️每条 user 消息自带的小时间戳：包成独立 div(.rol-msg-time)，落在「自己」气泡正上方/┅┅╗ */
+// ❤ 跟上面的「间隔分割线 .rol-time-divider」完全两码事：这个是每条都带的小药丸 ❤
+function appendMsgTimestamp(text, mesId) {
+    const chatEl = document.getElementById('chat');
+    if (!chatEl) return;
+    const target = chatEl.querySelector(`.mes[mesid="${mesId}"]`);
+    if (!target) return;                                   // 这条消息 DOM 还没好就跳过
+    if (target.querySelector('.rol-msg-time')) return;     // 防重复
+    // ❤ 塞进 .mes_block 顶部，让小药丸贴在「这条消息气泡」正上方 ❤
+    const block = target.querySelector('.mes_block') || target;
+    const span = document.createElement('div');
+    span.className = 'rol-msg-time';
+    span.textContent = text;
+    block.insertBefore(span, block.firstChild);
+}
+
+
 /* ⬇️┅⏰️user发消息：prompt注入间隔 + ≥20分钟加分隔线 + 打时间戳/┅┅╗ */
 eventSource.on(event_types.MESSAGE_SENT, () => {
     const ctx = SillyTavern.getContext();
@@ -389,7 +406,15 @@ eventSource.on(event_types.MESSAGE_SENT, () => {
     lastMsg.extra = lastMsg.extra || {};
     lastMsg.extra.rol_timestamp = nowTs;
 
+    // ❤ 4. 前端：给「本条 user 消息」自己的气泡正上方挂个小时间戳药丸 ❤
+    if (cfg.enableTimeAware !== false) {
+        const tsText = fmtRelativeTime(nowTs);
+        const tsMesId = chat.length - 1;
+        requestAnimationFrame(() => appendMsgTimestamp(tsText, tsMesId));
+    }
+
     if (typeof ctx.saveChat === 'function') ctx.saveChat();
+
 });
 
 /* ⬇️┅⏰️生成前注入「当前真实时间」/┅┅╗ */
