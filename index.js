@@ -200,13 +200,18 @@ function mapModelName(raw) {
         [/mythos/, 'Mythos'],
         [/4[.\-_]?8/, '4.8 Opus'],
         [/4[.\-_]?7/, '4.7'],
+        [/opus.*4[.\-_]?6|4[.\-_]?6.*opus/, '4.6 Opus'],
+        [/sonnet.*4[.\-_]?6|4[.\-_]?6.*sonnet/, '4.6 Sonnet'],
         [/4[.\-_]?6/, '4.6'],
         [/sonnet.*4[.\-_]?5|4[.\-_]?5.*sonnet/, '4.5 Sonnet'],
+        [/opus.*4[.\-_]?5|4[.\-_]?5.*opus/, '4.5 Opus'], 
         [/4[.\-_]?5/, '4.5'],
         [/4[.\-_]?1/, '4.1 Opus'],
+        [/opus[.\-_]?4|4*opus/, '4 Opus'],
         [/opus[.\-_]?4|4.*opus/, '4.0 Opus'],
-        [/3[.\-_]?7/, '3.7 Sonnet'],
-        [/3[.\-_]?5/, '3.5'],
+        [/sonnet.*3[.\-_]?7|3[.\-_]?7.*sonnet/, '3.7 Sonnet'],
+        [/3[.\-_]?7/, '3.7'],
+        [/3[.\-_]?5/, '3.5 Sonnet'],
         // ❤ 兜底：只写了 opus/sonnet/haiku 没带版本号的也认出来 ❤
         [/opus/, 'Opus'],
         [/sonnet/, 'Sonnet'],
@@ -267,7 +272,7 @@ function injectVersionPrompt() {
 
     let injectText;
     if (isSwitch) {
-        // ❤ 切换高权重版：一级标题 + flag 词 + emoji，怎么显眼怎么来 ❤
+        // ❤ 切换提示-高权重 ❤
         injectText =
             `[SYS|${Date.now()}] MODEL_SWITCH: ${lastPretty} -> ${pretty}\n${baseText}` +
             baseText;
