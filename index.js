@@ -2674,7 +2674,6 @@ const FruitSystem = (() => {
 
     /* ⬇️┅🍎✨️显示/隐藏选果栏（内联在果园容器里，靠 .rol-garden-picking 切换）/┅┅╗ */
     function showPicker() {
-        setTimeout(() => initPickerScroll(), 50);
         const garden = document.getElementById('rol-section-garden');
         if (!garden) return;
 
@@ -2689,7 +2688,7 @@ const FruitSystem = (() => {
         garden.classList.add('rol-garden-picking');
 
         // ❤︎ display 切换后双帧重算 rect，让首颗🍎能居中选中 ❤︎
-        requestAnimationFrame(() => requestAnimationFrame(initPickerScroll));
+       setTimeout(initPickerScroll, 300);
     }
 
 
