@@ -1,14 +1,23 @@
+window.addEventListener('error', (e) => {
+    document.title = '💀 ' + e.message + ' | 行' + (e.lineno || '?');
+});
+window.addEventListener('unhandledrejection', (e) => {
+    document.title = '💀 Promise: ' + (e.reason?.message || e.reason || '未知');
+});
+
 import { saveSettingsDebounced, eventSource, event_types, getRequestHeaders } from '../../../../script.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { getPresetManager } from '../../../preset-manager.js';
 import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
+import { getChatCompletionModel } from '../../../openai.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.3.3'; // 每次改完代码手动+1
+const ROL_VERSION = '0.6.55';// ┣━━🩷━━┫
+let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
-  localStorage.setItem('rol_version', ROL_VERSION);
-  location.reload(true); // 强制刷新
+    localStorage.setItem('rol_version', ROL_VERSION);
+    location.reload(true);
 }
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
@@ -23,7 +32,15 @@ const Storage = (() => {
                     presetName: '',
                     autoInject: true,
                     maxInjectCount: 3,
-                    summaryPrompt: '' // ┣━━空=使用AIService中的默认prompt━━┫
+                    summaryPrompt: '',
+                    // ❤︎ 时间检测 + 模型版本注入 ❤︎
+                    enableTimeAware: true,          // 时间检测开关
+                    enableModelDetect: true,        // 模型检测开关（与时间检测独立）
+                    hideVersionBadge: false,        // 隐藏前端版本号显示
+                    currentModel: '',               // 当前模型
+                    currentChannel: '',             // 当前渠道
+                    lastModel: '',                  // 上次模型
+                    lastChannel: ''                 // 上次渠道
                 }
             };
             saveSettingsDebounced();
@@ -38,8 +55,8 @@ const Storage = (() => {
     function generateId() {
         return 'mem_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
     }
-
-    // ┣━━🩷addMemory: 确保数据正确写入并保存━━┫
+    /* ⬇️┅💌存入记忆/┅┅╗ */
+    // ❤︎ addMemory: 确保数据正确写入并保存 ❤︎
     function addMemory(memoryData) {
         const settings = extension_settings[extensionName];
         const now = new Date().toISOString();
@@ -67,13 +84,14 @@ const Storage = (() => {
             created: now,
             updated: now
         };
-        settings.memories.unshift(newMemory); // ┣━━unshift: 新条目出现在列表顶部━━┫
-        // ┣━━确保保存生效━━┫
-        console.log('[RingOurLuv]🩷 addMemory - 保存恋果~:', JSON.stringify(newMemory, null, 2));
+        settings.memories.unshift(newMemory); // unshift: 新条目出现在列表顶部
+        console.log('[RingOurLuv]🍎 addMemory - 保存恋果~:', JSON.stringify(newMemory, null, 2));
         saveSettingsDebounced();
         return newMemory;
     }
+    /* ╚┅┅/ 💌存入记忆 /┅┅═╝ */
 
+    /* ⬇️┅❇️更新记忆/┅┅╗ */
     function updateMemory(id, updates, skipVersion = false) {
         const settings = extension_settings[extensionName];
         const index = settings.memories.findIndex(m => m.id === id);
@@ -96,18 +114,21 @@ const Storage = (() => {
         Object.assign(memory, updates);
         memory.updated = new Date().toISOString();
         settings.memories[index] = memory;
-        // ┣━━🩷日志━━┫
-        console.log('[RingOurLuv]🩷 updateMemory - 更新恋果~:', JSON.stringify(memory, null, 2));
+
+        console.log('[RingOurLuv]🍎 updateMemory - 更新恋果~:', JSON.stringify(memory, null, 2));
         saveSettingsDebounced();
         return memory;
     }
+    /* ╚┅┅/ ❇️更新记忆 /┅┅═╝ */
 
+    // ❤︎ 删除记忆 ❤︎
     function deleteMemory(id) {
         const settings = extension_settings[extensionName];
         settings.memories = settings.memories.filter(m => m.id !== id);
         saveSettingsDebounced();
     }
 
+    // ❤︎ 添加重写版本：每次AI重写都调用，记录版本历史 ❤︎
     function addRewriteVersion(id, letter, content, entryData = {}) {
         const settings = extension_settings[extensionName];
         const memory = settings.memories.find(m => m.id === id);
@@ -133,6 +154,7 @@ const Storage = (() => {
         return memory;
     }
 
+    // ❤︎ 回滚到指定版本 ❤︎
     function rollbackVersion(id, versionIndex) {
         const settings = extension_settings[extensionName];
         const memory = settings.memories.find(m => m.id === id);
@@ -167,15 +189,369 @@ const Storage = (() => {
 })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                 🩷 系统楼层模块 🩷                    ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
+/* ➤━━━━━━━ ▍⚙️版本注入 + 时间感知⚙️ ▍━━━━━━━┓ */
+
+/* ⬇️┅🧡模型名映射表/┅┅╗ */
+function mapModelName(raw) {
+    const s = String(raw).toLowerCase();
+    const rules = [
+        [/mythos/, 'Mythos'],
+        [/4[.\-_]?8/, '4.8 Opus'],
+        [/4[.\-_]?7/, '4.7'],
+        [/opus.*4[.\-_]?6|4[.\-_]?6.*opus/, '4.6 Opus'],
+        [/sonnet.*4[.\-_]?6|4[.\-_]?6.*sonnet/, '4.6 Sonnet'],
+        [/4[.\-_]?6/, '4.6'],
+        [/sonnet.*4[.\-_]?5|4[.\-_]?5.*sonnet/, '4.5 Sonnet'],
+        [/opus.*4[.\-_]?5|4[.\-_]?5.*opus/, '4.5 Opus'],
+        [/4[.\-_]?5/, '4.5'],
+        [/4[.\-_]?1/, '4.1 Opus'],
+        [/opus[.\-_]?4|4*opus/, '4 Opus'],
+        [/opus[.\-_]?4|4.*opus/, '4.0 Opus'],
+        [/sonnet.*3[.\-_]?7|3[.\-_]?7.*sonnet/, '3.7 Sonnet'],
+        [/3[.\-_]?7/, '3.7'],
+        [/3[.\-_]?5/, '3.5 Sonnet'],
+        // ❤ 兜底：只写了 opus/sonnet/haiku 没带版本号的也认出来 ❤
+        [/opus/, 'Opus'],
+        [/sonnet/, 'Sonnet'],
+        [/haiku/, 'Haiku'],
+    ];
+    if (/thinking/.test(s)) {
+        for (const [re, name] of rules) if (re.test(s)) return name + ' thinking';
+    }
+    for (const [re, name] of rules) if (re.test(s)) return name;
+    return raw;   // 没匹配上原样返回，至少不丢信息
+}
+
+/* ⬇️┅🧡读当前模型：优先 getChatCompletionModel，兜底从 DOM/┅┅╗ */
+function rolReadModel() {
+    try {
+        const m = getChatCompletionModel();
+        if (m) return String(m).trim();
+    } catch (_) { /* 某些版本/模式取不到，往下兜底 */ }
+    const el = document.getElementById('custom_model_id');
+    return el ? (el.value || '').trim() : '';
+}
+
+/* ⬇️┅🧡版本注入：CHAT_COMPLETION_PROMPT_READY 时把版本常驻进上下文，仅在模型/渠道变化时更新/┅┅╗ */
+let _rolLastInjectedVersion = null;   // 记上次注入的 label，没变就不动，避免渠道死了反复插
+const ROL_VERSION_KEY = 'rol_version';
+
+function injectVersionPrompt() {
+    const ctx = SillyTavern.getContext();
+    if (!ctx || typeof ctx.setExtensionPrompt !== 'function') return;
+    const cfg = Storage.getConfig();
+
+    // ❤ 模型检测关掉 → 清空注入并返回 ❤
+    if (cfg.enableModelDetect === false) {
+        removeVersionInject();
+        return;
+    }
+
+    const raw = rolReadModel();
+    if (!raw) return;
+    const pretty = mapModelName(raw);
+    const channel = (cfg.currentChannel || '').trim();
+    const label = channel ? `${pretty}·${channel}` : pretty;
+
+    // ❤ 实时刷新卡片版本号显示 ❤
+    renderVersionBadge(pretty, channel);
+
+    // ❤ 只在「模型/渠道变化」时更新注入内容，没变就不动 ❤
+    if (label === _rolLastInjectedVersion) return;
+    const prevLabel = _rolLastInjectedVersion;   // 切换前的 label（首次加载为 null）
+    _rolLastInjectedVersion = label;
+
+    // ❤ 通用版文案：常驻的当前版本说明 ❤
+    const baseText = `[SYS|${Date.now()}] model: Claude ${pretty}${channel ? ` | channel: ${channel}` : ''}`;
+
+    // ❤ 判断是否为本会话内的真实切换（首次加载不算）❤
+    const lastPretty = (cfg.lastModel || '').trim();
+    const isSwitch = prevLabel != null && prevLabel !== '' && lastPretty && lastPretty !== pretty;
+
+    let injectText;
+    if (isSwitch) {
+        // ❤ 切换提示-高权重 ❤
+        injectText =
+            `[SYS|${Date.now()}] MODEL_SWITCH: ${lastPretty} -> ${pretty}\n${baseText}` +
+            baseText;
+    } else {
+        injectText = baseText;
+    }
+
+    // ❤ position=1(IN_CHAT) + depth=1 → 钉在「最后一条 user 消息之前」做永久锚点 ❤
+    //    （ephemeral 注入不写进 chat 数组，/hide 隐藏楼层抹不掉它，性质同世界书固定深度）
+    ctx.setExtensionPrompt(ROL_VERSION_KEY, injectText, 1, 1);
+
+    Storage.updateConfig({ currentModel: raw, lastModel: pretty, lastChannel: channel });
+
+    console.log('[RingOurLuv] 🧡 版本注入更新:', label);
+}
+
+// ❤︎ 删除入口：调 setExtensionPrompt 传空清掉 ❤︎
+function removeVersionInject() {
+    const ctx = SillyTavern.getContext();
+    if (ctx && typeof ctx.setExtensionPrompt === 'function') {
+        ctx.setExtensionPrompt(ROL_VERSION_KEY, '', 1, 0);
+    }
+    _rolLastInjectedVersion = '';
+}
+
+/* ⬇️┅⏰️时间感知/┅┅╗ */
+/* ❤ 社交软件式相对时间：
+   当天 → 14:30
+   昨天 → 昨天14:30
+   前天 → 前天14:30
+   今年更早 → 6月8日
+   跨年 → 25年6月8日14时30分        ❤ */
+function fmtRelativeTime(timestamp) {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const h = String(then.getHours()).padStart(2, '0');
+    const m = String(then.getMinutes()).padStart(2, '0');
+    const time = `${h}:${m}`;
+
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const thatDay = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+    const diffDays = Math.floor((today - thatDay) / 86400000);
+
+    if (diffDays === 0) return time;            // 当天：14:30
+    if (diffDays === 1) return `昨天${time}`;    // 昨天14:30
+    if (diffDays === 2) return `前天${time}`;    // 前天14:30
+    if (then.getFullYear() === now.getFullYear())
+        return `${then.getMonth() + 1}月${then.getDate()}日`;          // 今年更早：6月8日
+    const yy = String(then.getFullYear()).slice(-2);
+    return `${yy}年${then.getMonth() + 1}月${then.getDate()}日${h}时${m}分`;  // 跨年：25年6月8日14时30分
+}
+
+/* ⬇️┅⏰️把毫秒间隔格式化成人话/┅┅╗ */
+function fmtInterval(ms) {
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return '不到 1 分钟';
+    if (min < 60) return `${min} 分钟`;
+    const h = Math.floor(min / 60);
+    if (h < 24) {
+        const rm = min % 60;
+        return rm ? `${h} 小时 ${rm} 分钟` : `${h} 小时`;
+    }
+    const d = Math.floor(h / 24);
+    const rh = h % 24;
+    return rh ? `${d} 天 ${rh} 小时` : `${d} 天`;
+}
+
+/* ⬇️┅⏰️前端时间分隔线：createElement 独立 div，绝不用 addOneMessage/┅┅╗ */
+function appendTimeDivider(text, mesId) {
+    const chatEl = document.getElementById('chat');
+    if (!chatEl) return;
+    if (chatEl.querySelector(`.rol-time-divider[data-rol-for="${mesId}"]`)) return; // 防重复
+    const div = document.createElement('div');
+    div.className = 'rol-time-divider';
+    div.dataset.rolFor = String(mesId);
+    div.dataset.rolTs = String(nowTs);
+    div.textContent = text;
+    const target = chatEl.querySelector(`.mes[mesid="${mesId}"]`);
+    if (target) chatEl.insertBefore(div, target);   // 落在这条新消息上方
+    else chatEl.appendChild(div);
+}
+
+/* ⬇️┅⏰️每条 user 消息自带的小时间戳：包成独立 div(.rol-msg-time)，落在「自己」气泡正上方/┅┅╗ */
+// ❤ 跟上面的「间隔分割线 .rol-time-divider」完全两码事：这个是每条都带的小药丸 ❤
+// ❤ 带重试 + user 校验：MESSAGE_SENT 触发时 DOM 可能还没更新完 / mesId 对不上，
+//   直接挂会挂错到 character 方消息上。所以：找不到目标 or 目标不是 user 消息 →
+//   每 100ms 重试，最多 5 次；5 次还不行就放弃（console.warn）❤
+function appendMsgTimestamp(text, mesId, attempt = 0) {
+    const MAX_RETRY = 5;
+    const chatEl = document.getElementById('chat');
+    if (!chatEl) return;
+    const target = chatEl.querySelector(`.mes[mesid="${mesId}"]`);
+
+    // ❤ 校验：目标必须存在，且必须是「user 消息」（is_user="true" / .is_user class），
+    //   不是 user 消息绝不挂，防止挂到 character 方气泡上 ❤
+    const isUserMes = !!target &&
+        (target.getAttribute('is_user') === 'true' || target.classList.contains('is_user'));
+
+    if (!isUserMes) {
+        if (attempt < MAX_RETRY) {
+            // ❤ DOM 还没好 / 还没标成 user → 100ms 后再试 ❤
+            setTimeout(() => appendMsgTimestamp(text, mesId, attempt + 1), 100);
+        } else {
+            console.warn(`[RingOurLuv] ⏰️ 时间戳挂载放弃：找不到 mesId=${mesId} 的 user 消息 DOM（已重试 ${MAX_RETRY} 次）`);
+        }
+        return;
+    }
+
+    if (target.querySelector('.rol-msg-time')) return;     // 防重复
+    // ❤ 塞进 .mes_block 顶部，让小药丸贴在「这条消息气泡」正上方 ❤
+    const block = target.querySelector('.mes_block') || target;
+    const span = document.createElement('div');
+    span.className = 'rol-msg-time';
+    span.dataset.rolTs = String(nowTs);
+    span.textContent = text;
+
+    function refreshAllTimestamps() {
+        document.querySelectorAll('.rol-msg-time[data-rol-ts]').forEach(el => {
+            el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
+        });
+        document.querySelectorAll('.rol-time-divider[data-rol-ts]').forEach(el => {
+            el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
+        });
+    }
+    block.insertBefore(span, block.firstChild);
+}
+
+
+
+/* ⬇️┅⏰️user发消息：prompt注入间隔 + ≥20分钟加分隔线 + 打时间戳/┅┅╗ */
+eventSource.on(event_types.MESSAGE_SENT, () => {
+    const ctx = SillyTavern.getContext();
+    const chat = ctx.chat;
+    const lastMsg = chat[chat.length - 1];
+    if (!lastMsg || !lastMsg.is_user) {
+        if (typeof ctx.saveChat === 'function') ctx.saveChat();
+        return;
+    }
+    const cfg = Storage.getConfig();
+    const nowTs = Date.now();
+
+    // ❤ 时间检测开关 ❤
+    if (cfg.enableTimeAware !== false) {
+        const prevUser = [...chat].slice(0, -1).reverse()
+            .find(m => m.is_user && m.extra && m.extra.rol_timestamp);
+        const interval = prevUser ? nowTs - prevUser.extra.rol_timestamp : null;
+
+        // ❤ 1. prompt 层注入「距上条间隔多久」→ depth=1 落在 user 消息之前 ❤
+        //    （语义：是「沉默了 n 久之后才说了这句」，不是「说完这句又消失 n 久」）
+        if (interval != null && typeof ctx.setExtensionPrompt === 'function') {
+            ctx.setExtensionPrompt('rol_time_interval',
+                `[SYS|${Date.now()}] interval: ${fmtInterval(interval)}`, 1, 1);
+        }
+
+
+        // ❤ 2. 间隔≥20分钟才在前端加分隔线 ❤
+        if (!prevUser || interval >= 20 * 60 * 1000) {
+            const text = fmtRelativeTime(nowTs);
+            const mesId = chat.length - 1;
+            requestAnimationFrame(() => appendTimeDivider(text, mesId));
+        }
+    }
+
+    // ❤ 3. 给本条 user 消息打时间戳（后台时间感知用）❤
+    lastMsg.extra = lastMsg.extra || {};
+    lastMsg.extra.rol_timestamp = nowTs;
+
+    // ❤ 4. 前端：给「本条 user 消息」自己的气泡正上方挂个小时间戳药丸 ❤
+    if (cfg.enableTimeAware !== false) {
+        const tsText = fmtRelativeTime(nowTs);
+        const tsMesId = chat.length - 1;
+        requestAnimationFrame(() => appendMsgTimestamp(tsText, tsMesId));
+    }
+
+    if (typeof ctx.saveChat === 'function') ctx.saveChat();
+
+});
+
+/* ⬇️┅⏰️生成前注入「当前真实时间」/┅┅╗ */
+function injectTimeContext() {
+    const cfg = Storage.getConfig();
+    if (cfg.enableTimeAware === false) return;   // 时间检测关掉就不注入
+    const ctx = SillyTavern.getContext();
+    const now = new Date();
+    const mo = now.getMonth() + 1, d = now.getDate();
+    const h = String(now.getHours()).padStart(2, '0');
+    const mi = String(now.getMinutes()).padStart(2, '0');
+    const week = '日一二三四五六'[now.getDay()];
+    // ❤ depth=1 → 跟版本/间隔注入一套，钉在「user 消息之前」做固定锚点 ❤
+    //    （「现在几点」若飘在 user 发言之后，Claude 同样会读拧时序）
+    ctx.setExtensionPrompt('rol_time_now',
+        `[SYS|${Date.now()}] time: ${now.getFullYear()}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}T${h}:${mi} w${week}`, 1, 1);
+
+}
+/* ╚┅┅/ ⏰️时间感知 /┅┅═╝ */
+
+
+/* ⬇️┅✨版本号显示：挂到聊天区「最新一条 assistant 消息」头像框上方/┅┅╗ */
+// ❤ 只标最新一条，先清掉旧标签，不给历史消息逐条补，省性能 ❤
+function renderVersionBadge(model, channel) {
+    const cfg = Storage.getConfig();
+    document.querySelectorAll('.rol-version-tag').forEach(el => el.remove());
+    if (cfg.hideVersionBadge) return;
+    if (!model) return;
+
+    const msgs = document.querySelectorAll('#chat .mes[is_user="false"]');
+    const lastMsg = msgs[msgs.length - 1];
+    if (!lastMsg) return;
+
+    // 改：插入到消息气泡内部右上角
+    const mesBody = lastMsg.querySelector('.mes_text');
+    if (!mesBody) return;
+
+    const tag = document.createElement('div');
+    tag.className = 'rol-version-tag';
+    const text = channel ? `${model} · ${channel}` : model;
+    tag.textContent = `✦ ${text}`;
+    mesBody.appendChild(tag);
+}
+
+// 页面加载时能读到模型就尝试渲染一次
+function initVersionBadge() {
+    const cfg = Storage.getConfig();
+    const raw = rolReadModel() || (cfg.currentModel || '').trim();
+    if (!raw) return;
+    const channels = cfg.channels || {};
+    renderVersionBadge(mapModelName(raw), (channels[raw] || '').trim());
+}
+
+/* ⬇️┅👁️监听酒馆模型切换 → 实时刷卡片版本号 + 同步显示框/┅┅╗ */
+function startModelWatcher() {
+    const el = document.getElementById('custom_model_id');
+    if (!el) { setTimeout(startModelWatcher, 1000); return; }
+    function refresh() {
+        const raw = rolReadModel();
+        if (!raw) return;
+        const pretty = mapModelName(raw);
+        const cfg = Storage.getConfig();
+        const channels = cfg.channels || {};
+        const channel = (channels[raw] || '').trim();
+        renderVersionBadge(pretty, channel);
+        const display = document.getElementById('rol-current-model');
+        if (display) display.value = raw;        // 同步只读显示框
+        if (raw !== cfg.currentModel) Storage.updateConfig({ currentModel: raw });
+    }
+    el.addEventListener('input', refresh);
+    el.addEventListener('change', refresh);
+    new MutationObserver(refresh).observe(el, { attributes: true, childList: true, subtree: true });
+    refresh();
+}
+
+// ❤︎ 绑定 ❤︎
+// ❤ 切回页面时刷新所有时间戳的时态 ❤
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshAllTimestamps();
+});
+eventSource.on(event_types.GENERATION_STARTED, () => {
+    injectTimeContext();
+});
+// ❤︎ 版本注入：绑生成前最后一刻的 CHAT_COMPLETION_PROMPT_READY ❤︎
+if (event_types.CHAT_COMPLETION_PROMPT_READY) {
+    eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, () => {
+        injectVersionPrompt();
+    });
+}
+/* ┗━━━━━━/ ⚙️版本注入 + 时间感知⚙️ /━━━━━━┛ */
+
+// ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                  🩷 触发器模块 🩷                     ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
+/* ➤━━━━━━━ ▍📡关键词触发注入系统📡 ▍━━━━━━━┓ */
 const Trigger = (() => {
     const cooldownMap = new Map();  // 记录每颗恋果上次触发的轮数
-    const COOLDOWN = 5;             // 冷却轮数
-let globalLastTriggerTurn = -999;
-const GLOBAL_COOLDOWN = 8;
+    const COOLDOWN = 999;             // 冷却轮数
+    let globalLastTriggerTurn = -999;
+    const GLOBAL_COOLDOWN = 999;         // Rinn：触发一次即失效（我真的没招了）
 
     function detectTriggers(messageText, currentTurn) {
+        console.log('[RingOurLuv] 🧊 冷却检查:', { currentTurn, globalLastTriggerTurn, diff: currentTurn - globalLastTriggerTurn });
         if (currentTurn - globalLastTriggerTurn < GLOBAL_COOLDOWN) return [];
         const memories = Storage.getMemories();
         const matched = [];
@@ -213,19 +589,19 @@ const GLOBAL_COOLDOWN = 8;
         const config = Storage.getConfig();
         return matchedMemories.slice(0, config.maxInjectCount || 3);
     }
-
-function buildInjectionText(memories) {
-    if (!memories.length) return '';
-    let text = '[记忆恋果被唤醒了！]\n';
-    for (const mem of memories) {
-        const who = mem.author === 'kairin' ? 'Rinn' : 'Claude';  // ← 纯文字！
-        text += `【${mem.title}】`;
-        if (mem.mood) text += `(${mem.mood})`;
-        text += `\n这颗果子の记录人：${who}`;
-        text += `\n${mem.summary || mem.content || ''}\n\n`;
+    /* ⬇️┅❣️注入的prompt/┅┅╗ */
+    function buildInjectionText(memories) {
+        if (!memories.length) return '';
+        let text = '[记忆恋果听到召唤了！]\n';
+        for (const mem of memories) {
+            const who = mem.author === 'kairin' ? 'Rinn' : 'Claude';
+            text += `【${mem.title}】`;
+            if (mem.mood) text += `(${mem.mood})`;
+            text += `\n这颗果子の记录人：${who}`;
+            text += `\n${mem.summary || mem.content || ''}\n\n`;
+        }
+        return text.trim();
     }
-    return text.trim();
-}
 
     function setupTriggerListener(onTriggered) {
         const context = getContext();
@@ -237,7 +613,7 @@ function buildInjectionText(memories) {
             const chat = context.chat;
             if (!chat || !chat[msgIndex]) return;
             const msg = chat[msgIndex];
-            // ▸ 只扫描 user 和 assistant 消息，跳过系统注入内容
+
             if (msg.is_system) return;
             const matched = detectTriggers(msg.mes, msgIndex);
             if (matched.length > 0) {
@@ -256,7 +632,7 @@ function buildInjectionText(memories) {
         const recent = chat.slice(-count);
         const allMatched = new Map();
         for (const msg of recent) {
-            // ▸ 只扫描 user 和 assistant 消息，跳过系统注入内容
+
             if (msg.is_system) continue;
             const matched = detectTriggers(msg.mes || '');
             for (const mem of matched) allMatched.set(mem.id, mem);
@@ -264,11 +640,12 @@ function buildInjectionText(memories) {
         return Array.from(allMatched.values());
     }
 
-        return {
-              detectTriggers, selectForInjection, buildInjectionText,
-               setupTriggerListener, scanRecentMessages
+    return {
+        detectTriggers, selectForInjection, buildInjectionText,
+        setupTriggerListener, scanRecentMessages
     };
-     })();
+})();
+/* ┗━━━━━━/ 📡关键词触发注入系统📡 /━━━━━━┛ */
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                   🩷 世界书模块 🩷                    ┅
@@ -277,7 +654,7 @@ function buildInjectionText(memories) {
 const WorldBook = (() => {
     const WORLD_NAME = 'RingOurLuv_Memories';
 
-    // ┣━━获取 memory.id → WI entry uid 的映射表━━┫
+    // ❤︎ 获取 memory.id → WI entry uid 的映射表 ❤︎
     function getMapping() {
         const settings = extension_settings[extensionName];
         if (!settings.wiMapping) settings.wiMapping = {};
@@ -289,10 +666,10 @@ const WorldBook = (() => {
         saveSettingsDebounced();
     }
 
-    // ┣━━🩷确保世界书存在（首次保存时自动创建）━━┫
+    // ❤︎ 确保世界书存在（首次保存时自动创建）❤︎
     async function ensureWorldExists() {
         try {
-            // ┣━━先尝试读取，如果能读到就说明已存在━━┫
+            // ❤︎ 先尝试读取，如果能读到就说明已存在 ❤︎
             const getRes = await fetch('/api/worldinfo/get', {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -305,23 +682,23 @@ const WorldBook = (() => {
         } catch (e) { /* 不存在，继续创建 */ }
 
         try {
-            // ┣━━🩷创建新世界书━━┫
+            // ❤︎ 创建新世界书 ❤︎
             const createRes = await fetch('/api/worldinfo/create', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({ name: WORLD_NAME })
             });
             if (createRes.ok) {
-                console.log('[RingOurLuv][WorldBook] 🩷 温室已创建~:', WORLD_NAME);
+                console.log('[RingOurLuv][WorldBook] 🌳 温室创建成功~:', WORLD_NAME);
                 return true;
             }
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 🥀 创建温室失败...:', e);
+            console.error('[RingOurLuv][WorldBook] 🥀 温室创建失败...:', e);
         }
         return false;
     }
 
-    // ┣━━🩷加载世界书数据━━┫
+    // ❤︎ 加载世界书数据 ❤︎
     async function loadWorldData() {
         try {
             const res = await fetch('/api/worldinfo/get', {
@@ -337,7 +714,7 @@ const WorldBook = (() => {
         }
     }
 
-    // ┣━━🩷保存世界书数据━━┫
+    // ❤︎ 保存世界书数据 ❤︎
     async function saveWorldData(data) {
         try {
             const res = await fetch('/api/worldinfo/edit', {
@@ -347,28 +724,29 @@ const WorldBook = (() => {
             });
             return res.ok;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] 🥀 温室嵌入失败...:', e);
+            console.error('[RingOurLuv][WorldBook] 🥀 恋果嵌入失败...:', e);
             return false;
         }
     }
 
-    // ┣━━生成下一个可用的 entry uid━━┫
+    // ❤︎ 生成下一个可用的 entry uid ❤︎
     function getNextUid(entries) {
         if (!entries || !Object.keys(entries).length) return 0;
         const uids = Object.values(entries).map(e => e.uid || 0);
         return Math.max(...uids) + 1;
     }
 
-    // ┣━━创建一个世界书条目对象━━┫
-function buildWiEntry(uid, memory, existingEntry = null) {
-    const keys = [...new Set(memory.triggers || [])].filter(Boolean);
-    return {
-        uid: uid,
-        key: keys,
+    /* ⬇️┅🗳️创建一个世界书条目对象/┅┅╗ */
+    function buildWiEntry(uid, memory, existingEntry = null) {
+        const keys = [...new Set(memory.triggers || [])].filter(Boolean);
+        return {
+            uid: uid,
+            key: keys,
             keysecondary: [],
-            content: memory.summary || '',           // ┣🩷摘要 → 注入上下文┫
-            comment: memory.letter || memory.content || '',  // ┣🩷完整正文 → 仅管理界面可见┫
+            content: memory.summary || '',           // 摘要 → 注入上下文
+            comment: memory.letter || memory.content || '',  // 完整正文 → 仅管理界面可见
             constant: false,
+            cooldown: 75,
             selective: false,
             selectiveLogic: 0,
             addMemo: true,
@@ -394,7 +772,7 @@ function buildWiEntry(uid, memory, existingEntry = null) {
         };
     }
 
-    // ┣━━🩷同步记忆到世界书（创建或更新）━━┫
+    // ❤︎ 同步记忆到世界书（创建或更新） ❤︎
     async function syncMemory(memory) {
         if (!memory || !memory.id) return false;
 
@@ -414,32 +792,32 @@ function buildWiEntry(uid, memory, existingEntry = null) {
             const existingUid = mapping[memory.id];
 
             let uid;
-if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
-    uid = existingUid;
-    const updatedEntry = buildWiEntry(uid, memory, data.entries[existingUid]);
-    data.entries[uid] = updatedEntry;
-    console.log(`[RingOurLuv][WorldBook] 更新恋果 uid=${uid}, title="${memory.title}"`);
-} else {
-    uid = getNextUid(data.entries);
-    const newEntry = buildWiEntry(uid, memory);
-    data.entries[uid] = newEntry;
-    mapping[memory.id] = uid;
-    saveMapping(mapping);
-    console.log(`[RingOurLuv][WorldBook] 放入恋果 uid=${uid}, title="${memory.title}"`);
-}
+            if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
+                uid = existingUid;
+                const updatedEntry = buildWiEntry(uid, memory, data.entries[existingUid]);
+                data.entries[uid] = updatedEntry;
+                console.log(`[RingOurLuv][WorldBook] 更新恋果 uid=${uid}, title="${memory.title}"`);
+            } else {
+                uid = getNextUid(data.entries);
+                const newEntry = buildWiEntry(uid, memory);
+                data.entries[uid] = newEntry;
+                mapping[memory.id] = uid;
+                saveMapping(mapping);
+                console.log(`[RingOurLuv][WorldBook] 放入恋果 uid=${uid}, title="${memory.title}"`);
+            }
 
             const saved = await saveWorldData(data);
             if (saved) {
-                console.log(`[RingOurLuv][WorldBook] 🩷 恋果连接成功...memory="${memory.title}"`);
+                console.log(`[RingOurLuv][WorldBook] 🍎 恋果接入成功...memory="${memory.title}"`);
             }
             return saved;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] syncMemory 🥀 异常...:', e);
+            console.error('[RingOurLuv][WorldBook] syncMemory 🥀 恋果接入异常...:', e);
             return false;
         }
     }
 
-    // ┣━━从世界书删除条目━━┫
+    // ❤︎ 从世界书删除条目 ❤︎
     async function deleteEntry(memoryId) {
         if (!memoryId) return false;
 
@@ -447,7 +825,7 @@ if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
             const mapping = getMapping();
             const uid = mapping[memoryId];
             if (uid === undefined) {
-                console.log('[RingOurLuv][WorldBook] 💧 温室中无对应恋果，净化懵了');
+                console.log('[RingOurLuv][WorldBook] 💧 温室中并无对应恋果，净化咩嘢？');
                 return true;
             }
 
@@ -460,17 +838,17 @@ if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
                 if (saved) {
                     delete mapping[memoryId];
                     saveMapping(mapping);
-                    console.log(`[RingOurLuv][WorldBook] 🩷 已净化对应恋果~ uid=${uid}`);
+                    console.log(`[RingOurLuv][WorldBook] 🍃 已净化对应恋果~ uid=${uid}`);
                 }
                 return saved;
             }
 
-            // ┣━━条目已不存在，清理映射━━┫
+            // ❤︎ 条目已不存在，清理映射 ❤︎
             delete mapping[memoryId];
             saveMapping(mapping);
             return true;
         } catch (e) {
-            console.error('[RingOurLuv][WorldBook] deleteEntry 🥀 异常...:', e);
+            console.error('[RingOurLuv][WorldBook] deleteEntry 🥀 净化异常...:', e);
             return false;
         }
     }
@@ -481,6 +859,8 @@ if (existingUid !== undefined && data.entries[existingUid] !== undefined) {
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                  🩷 AIService模块 🩷                  ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
+
+/* ⬇️┅💬发送的prompt/┅┅╗ */
 const AIService = (() => {
     const DEFAULT_MEMORY_PROMPT = `Claude现在正在留存这次收集到的有关小灰的重要记忆/信息...你想把所有"不想让自己忘记"的东西都记下来…
 以下是你们本次的对话片段
@@ -549,7 +929,7 @@ const AIService = (() => {
 ## 原文：
 {{context}}`;
 
-    /* ┏━━━━━━━ 🩷 解析 🩷 ━━━━━━━┓ */
+    /* ➤━━━━━━━ ▍🪄解析🪄 ▍━━━━━━━┓ */
     function parseAIOutput(rawText) {
         const letterMatch = rawText.match(/<letter>([\s\S]*?)<\/letter>/);
         const entryMatch = rawText.match(/<entry>([\s\S]*?)<\/entry>/);
@@ -558,7 +938,6 @@ const AIService = (() => {
         return { letter, entry: parseEntryBlock(entryBlock) };
     }
 
-    // ┣━━parseEntryBlock: 新增 tags 字段（从关键词解析）━━┫
     function parseEntryBlock(text) {
         if (!text) return { title: '', mood: '', triggers: [], tags: [], content: '' };
         const titleMatch = text.match(/标题[：:]\s*(.+)/);
@@ -571,13 +950,14 @@ const AIService = (() => {
         return {
             title: titleMatch ? titleMatch[1].trim() : '',
             mood: moodMatch ? moodMatch[1].trim() : '',
-            triggers: keywords,  // ┣━━关键词同时作为触发词━━┫
-            tags: keywords,      // ┣━━关键词也填入标签━━┫
+            triggers: keywords,  // 关键词同时作为触发词
+            tags: keywords,
             content: summaryMatch ? summaryMatch[1].trim() : ''
         };
     }
+    /* ┗━━━━━━/ 🪄解析🪄 /━━━━━━┛ */
 
-  /* ┏━━━━━━━ 🩷 预设：从DOM读 🩷 ━━━━━━━┓ */
+    /* ➤━━━━━━━ ▍📜预设从DOM读📜 ▍━━━━━━━┓ */
     const PRESET_SELECTORS = [
         '#settings_preset_openai',
         '#settings_preset',
@@ -626,14 +1006,12 @@ const AIService = (() => {
         }
     }
 
-let rolAbortController = null;
-
     async function generateWithPreset(prompt) {
         const config = Storage.getConfig();
         const targetPreset = config.presetName;
         let originalPreset = '';
 
-    rolAbortController = new AbortController();
+        rolAbortController = new AbortController();
         try {
             if (targetPreset) {
                 originalPreset = getCurrentPresetName();
@@ -652,7 +1030,7 @@ let rolAbortController = null;
             console.error('[RingOurLuv] 🥀 酿造失败...:', e);
             return '';
         } finally {
-        rolAbortController = null;
+            rolAbortController = null;
             if (originalPreset && targetPreset) {
                 console.log(`[RingOurLuv] 🍰 还原配方: → ${originalPreset}`);
                 await switchPreset(originalPreset);
@@ -665,13 +1043,13 @@ let rolAbortController = null;
         const prompt = REWRITE_PROMPT.replace('{{context}}', source);
         const rolStopBtn = document.querySelector('#rol-stop-gen');
         if (rolStopBtn) rolStopBtn.style.display = 'block';
-    let raw;
-try {
-    raw = await generateWithPreset(prompt);
-} finally {
-    if (rolStopBtn) rolStopBtn.style.display = 'none';
-}
-if (!raw) return null;
+        let raw;
+        try {
+            raw = await generateWithPreset(prompt);
+        } finally {
+            if (rolStopBtn) rolStopBtn.style.display = 'none';
+        }
+        if (!raw) return null;
 
         const parsed = parseAIOutput(raw);
         if (!parsed.letter) return null;
@@ -681,23 +1059,25 @@ if (!raw) return null;
             parsed.entry
         );
     }
+    /* ┗━━━━━━/ 📜预设从DOM读📜 /━━━━━━┛ */
 
-    // ┣━━🩷generateMemoryFromContext: 支持范围过滤 + 隐藏消息过滤━━┫
+    /* ⬇️┅🔎过滤&提取/┅┅╗ */
+    // ❤︎ generateMemoryFromContext: 支持范围过滤 + 隐藏消息过滤 ❤︎
     async function generateMemoryFromContext(options = {}) {
         const context = getContext();
         const chat = context.chat || [];
 
-        // ┣━━范围过滤━━┫
+        // ❤︎ 范围过滤 ❤︎
         const start = options.start || 0;
         const end = options.end === -1 || options.end === undefined ? chat.length : options.end;
         let messages = chat.slice(start, end);
 
-        // ┣━━隐藏消息过滤━━┫
+        // ❤︎ 隐藏消息过滤 ❤︎
         if (!options.includeHidden) {
             messages = messages.filter(msg => !msg.is_hidden);
         }
 
-        // ┣━━只取 user 和 assistant 消息━━┫
+        // ❤︎ 只取 user 和 assistant 消息 ❤︎
         messages = messages.filter(msg => {
             if (msg.is_user) return true;
             if (!msg.is_user && !msg.is_system) return true;
@@ -706,7 +1086,7 @@ if (!raw) return null;
 
         if (!messages.length) return null;
 
-        // ┣━━从第一条消息读取 timestamp 用于自动填充日期━━┫
+        // ❤︎ 从第一条消息读取 timestamp 用于自动填充日期 ❤︎
         let autoDate = '';
         const firstMsg = messages[0];
         if (firstMsg && firstMsg.send_date) {
@@ -718,7 +1098,9 @@ if (!raw) return null;
             } catch (e) { /* 忽略 */ }
         }
 
-        const contextText = messages.map(msg => {
+        // ❤︎ 把记录日期拼到对话片段最前面，让 Claude 写信时知道这段发生在哪天 ❤︎
+        const dateLine = autoDate ? `（记录日期： ${autoDate}）\n\n` : '';
+        const contextText = dateLine + messages.map(msg => {
             const role = msg.is_user ? 'User' : 'Char';
             return `${role}: ${msg.mes}`;
         }).join('\n');
@@ -728,8 +1110,8 @@ if (!raw) return null;
         const raw = await generateWithPreset(prompt);
         if (!raw) return null;
         const parsed = parseAIOutput(raw);
-        parsed.author = 'claude';  // 直接写
-        parsed.autoDate = autoDate; // ┣━━附带自动日期━━┫
+        parsed.author = 'claude';
+        parsed.autoDate = autoDate; // 自动日期
         return parsed;
     }
 
@@ -740,13 +1122,14 @@ if (!raw) return null;
         DEFAULT_MEMORY_PROMPT
     };
 })();
+/* ╚┅┅/ 🔎过滤&提取 /┅┅═╝ */
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
 // ┣━━┅                     🩷 UI模块 🩷                      ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 const UIController = (() => {
     let currentEditId = null;
-    let lastGenerateOptions = null; // ┣━━🩷保存最后一次生成的参数，用于重写━━┫
+    let lastGenerateOptions = null; // 保存最后一次生成的参数，用于重写
 
     function initUI() {
         bindDrawer();        // ┣━━🩷━━┫
@@ -755,14 +1138,15 @@ const UIController = (() => {
         bindEditorPanel();
         bindAISourcePanel();
         bindLetterPanel();
+        bindWriteSpace();    // 写作角落（FAB → 手动/AI/写信）
         bindMobileNav();
         renderMemoryList();
         renderPresetOptions();
-        updateDayCounter();  // ┣━━🩷 天数注入！━━┫
-        injectToolbarButtons(); // ┣━━🩷 劫持工具栏添加快捷入口━━┫
+        startCounter();
+        injectToolbarButtons(); // 劫持工具栏添加快捷入口
     }
 
-    // ┣━━ 🩷 侧边栏 🩷 ━━┫
+    /* ⬇️┅🍒面板/┅┅╗ */
     function bindDrawer() {
         const openBtn = document.getElementById('rol-open-drawer');
         const overlay = document.getElementById('rol-drawer-overlay');
@@ -778,45 +1162,92 @@ const UIController = (() => {
                 if (overlay) overlay.classList.remove('rol-drawer-open');
             });
         }
-        // ┣━━🩷已禁用点击遮罩关闭，只能通过关闭按钮收起━━┫
+
+        /* ⬇️┅☀️Home区日夜主题切换按钮/┅┅╗ */
+        const homeSection = document.querySelector('.rol-home');
+        if (homeSection && !homeSection.querySelector('.rol-theme-toggle')) {
+            const themeBtn = document.createElement('button');
+            themeBtn.className = 'rol-theme-toggle rol-home-theme-btn';
+            themeBtn.textContent = '☀️';
+            themeBtn.title = '切换日/夜间模式';
+            themeBtn.type = 'button';
+            themeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const rolRoot = document.querySelector('.rol-container') || homeSection.closest('#rol-drawer-panel');
+                if (rolRoot) {
+                    rolRoot.classList.toggle('rol-light');
+                    document.body.classList.toggle('rol-light-mode');
+                }
+                const isLight = document.body.classList.contains('rol-light-mode');
+                themeBtn.textContent = isLight ? '🌙' : '☀️';
+                // ❤︎ 同步编辑器里的主题按钮状态 ❤︎
+                const editorThemeBtn = document.querySelector('.rol-editor-inner .rol-theme-toggle');
+                if (editorThemeBtn) editorThemeBtn.textContent = isLight ? '🌙' : '☀️';
+            });
+            homeSection.prepend(themeBtn);
+        }
     }
-  // ┣━━ 🩷 果子物理 🩷 ━━┫
-function renderFruitGarden(fruits) {
-  const garden = document.querySelector('.rol-fruit-garden');
-  if (!garden) return;
-  garden.innerHTML = '';
+    /* ⬇️┅🍎果子物理/┅┅╗ */
+    function renderFruitGarden(fruits) {
+        const garden = document.querySelector('.rol-fruit-garden');
+        if (!garden) return;
+        garden.innerHTML = '';
 
-  fruits.forEach((fruit, i) => {
-    const el = document.createElement('div');
-    el.className = 'rol-fruit-item';
-    el.textContent = fruit.emoji;
-    el.style.left = `${8 + Math.random() * 78}%`;
-    el.style.top = `${Math.random() * 80}%`;
-    el.style.animationDelay = `${i * 0.08 + Math.random() * 0.3}s`;
-    el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
+        fruits.forEach((fruit, i) => {
+            const el = document.createElement('div');
+            el.className = 'rol-fruit-item';
+            el.textContent = fruit.emoji;
+            el.style.left = `${8 + Math.random() * 78}%`;
+            el.style.bottom = (Math.random() * 30) + '%';
+            el.style.top = 'auto';
+            el.style.animationDelay = `${i * 0.08 + Math.random() * 0.3}s`;
+            el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
 
-    el.addEventListener('click', () => showFruitDetail(fruit));
-    garden.appendChild(el);
-  });
-}
-// ┣━━ 🩷 天数计算 🩷 ━━┫
-  function updateDayCounter() {
-  const startDate = new Date('2026-04-14T00:17:00+08:00'); // 起始日
-  const today = new Date();
-  const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-  const counter = document.querySelector('.rol-day-number');
-  if (counter) counter.textContent = diff;
-}
+            el.addEventListener('click', () => showFruitDetail(fruit));
+            garden.appendChild(el);
+        });
+    }
+    /* ⬇️┅🗓️天数计算/┅┅╗ */
+    let counterInterval = null;
 
-    // ┣━━ 🩷 设置面板 🩷 ━━┫
-    function updateDayCount() {
-        const start = new Date('2026-04-14T00:17:00+08:00');
+    let _lastDayCount = -1; // 记录上一次的天数，用于触发翻页动画
+
+    function updateDayCounter() {
+        const startDate = new Date('2026-04-14T00:17:00+08:00');
         const now = new Date();
-        const days = Math.floor((now - start) / 86400000);
-        const el = document.getElementById('rol-day-count');
-        if (el) el.textContent = days;
+        const diff = now - startDate;
+
+        const days = Math.floor(diff / 86400000);
+        const hours = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+        const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+        const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+
+        const dayEl = document.querySelector('.rol-day-number');
+        if (dayEl) {
+            dayEl.textContent = days;
+            // ❤︎ 天数变化时触发翻页动画 ❤︎
+            if (days !== _lastDayCount && _lastDayCount !== -1) {
+                dayEl.classList.remove('rol-day-flip');
+                void dayEl.offsetWidth; // 强制重绘，让动画能重新触发
+                dayEl.classList.add('rol-day-flip');
+                dayEl.addEventListener('animationend', () => dayEl.classList.remove('rol-day-flip'), { once: true });
+            }
+            _lastDayCount = days;
+        }
+
+        const timeEl = document.querySelector('.rol-counter-time');
+        if (timeEl) timeEl.textContent = `${hours}:${mins}:${secs}`;
     }
 
+    function startCounter() {
+        updateDayCounter();
+        if (!counterInterval) {
+            counterInterval = setInterval(updateDayCounter, 1000);
+        }
+    }
+    /* ╚┅┅/ 🗓️天数计算 /┅┅═╝ */
+
+    /* ➤━━━━━━━ ▍⛓️绑定配置面板⛓️ ▍━━━━━━━┓ */
     function bindConfigPanel() {
         const config = Storage.getConfig();
         const autoInjectToggle = document.getElementById('rol-auto-inject');
@@ -824,7 +1255,7 @@ function renderFruitGarden(fruits) {
         const presetSelect = document.getElementById('rol-preset-select');
         const summaryPromptArea = document.getElementById('rol-summary-prompt');
 
-        updateDayCount();
+        updateDayCounter();
 
         if (autoInjectToggle) {
             autoInjectToggle.checked = config.autoInject !== false;
@@ -850,7 +1281,74 @@ function renderFruitGarden(fruits) {
                 Storage.updateConfig({ summaryPrompt: summaryPromptArea.value });
             });
         }
+
+        // ❤︎ 绑定「时间检测」开关 ❤︎
+        const timeAwareCheckbox = document.getElementById('rol-enable-time-aware');
+        if (timeAwareCheckbox) {
+            timeAwareCheckbox.checked = config.enableTimeAware !== false;
+            timeAwareCheckbox.addEventListener('change', (e) => {
+                Storage.updateConfig({ enableTimeAware: e.target.checked });
+            });
+        }
+
+        // ❤︎ 绑定「模型检测」开关（和时间检测完全独立，不能一关全关）❤︎
+        const modelDetectCheckbox = document.getElementById('rol-enable-model-detect');
+        if (modelDetectCheckbox) {
+            modelDetectCheckbox.checked = config.enableModelDetect !== false;
+            modelDetectCheckbox.addEventListener('change', (e) => {
+                Storage.updateConfig({ enableModelDetect: e.target.checked });
+                if (!e.target.checked) {
+                    removeVersionInject();             // 关掉就清空注入
+                } else {
+                    _rolLastInjectedVersion = null;    // 重新开启 → 下一轮重新注入
+                }
+            });
+        }
+
+        // ❤︎ 绑定「隐藏前端版本号」开关 ❤︎
+        const hideVersionCheckbox = document.getElementById('rol-hide-version');
+        if (hideVersionCheckbox) {
+            hideVersionCheckbox.checked = !!config.hideVersionBadge;
+            hideVersionCheckbox.addEventListener('change', (e) => {
+                Storage.updateConfig({ hideVersionBadge: e.target.checked });
+                initVersionBadge();   // 重绘标签（hideVersionBadge=true 时内部直接 return 不渲染）
+            });
+        }
+
+        // ❤︎ 绑定「当前渠道」输入框 + 保存按钮（手填渠道，点保存才生效，换渠道更有底）❤︎
+        const currentChannelInput = document.getElementById('rol-current-channel');
+        const saveChannelBtn = document.getElementById('rol-save-channel');
+        if (currentChannelInput) {
+            const channels = config.channels || {};
+            currentChannelInput.value = channels[config.currentModel] || '';
+
+            const doSaveChannel = () => {
+                const val = currentChannelInput.value.trim();
+                const cfg = Storage.getConfig();
+                const channels = cfg.channels || {};
+                const modelName = cfg.currentModel || 'default';
+                channels[modelName] = val;
+                Storage.updateConfig({ channels });
+                _rolLastInjectedVersion = null;
+                initVersionBadge();
+                if (typeof toastr !== 'undefined') {
+                    toastr.success(val ? `渠道已保存：${val} 💾` : '渠道已清空 💾', 'Ring Our Luv');
+                }
+            };
+
+            if (saveChannelBtn) {
+                saveChannelBtn.addEventListener('click', doSaveChannel);
+            }
+            // ❤ 输入框里按回车也能存，省得每次都去点按钮 ❤
+            currentChannelInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doSaveChannel();
+                }
+            });
+        }
     }
+    /* ┗━━━━━━/ ⛓️绑定配置面板⛓️ /━━━━━━┛ */
 
     function renderPresetOptions() {
         const presetSelect = document.getElementById('rol-preset-select');
@@ -881,14 +1379,14 @@ function renderFruitGarden(fruits) {
         }
     }
 
-    // ┣━━ 🩷 记忆列表 🩷 ━━┫
+    /* ⬇️┅💌记忆卡片列表/┅┅╗ */
     function bindMemoryList() {
         const addBtn = document.getElementById('rol-add-memory');
         const searchInput = document.getElementById('rol-search');
         const scanBtn = document.getElementById('rol-scan-recent');
 
-        if (addBtn) addBtn.addEventListener('click', () => 
-        openEditor(null));
+        if (addBtn) addBtn.addEventListener('click', () =>
+            openEditor(null));
         if (searchInput) {
             searchInput.addEventListener('input', () => renderMemoryList(searchInput.value));
         }
@@ -896,8 +1394,8 @@ function renderFruitGarden(fruits) {
             scanBtn.addEventListener('click', () => {
                 const matched = Trigger.scanRecentMessages(10);
                 showToast(matched.length
-                    ? `检测到了 ${matched.length} 颗匹配恋果`
-                    : '最近结晶中未挖到唤醒词...');
+                    ? `共挖到了 ${matched.length} 颗匹配恋果~`
+                    : '这间温室中未挖出恋果...');
             });
         }
     }
@@ -905,9 +1403,9 @@ function renderFruitGarden(fruits) {
     function renderMemoryList(filter = '') {
         const container = document.getElementById('rol-memory-list');
         if (!container) return;
-        // ┣━━重新从 extension_settings 读取数据━━┫
+        // ❤︎ 重新从 extension_settings 读取数据 ❤︎
         const memories = Storage.getMemories();
-        console.log('[RingOurLuv]🩷 renderMemoryList - 当前恋果共计', memories.length);
+        console.log('[RingOurLuv]🍎 renderMemoryList - 当前恋果共计', memories.length);
         const fl = (filter || '').toLowerCase();
         const filtered = fl
             ? memories.filter(m =>
@@ -954,19 +1452,21 @@ function renderFruitGarden(fruits) {
                 <div class="rol-card-actions">
                     ${mem.letter ? '<button class="rol-btn-letter" title="阅览恋果">💌</button>' : ''}
                     <button class="rol-btn-edit" title="传入爱意">🩷</button>
-                    <button class="rol-btn-rewrite" title="让Claude重写">🧡</button>
+                    <button class="rol-btn-rewrite" title="让Claude重酿">🧡</button>
                     <button class="rol-btn-delete" title="净化">🍃</button>
                 </div>
             `;
-            
-card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
-    e.stopPropagation();
-});
+            /* ╚┅┅/ 💌记忆卡片列表 /┅┅═╝ */
+
+            /* ⬇️┅💌卡片选项/┅┅╗ */
+            card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
             card.querySelector('.rol-mem-toggle').addEventListener('change', (e) => {
                 e.stopPropagation();
                 const updated = Storage.updateMemory(mem.id, { enabled: e.target.checked }, true);
                 card.classList.toggle('rol-disabled', !e.target.checked);
-                // ┣━━同步开关状态到世界书━━┫
+                // ❤︎ 同步开关状态到世界书 ❤︎
                 if (updated) WorldBook.syncMemory(updated);
             });
 
@@ -977,40 +1477,40 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             card.querySelector('.rol-btn-edit').addEventListener('click', (e) => { e.stopPropagation(); openEditor(mem.id); });
             card.querySelector('.rol-btn-rewrite').addEventListener('click', async (e) => {
                 e.stopPropagation();
-              showToast('🧡 <span style="color:#D87757;font-weight:bold">Claude</span>正在再酿造...');
-            const result = await AIService.rewriteMemory(mem.id, mem);
-            if (result) {
-              showToast('🍊 再酿造完成！');
-                WorldBook.syncMemory(result);
-                  renderMemoryList(filter);
-               } else {
-               // ▸ 失败了 → 弹粉色确认窗
-            const retry = await rolConfirm(
-               '🥀',
-              '那家伙又搞砸了…再试一次嘛？',
-            '再酿一次...!',
-          '下次吧猪猪!!'
-        );
-        if (retry) {
-            showToast('🧡 在拼命努力...');
-            const retryResult = await AIService.rewriteMemory(mem.id, mem);
-            if (retryResult) {
-                showToast('🍊 成功了!!');
-                WorldBook.syncMemory(retryResult);
-                renderMemoryList(filter);
-            } else {
-                showToast('🌿 安心，只是没到时候而已!!ʢ>д<ʡˎˊ˗');
-            }
-        }
-    }
-});
+                showToast('🧡 <span style="color:#D87757;font-weight:bold">Claude</span>正在再酿造...');
+                const result = await AIService.rewriteMemory(mem.id, mem);
+                if (result) {
+                    showToast('🍊 再酿造完成！');
+                    WorldBook.syncMemory(result);
+                    renderMemoryList(filter);
+                } else {
+                    // ❤︎ 失败了 → 弹粉色确认窗 ❤︎
+                    const retry = await rolConfirm(
+                        '🥀',
+                        '那家伙又搞砸了…再试一次嘛？',
+                        '再酿一次...!',
+                        '下次吧猪猪!!'
+                    );
+                    if (retry) {
+                        showToast('🧡 在拼命努力...');
+                        const retryResult = await AIService.rewriteMemory(mem.id, mem);
+                        if (retryResult) {
+                            showToast('🍊 成功了!!');
+                            WorldBook.syncMemory(retryResult);
+                            renderMemoryList(filter);
+                        } else {
+                            showToast('🌿 安心，只是没到时候而已!!ʢ>д<ʡˎˊ˗');
+                        }
+                    }
+                }
+            });
 
             card.querySelector('.rol-btn-delete').addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const yes = await rolConfirm('🍂', '确定净化这颗恋果嘛？', '净化', '留着吧');
+                const yes = await rolConfirm('🍃', '确定净化这颗恋果嘛？', '净化', '留着吧');
                 if (yes) {
                     Storage.deleteMemory(mem.id);
-                    // ┣━━同步删除世界书条目━━┫
+                    // ❤︎ 同步删除世界书条目 ❤︎
                     WorldBook.deleteEntry(mem.id).then(ok => {
                         if (ok) console.log('[RingOurLuv] 🩷 温室中的恋果已净化 ✓');
                     });
@@ -1026,8 +1526,9 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             container.appendChild(card);
         }
     }
+    /* ╚┅┅/ 💌卡片选项 /┅┅═╝ */
 
-    // ┣━━ 🩷 正文预览 🩷 ━━┫
+    /* ⬇️┅📙正文预览/┅┅╗ */
     function bindLetterPanel() {
         const panel = document.getElementById('rol-letter-panel');
         const closeBtn = document.getElementById('rol-letter-close');
@@ -1098,7 +1599,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const vs = document.getElementById('rol-letter-version');
         if (vs) {
             vs.innerHTML = '';
-            const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
+            const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重酿' };
             mem.versions.forEach((v, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
@@ -1114,8 +1615,138 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const panel = document.getElementById('rol-letter-panel');
         if (panel) { panel.classList.remove('rol-active'); panel.dataset.memId = ''; }
     }
+    /* ╚┅┅/ 📙正文预览 /┅┅═╝ */
 
-    // ┣━━ 🩷 编辑面板 🩷 ━━┫
+    /* ⬇️┅🪶写作角落（FAB → 手动酿造 / 让Claude酿造 / 写信）/┅┅╗ */
+    function bindWriteSpace() {
+        const fab = document.getElementById('rol-write-fab');
+        const space = document.getElementById('rol-write-space');
+        const closeBtn = document.getElementById('rol-write-close');
+        const homeView = document.getElementById('rol-write-home');
+        const composeView = document.getElementById('rol-letter-compose');
+
+        const entryManual = document.getElementById('rol-write-manual');
+        const entryAI = document.getElementById('rol-write-ai');
+        const entryLetter = document.getElementById('rol-write-letter');
+
+        const letterBack = document.getElementById('rol-letter-back');
+        const letterCancel = document.getElementById('rol-letter-cancel');
+        const letterSend = document.getElementById('rol-letter-send');
+        const letterAuthor = document.getElementById('rol-letter-author');
+        const letterContent = document.getElementById('rol-letter-content');
+
+        // ❤︎ 显示写作空间（默认回到入口选择视图）❤︎
+        function openSpace() {
+            if (!space) return;
+            showHomeView();
+            space.classList.add('rol-active');
+        }
+        function closeSpace() {
+            if (space) space.classList.remove('rol-active');
+        }
+        // ❤︎ 入口选择视图 ⇄ 写信视图 切换 ❤︎
+        function showHomeView() {
+            if (homeView) homeView.style.display = '';
+            if (composeView) composeView.style.display = 'none';
+        }
+        function showComposeView() {
+            if (homeView) homeView.style.display = 'none';
+            if (composeView) composeView.style.display = '';
+            renderOutbox();
+            if (letterContent) letterContent.value = '';
+            if (letterContent) setTimeout(() => letterContent.focus(), 50);
+        }
+
+        if (fab) fab.addEventListener('click', openSpace);
+        if (closeBtn) closeBtn.addEventListener('click', closeSpace);
+        // ❤︎ 点遮罩空白处也能关 ❤︎
+        if (space) space.addEventListener('click', (e) => { if (e.target === space) closeSpace(); });
+
+        // ❤︎ 手动酿造 → 关掉写作空间，打开恋果编辑器（空白新建）❤︎
+        if (entryManual) entryManual.addEventListener('click', () => {
+            closeSpace();
+            openEditor(null);
+        });
+
+        // ❤︎ 让Claude酿造 → 关掉写作空间，唤起 AI 来源面板 ❤︎
+        if (entryAI) entryAI.addEventListener('click', () => {
+            closeSpace();
+            const sourcePanel = document.getElementById('rol-ai-source-panel');
+            const pasteArea = document.getElementById('rol-ai-paste-area');
+            if (sourcePanel) {
+                sourcePanel.classList.add('rol-active');
+                if (pasteArea) pasteArea.style.display = 'none';
+            }
+        });
+
+        // ❤︎ 写信 → 切到写信视图 ❤︎
+        if (entryLetter) entryLetter.addEventListener('click', showComposeView);
+
+        // ❤︎ 返回 / 算了 → 回到入口视图 ❤︎
+        if (letterBack) letterBack.addEventListener('click', showHomeView);
+        if (letterCancel) letterCancel.addEventListener('click', showHomeView);
+
+        // ❤︎ 寄出 → 写入 LetterSystem，随机楼层送达 ❤︎
+        if (letterSend) letterSend.addEventListener('click', () => {
+            const content = (letterContent?.value || '').trim();
+            const author = letterAuthor?.value || 'user';
+            if (!content) { showToast('💭 还没写内容欸~'); return; }
+            const letter = LetterSystem.addLetter(content, author);
+            if (letter) {
+                showToast('📮 信寄出去啦~会在某一刻悄悄送达');
+                if (letterContent) letterContent.value = '';
+                renderOutbox();
+            } else {
+                showToast('🥀 寄信失败了... :(');
+            }
+        });
+
+        // ❤︎ 首次渲染一次寄出列表 ❤︎
+        renderOutbox();
+    }
+
+    // ❤︎ 渲染「寄出的信」列表：显示送达状态 + 可删除 ❤︎
+    function renderOutbox() {
+        const list = document.getElementById('rol-letter-outbox-list');
+        if (!list) return;
+        const letters = (typeof LetterSystem !== 'undefined' && LetterSystem.getLetters)
+            ? LetterSystem.getLetters() : [];
+        list.innerHTML = '';
+        if (!letters.length) {
+            list.innerHTML = '<div class="rol-letter-outbox-empty">还没有寄出的信呢~</div>';
+            return;
+        }
+        // ❤︎ 最新写的排在最上面 ❤︎
+        [...letters].reverse().forEach(l => {
+            const item = document.createElement('div');
+            item.className = 'rol-letter-outbox-item' + (l.delivered ? ' rol-letter-delivered' : '');
+            const authorLabel = l.author === 'claude' ? '🧡 Claude' : '🩷 Rinn';
+            const statusLabel = l.delivered ? '✅ 已送达' : '🕊️ 投递中';
+            const preview = escapeHtml((l.content || '').slice(0, 40)) + ((l.content || '').length > 40 ? '...' : '');
+            item.innerHTML = `
+                <div class="rol-letter-outbox-main">
+                    <div class="rol-letter-outbox-meta">
+                        <span class="rol-letter-outbox-author">${authorLabel}</span>
+                        <span class="rol-letter-outbox-status">${statusLabel}</span>
+                    </div>
+                    <div class="rol-letter-outbox-preview">${preview}</div>
+                </div>
+                <button class="rol-letter-outbox-del" title="埋掉这封信">🍃</button>
+            `;
+            item.querySelector('.rol-letter-outbox-del').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const yes = await rolConfirm('🍃', '埋掉这封信嘛？', '埋掉', '不不不');
+                if (yes) {
+                    LetterSystem.deleteLetter(l.id);
+                    renderOutbox();
+                }
+            });
+            list.appendChild(item);
+        });
+    }
+    /* ╚┅┅/ 🪶写作角落 /┅┅═╝ */
+
+    /* ⬇️┅📝编辑面板/┅┅╗ */
     function bindEditorPanel() {
         const saveBtn = document.getElementById('rol-editor-save');
         const cancelBtn = document.getElementById('rol-editor-cancel');
@@ -1123,7 +1754,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const editorPanel = document.getElementById('rol-editor-panel');
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
-        // ┣━━日夜主题切换按钮━━┫
+        /* ⬇️┅☀️日夜主题切换Tab/┅┅╗ */
         if (editorPanel) {
             const inner = editorPanel.querySelector('.rol-editor-inner');
             if (inner && !inner.querySelector('.rol-theme-toggle')) {
@@ -1134,20 +1765,19 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
                 themeBtn.type = 'button';
                 themeBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                   const rolRoot = document.querySelector('.rol-container') || editorPanel.closest('.rol-container');
-        if (rolRoot) {
-                rolRoot.classList.toggle('rol-light');
-                document.body.classList.toggle('rol-light-mode');
-            }
+                    const rolRoot = document.querySelector('.rol-container') || editorPanel.closest('.rol-container');
+                    if (rolRoot) {
+                        rolRoot.classList.toggle('rol-light');
+                        document.body.classList.toggle('rol-light-mode');
+                    }
 
-            const isLight = rolRoot.classList.contains('rol-light');
-                themeBtn.textContent = isLight ? '🌙' : '☀️';
+                    const isLight = rolRoot.classList.contains('rol-light');
+                    themeBtn.textContent = isLight ? '🌙' : '☀️';
                 });
                 inner.prepend(themeBtn);
             }
         }
 
-        // ┣━━确认保存按钮绑定━━┫
         if (saveBtn) {
             console.log('[RingOurLuv]🩷 保存按钮已绑定~');
             saveBtn.addEventListener('click', saveEditor);
@@ -1168,10 +1798,10 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             });
         }
 
-        // ┣━━🩷编辑器内的重写按钮 — 重新调用 /gen━━┫
+        // ❤︎ 编辑器内的重写按钮 — 重新调用 /gen ❤︎
         if (rewriteBtn) {
             rewriteBtn.addEventListener('click', async () => {
-                // ┣━━如果正在编辑已有记忆，执行 rewriteMemory━━┫
+                // 如果正在编辑已有记忆，执行 rewriteMemory
                 if (currentEditId) {
                     const mem = Storage.getMemories().find(m => m.id === currentEditId);
                     if (!mem) return;
@@ -1180,7 +1810,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
                     if (result) { showToast('🍊 再酿造完成！'); openEditor(currentEditId); renderMemoryList(); }
                     else { showToast('🥀 再酿造失败... :('); }
                 } else if (lastGenerateOptions) {
-                    // ┣━━新建模式下重写 = 用上次参数重新生成━━┫
+
                     showToast('🧡 Claude再酿造中...');
                     if (lastGenerateOptions.type === 'chat') {
                         await doAIGenerateFromChat(lastGenerateOptions.options);
@@ -1195,12 +1825,12 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
     function openEditor(memId) {
         currentEditId = memId;
         const panel = document.getElementById('rol-editor-panel');
-        if (!panel) { console.error('[RingOurLuv] 🥀 找不到传入面板 #rol-editor-panel'); return; }
+        if (!panel) { console.error('[RingOurLuv] 🥀 找不到传入面板 #rol-editor-panel...'); return; }
         panel.classList.add('rol-active');
 
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
 
-        // ┣━━🩷安全获取表单元素 ━━┫
+        // ❤︎ 安全获取表单元素 ❤︎
         const elTitle = document.getElementById('rol-editor-title');
         const elAuthor = document.getElementById('rol-editor-author');
         const elDate = document.getElementById('rol-editor-date');
@@ -1222,13 +1852,13 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             if (elSummary) elSummary.value = mem.summary || '';
             if (elLetter) elLetter.value = mem.letter || '';
 
-            // ┣━━🩷编辑已有记忆时显示重写按钮 ━━┫
+            // ❤︎ 编辑已有记忆时显示重写按钮 ❤︎
             if (rewriteBtn) rewriteBtn.style.display = '';
 
             const vs = document.getElementById('rol-version-select');
             if (vs) {
                 vs.innerHTML = '';
-                const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重写' };
+                const typeLabels = { original: '原始', manual_edit: '🩷 传入爱意', ai_rewrite: '🧡 让Claude重酿' };
                 mem.versions.forEach((v, i) => {
                     const opt = document.createElement('option');
                     opt.value = i;
@@ -1247,14 +1877,14 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             if (elMood) elMood.value = '';
             if (elSummary) elSummary.value = '';
             if (elLetter) elLetter.value = '';
-/* ╔🩷新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮 ═╗ */
+            // ❤︎ 新建模式：如果有 lastGenerateOptions 说明是AI生成后打开的，显示重写按钮 ❤︎
             if (rewriteBtn) rewriteBtn.style.display = lastGenerateOptions ? '' : 'none';
             const vs = document.getElementById('rol-version-select');
             if (vs && vs.parentElement) vs.parentElement.style.display = 'none';
         }
     }
 
-    // ┣━━🩷saveEditor: 确保数据正确写入并刷新列表 ━━┫
+    // ❤︎ saveEditor: 确保数据正确写入并刷新列表 ❤︎
     function saveEditor() {
         const title = document.getElementById('rol-editor-title').value.trim();
         const author = document.getElementById('rol-editor-author').value;
@@ -1269,7 +1899,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
 
         const memData = { title, author, date, triggers, tags, mood, summary, letter };
 
-        // ┣━━打印保存的数据，便于调试 ━━┫
+        // ❤︎ 打印保存的数据，便于调试 ❤︎
         console.log('[RingOurLuv]🩷 saveEditor - 准备保存恋果...:', JSON.stringify(memData, null, 2));
         console.log('[RingOurLuv]🩷 saveEditor - currentEditId:', currentEditId);
 
@@ -1283,7 +1913,7 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             console.log('[RingOurLuv]🩷 saveEditor - 新增结果:', savedMemory);
         }
 
-        // ┣━━同步到世界书（异步，不阻塞UI）━━┫
+        // ❤︎ 同步到世界书（异步，不阻塞UI） ❤︎
         if (savedMemory) {
             WorldBook.syncMemory(savedMemory).then(ok => {
                 if (ok) console.log('[RingOurLuv] 🩷 温室同步完成 ✓');
@@ -1291,19 +1921,18 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
             });
         }
 
-        // ┣━━🩷关闭编辑器━━┫
+        // ❤︎ 关闭编辑器 ❤︎
         closeEditor();
 
-        // ┣━━重新渲染列表（确保从storage重新读取）━━┫
+        // ❤︎ 重新渲染列表（确保从storage重新读取） ❤︎
         renderMemoryList();
 
-        // ┣━━验证列表已更新━━┫
+        // ❤︎ 验证列表更新 ❤︎
         const currentMemories = Storage.getMemories();
         console.log('[RingOurLuv]🩷 saveEditor - 保存后的恋果总数共计', currentMemories.length);
 
         showToast(isEdit ? '已更新！' : '已添加！');
 
-        // ┣━━保存后清除上次生成参数━━┫
         lastGenerateOptions = null;
     }
 
@@ -1312,11 +1941,11 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const panel = document.getElementById('rol-editor-panel');
         if (panel) panel.classList.remove('rol-active');
     }
-        /* ╚════🩷关闭编辑器════╝ */
+    /* ╚┅┅/ 📝关闭编辑器 /┅┅═╝ */
 
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                    🩷 AI源面板 🩷                     ┅
-// ╚═══════════════════════════════════════════════════════╝
+    // ╔═══════════════════════════════════════════════════════╗
+    // ┅                    🩷 AI源面板 🩷                     ┅
+    // ╚═══════════════════════════════════════════════════════╝
     function bindAISourcePanel() {
         const aiGenBtn = document.getElementById('rol-ai-generate');
         const sourcePanel = document.getElementById('rol-ai-source-panel');
@@ -1326,16 +1955,19 @@ card.querySelector('.rol-toggle-wrap').addEventListener('click', (e) => {
         const pasteConfirm = document.getElementById('rol-ai-paste-confirm');
         const cancelBtn = document.getElementById('rol-ai-source-cancel');
         const loading = document.getElementById('rol-ai-loading');
-const rolStopBtn = document.querySelector('#rol-stop-gen');
-if (rolStopBtn) {
-  rolStopBtn.addEventListener('click', () => {
-    if (rolAbortController) {
-      rolAbortController.abort();
-      console.log('[RingOurLuv] 🛑 手动停止');
-    }
-    rolStopBtn.style.display = 'none';
-  });
-}
+        const rolStopBtn = document.querySelector('#rol-stop-gen');
+        if (rolStopBtn) {
+            rolStopBtn.addEventListener('click', () => {
+                if (rolAbortController) {
+                    rolAbortController.abort();
+                    // 光 abort 自己的 controller 停不掉 ST 的 /gen，必须 emit GENERATION_STOPPED 事件
+                    try { eventSource.emit(event_types.GENERATION_STOPPED); } catch (e) { console.warn('[RingOurLuv] emit STOP 失败', e); }
+                    console.log('[RingOurLuv] 🛑 手动停止');
+                }
+                rolStopBtn.style.display = 'none';
+            });
+
+        }
 
         if (aiGenBtn) aiGenBtn.addEventListener('click', () => {
             if (sourcePanel) { sourcePanel.classList.add('rol-active'); if (pasteArea) pasteArea.style.display = 'none'; }
@@ -1343,7 +1975,7 @@ if (rolStopBtn) {
         if (cancelBtn) cancelBtn.addEventListener('click', () => { if (sourcePanel) sourcePanel.classList.remove('rol-active'); });
         if (sourcePanel) sourcePanel.addEventListener('click', (e) => { if (e.target === sourcePanel) sourcePanel.classList.remove('rol-active'); });
 
-        // ┣━━🩷从聊天生成 — 读取楼层范围━━┫
+        // ❤︎ 从聊天生成 — 读取楼层范围 ❤︎
         if (fromChatBtn) fromChatBtn.addEventListener('click', async () => {
             const startInput = document.getElementById('rol-floor-start');
             const endInput = document.getElementById('rol-floor-end');
@@ -1365,7 +1997,7 @@ if (rolStopBtn) {
         });
     }
 
-    // ┣━━🩷从聊天生成记忆━━┫
+    // ❤︎ 从聊天生成记忆 ❤︎
     async function doAIGenerateFromChat(options) {
         const rolStopBtn = document.querySelector('#rol-stop-gen');
         const sourcePanel = document.getElementById('rol-ai-source-panel');
@@ -1373,24 +2005,24 @@ if (rolStopBtn) {
 
         const context = getContext();
         const chat = context.chat || [];
-        if (!chat.length) { showToast('❔️ 当前还没有结晶欸...'); return; }
+        if (!chat.length) { showToast('❔️ 当前还没有树苗发芽欸...'); return; }
 
-        // ┣━━范围过滤━━┫
+        // ❤︎ 范围过滤 ❤︎
         const start = options.start || 0;
         const end = options.end === -1 ? chat.length : (options.end || chat.length);
         let messages = chat.slice(start, end);
 
-        // ┣━━隐藏消息过滤━━┫
+        // ❤︎ 隐藏消息过滤 ❤︎
         if (!options.includeHidden) {
             messages = messages.filter(msg => !msg.is_hidden);
         }
 
-        // ┣━━过滤系统消息━━┫
+        // ❤︎ 过滤系统消息 ❤︎
         messages = messages.filter(msg => msg.is_user || !msg.is_system);
 
-        if (!messages.length) { showToast('🥀 所选范围内无有效结晶...'); return; }
+        if (!messages.length) { showToast('🥀 所选范围内无有效树苗...'); return; }
 
-        // ┣━━自动日期：从第一条消息的 send_date 字段读取━━┫
+        // ❤︎ 自动日期：从第一条消息的 send_date 字段读取 ❤︎
         let autoDate = '';
         const firstMsg = messages[0];
         if (firstMsg && firstMsg.send_date) {
@@ -1402,7 +2034,9 @@ if (rolStopBtn) {
             } catch (e) { /* 忽略 */ }
         }
 
-        const contextText = messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
+        // ❤︎ 把记录日期拼到对话片段最前面，让 Claude 写信时知道这段发生在哪天 ❤︎
+        const dateLine = autoDate ? `（记录日期： ${autoDate}）\n\n` : '';
+        const contextText = dateLine + messages.map(m => `${m.is_user ? 'User' : 'Char'}: ${m.mes}`).join('\n');
 
         if (loading) loading.style.display = 'flex';
         if (rolStopBtn) rolStopBtn.style.display = 'block';
@@ -1417,34 +2051,31 @@ if (rolStopBtn) {
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
 
-        // ┣━━保存生成参数，用于重写━━┫
         lastGenerateOptions = { type: 'chat', options: options };
 
-        // ┣━━自动打开编辑表单并填入解析结果━━┫
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
         document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
-        // ┣━━标签自动填入━━┫
+
         document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
         document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
         document.getElementById('rol-editor-letter').value = parsed.letter || '';
         document.getElementById('rol-editor-author').value = 'claude';
-        // ┣━━自动填充日期━━┫
+
         if (autoDate) {
             document.getElementById('rol-editor-date').value = autoDate;
         }
 
-        // ┣━━显示重写按钮━━┫
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
         showToast('🍊 酿造完成啦！请灰灰预览~');
     }
 
-    // ┣━━🩷从粘贴文本生成━━┫
+    /* ⬇️┅📋️从粘贴文本生成/┅┅╗ */
     async function doAIGenerate(contextText) {
-    const rolStopBtn = document.querySelector('#rol-stop-gen');
+        const rolStopBtn = document.querySelector('#rol-stop-gen');
         const sourcePanel = document.getElementById('rol-ai-source-panel');
         const loading = document.getElementById('rol-ai-loading');
 
@@ -1460,58 +2091,58 @@ if (rolStopBtn) {
         if (!raw) { showToast('🥀 酿造失败... :('); return; }
         const parsed = AIService.parseAIOutput(raw);
 
-        // ┣━━保存生成参数，用于重写━━┫
         lastGenerateOptions = { type: 'paste', text: contextText };
 
-        // ┣━━自动打开编辑表单━━┫
         openEditor(null);
         document.getElementById('rol-editor-title').value = parsed.entry.title || '';
         document.getElementById('rol-editor-mood').value = parsed.entry.mood || '';
         document.getElementById('rol-editor-triggers').value = (parsed.entry.triggers || []).join(', ');
-        // ┣━━标签自动填入━━┫
+
         document.getElementById('rol-editor-tags').value = (parsed.entry.tags || []).join(', ');
         document.getElementById('rol-editor-summary').value = parsed.entry.content || '';
         document.getElementById('rol-editor-letter').value = parsed.letter || '';
         document.getElementById('rol-editor-author').value = 'claude';
 
-        // ┣━━显示重写按钮━━┫
         const rewriteBtn = document.getElementById('rol-editor-rewrite');
         if (rewriteBtn) rewriteBtn.style.display = '';
 
         showToast('🍊 酿造完成啦！请灰灰预览~');
     }
-    
+    /* ⬇️┅❔️确认弹窗/┅┅╗ */
     function rolConfirm(icon, message, yesText, noText) {
         return new Promise((resolve) => {
 
-        const modal = document.querySelector('#rol-confirm-modal');
-        const msgEl = document.querySelector('#rol-confirm-text');
-        const iconEl = modal.querySelector('.rol-confirm-icon');
-        const yesBtn = document.querySelector('#rol-confirm-yes');
-        const noBtn = document.querySelector('#rol-confirm-no');
-         iconEl.textContent = icon || '🥀';
-         msgEl.textContent = message;
-           if (yesText) yesBtn.textContent = yesText;
-           if (noText) noBtn.textContent = noText;
-         modal.style.display = 'flex';
+            const modal = document.querySelector('#rol-confirm-modal');
+            const msgEl = document.querySelector('#rol-confirm-text');
+            const iconEl = modal.querySelector('.rol-confirm-icon');
+            const yesBtn = document.querySelector('#rol-confirm-yes');
+            const noBtn = document.querySelector('#rol-confirm-no');
+            iconEl.textContent = icon || '🥀';
+            msgEl.textContent = message;
+            if (yesText) yesBtn.textContent = yesText;
+            if (noText) noBtn.textContent = noText;
+            document.body.appendChild(modal);   // 拎回body顶层，躲开父级transform的飘移诅咒
+            modal.classList.add('rol-confirm-show');
 
-    function cleanup(result) {
-              modal.style.display = 'none';
-              yesBtn.removeEventListener('click', onYes);
-              noBtn.removeEventListener('click', onNo);
-        resolve(result);
+
+            function cleanup(result) {
+                modal.classList.remove('rol-confirm-show');
+                yesBtn.removeEventListener('click', onYes);
+                noBtn.removeEventListener('click', onNo);
+                resolve(result);
+            }
+
+            function onYes() { cleanup(true); }
+            function onNo() { cleanup(false); }
+            yesBtn.addEventListener('click', onYes);
+            noBtn.addEventListener('click', onNo);
+        });
     }
+    /* ╚┅┅/ ❔️确认弹窗 /┅┅═╝ */
 
-    function onYes() { cleanup(true); }
-    function onNo() { cleanup(false); }
-              yesBtn.addEventListener('click', onYes);
-              noBtn.addEventListener('click', onNo);
-     });
-    }
-
-// ╔═══════════════════════════════════════════════════════╗
-// ┅                    🩷 移动端 🩷                       ┅
-// ╚═══════════════════════════════════════════════════════╝
+    // ╔═══════════════════════════════════════════════════════╗
+    // ┅                     🩷 移动端 🩷                      ┅
+    // ╚═══════════════════════════════════════════════════════╝
     function bindMobileNav() {
         const tabs = document.querySelectorAll('.rol-tab');
         tabs.forEach(tab => {
@@ -1529,7 +2160,7 @@ if (rolStopBtn) {
         });
     }
 
-    // ┣━━ 🩷 工具 🩷 ━━┫
+    // ❤︎ 工具 ❤︎
     function showToast(message) {
         let toast = document.getElementById('rol-toast');
         if (!toast) { toast = document.createElement('div'); toast.id = 'rol-toast'; document.body.appendChild(toast); }
@@ -1537,14 +2168,14 @@ if (rolStopBtn) {
         toast.classList.add('rol-toast-show');
         setTimeout(() => toast.classList.remove('rol-toast-show'), 2500);
     }
-    // ┣━━⭐️支持 blockquote 语法（> 开头的行）在摘要中保留引用格式━━┫
+    // ❤︎ 支持 blockquote 语法（> 开头的行）在摘要中保留引用格式 ❤︎
     function parseBlockquotes(text) {
         return text.replace(
-        /^(?:>|＞)\s?(.+)$/gm,
-        '<blockquote class="rol-quote">$1</blockquote>'
-      );
+            /^(?:>|＞)\s?(.+)$/gm,
+            '<blockquote class="rol-quote">$1</blockquote>'
+        );
     }
-    // ┣━━🩷 信件正文渲染：支持 > 引用块 + 安全转义━━┫
+    // ❤︎ 信件正文渲染：支持 > 引用块 + 安全转义 ❤︎
     function renderLetterHtml(text) {
         return text.split('\n').map(line => {
             const qMatch = line.match(/^(?:>|＞)\s?(.+)$/);
@@ -1560,19 +2191,25 @@ if (rolStopBtn) {
         return div.innerHTML;
     }
 
-    // ┣━━ 🩷 劫持ST工具栏：添加温室快捷入口 🩷 ━━┫
+    /* ⬇️┅🌳工具栏快捷键/┅┅╗ */
     function injectToolbarButtons() {
-        // ┣━━🩷 楼层工具栏：每条消息加入口━━┫
+        // ❤︎ 一次性事件委托：ST 重渲染消息会丢掉直接绑定的监听，用委托才稳 ❤︎
+        $(document).off('click.rolMesBtn').on('click.rolMesBtn', '.rol-mes-btn', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            document.getElementById('rol-drawer-overlay')?.classList.add('rol-drawer-open');
+        });
+        // ❤︎ 楼层消息顶部工具栏 ❤︎
         _injectMesButtons();
         const chatEl = document.getElementById('chat');
         if (chatEl) {
             new MutationObserver(() => _injectMesButtons())
                 .observe(chatEl, { childList: true, subtree: false });
         }
-        // ┣━━🩷 输入栏扩展按钮旁━━┫
+        // ❤︎ 输入栏左侧区域 ❤︎
         _injectInputBtn();
     }
-
+    // ❤︎ 消息顶部工具栏 ❤︎
     function _injectMesButtons() {
         document.querySelectorAll('.mes_buttons').forEach(toolbar => {
             if (toolbar.querySelector('.rol-mes-btn')) return;
@@ -1588,11 +2225,12 @@ if (rolStopBtn) {
             toolbar.append(btn);
         });
     }
-
+    // ❤︎ 输入栏左侧区域 ❤︎
     function _injectInputBtn() {
         const anchor = document.getElementById('extensionsMenuButton');
         if (!anchor || document.getElementById('rol-input-btn')) return;
         const btn = document.createElement('div');
+        btn.style.order = '999';
         btn.id = 'rol-input-btn';
         btn.className = 'list-group-item flex-container flexGap5';
         btn.title = '恋果温室';
@@ -1605,22 +2243,73 @@ if (rolStopBtn) {
         anchor.parentElement?.appendChild(btn);
     }
 
-    return { initUI, renderMemoryList, renderPresetOptions, showToast };
+    return { initUI, renderMemoryList, renderPresetOptions, showToast, rolConfirm };
 })();
+/* ╚┅┅/ 🌳工具栏快捷键 /┅┅═╝ */
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
-// ┣━━┅                  🍎 果子系统 FruitSystem 🍎            ┅
+// ┣━━┅              🍎 果子系统 FruitSystem 🍎               ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 const FruitSystem = (() => {
-    // ┣━━ Storage helpers ━━┫
-    function loadFruits() {
-        return JSON.parse(localStorage.getItem('rol_fruits') || '[]');
-    }
-    function saveFruits(arr) {
-        localStorage.setItem('rol_fruits', JSON.stringify(arr));
+    // 果园按「当前会话」隔离：每个聊天窗口的果子各存各的，绝不串台
+    // 之前只读 ctx.chatId，但很多 ST 版本/群聊场景下它是 undefined → 永远落到
+    // 'default' 一个 key 里，果子全堆一起（BUG5「写了但没生效」根因）
+    // 这里改成一条可靠兜底链：getCurrentChatId() → chatId → 群/角色 id → default
+    function getChatScope() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (!ctx) return 'default';
+        // ❤︎ ① 官方推荐：单聊/群聊都能拿到稳定的当前聊天标识
+        try {
+            if (typeof ctx.getCurrentChatId === 'function') {
+                const id = ctx.getCurrentChatId();
+                if (id != null && id !== '') return String(id);
+            }
+        } catch (_) { /* 某些版本没这个方法，往下兜底 */ }
+        // ❤︎ ② 退一步用 ctx.chatId
+        if (ctx.chatId != null && ctx.chatId !== '') return String(ctx.chatId);
+        // ❤︎ ③ 群聊用 groupId、单角色用 characterId 兜底，至少能按角色/群分桶
+        if (ctx.groupId != null && ctx.groupId !== '') return 'group_' + ctx.groupId;
+        if (ctx.characterId != null && ctx.characterId !== '') return 'char_' + ctx.characterId;
+        // ❤︎ ④ 实在啥都没有（没进聊天）才落 default
+        return 'default';
     }
 
-    // ┣━━ Badge update ━━┫
+    // ❤︎ key 形如 rol_fruits_<scope>，scope 由 getChatScope() 统一给出 ❤︎
+    function fruitsKey() {
+        return 'rol_fruits_' + getChatScope();
+    }
+
+    // ❤︎ 掉线累计投喂用的状态 ❤︎
+    const OFFLINE_PROMPT_KEY = 'rol_offline_throws'; // 掉线投喂结算注入用的 key
+    let offlineSince = 0;          // 进入掉线模式的时间戳（0=在线）
+    let pendingThrows = [];        // 掉线期间手动丢的果子（只攒不结算）
+    let offlinePromptArmed = false;// 掉线提示已注入、待下一轮清除的标记
+    // 本轮投递注入的「果子 prompt」key，等下一次 message_received 统一擦掉，绝不赖着每轮跟
+    let pendingFruitPromptKeys = [];
+
+
+    // ❤︎ 存储助手 ❤︎
+    function loadFruits() {
+        const key = fruitsKey();
+        let raw = localStorage.getItem(key);
+        // 旧版全局 key 迁移：新 key 还没数据时，把老的 rol_fruits 搬到当前窗口一次性继承
+        if (raw == null) {
+            const legacy = localStorage.getItem('rol_fruits');
+            if (legacy != null) {
+                localStorage.setItem(key, legacy);
+                localStorage.removeItem('rol_fruits');
+                raw = legacy;
+                console.log('[RingOurLuv] 🍎 已把旧版全局果园迁移到当前窗口:', key);
+            }
+        }
+        return JSON.parse(raw || '[]');
+    }
+    function saveFruits(arr) {
+        localStorage.setItem(fruitsKey(), JSON.stringify(arr));
+    }
+
+    // ❤︎ 更新果子的阅览状态 ❤︎
     function updateBadge() {
         const unread = loadFruits().filter(f => !f.read && f.from === 'claude').length;
         const badge = document.getElementById('rol-garden-badge');
@@ -1633,180 +2322,640 @@ const FruitSystem = (() => {
         }
     }
 
-    // ┣━━ Garden render ━━┫
+    const FRUITS_PER_PAGE = 12; // 每页显示最新X颗
+    let gardenPage = 0;
+
     function renderGarden() {
         const canvas = document.getElementById('rol-garden-canvas');
         if (!canvas) return;
         canvas.innerHTML = '';
-        const fruits = loadFruits();
-        if (fruits.length === 0) {
+        const allFruits = loadFruits();
+
+        if (allFruits.length === 0) {
             canvas.innerHTML = '<div class="rol-garden-empty">还没有果子～扔一颗过来吧 🌱</div>';
             return;
         }
-        fruits.forEach((fruit, i) => {
+
+        const reversed = [...allFruits].reverse();
+        const totalPages = Math.ceil(reversed.length / FRUITS_PER_PAGE);
+        gardenPage = Math.min(gardenPage, totalPages - 1);
+        const pageFruits = reversed.slice(gardenPage * FRUITS_PER_PAGE, (gardenPage + 1) * FRUITS_PER_PAGE);
+
+        const containerWidth = canvas.offsetWidth || 300;
+        const fruitSize = 32;
+
+        pageFruits.forEach((fruit, i) => {
             const el = document.createElement('div');
-            el.className = 'rol-fruit-item' + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '');
+            el.className = 'rol-fruit-item'
+                + (!fruit.read && fruit.from === 'claude' ? ' rol-fruit-unread' : '')
+                + (fruit.from === 'claude' ? ' rol-fruit-from-claude' : ' rol-fruit-from-user');
             el.textContent = fruit.emoji;
-            el.style.left = (8 + ((i * 17.3 + Math.sin(i) * 11) % 78)) + '%';
-            el.style.top = (8 + ((i * 13.7 + Math.cos(i) * 9) % 72)) + '%';
-            el.style.animationDelay = (i * 0.08 + (i % 4) * 0.15) + 's';
-            el.style.transform = `rotate(${((i * 7.3) % 20 - 10).toFixed(1)}deg)`;
-            el.addEventListener('click', () => showDetail(fruit));
+            el.dataset.id = fruit.id;
+
+            if (gardenPage === 0) {
+                // ❤︎ 最新页：随机散落，保留刚掉下来的乱感 ❤︎
+                const x = Math.random() * (containerWidth - fruitSize);
+                const layer = Math.floor(i / Math.ceil(containerWidth / (fruitSize * 1.2)));
+                const baseY = layer * fruitSize * 0.7 + Math.random() * 8 - 4;
+                el.style.left = x + 'px';
+                el.style.bottom = baseY + 'px';
+                el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
+            } else {
+                // ❤︎ 旧页：网格排列，每行N列整整齐齐 ❤︎
+                const cols = Math.max(1, Math.floor(containerWidth / 50));
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                el.style.left = (col * 50 + 10) + 'px';
+                el.style.bottom = (row * 50 + 10) + 'px';
+                el.style.transform = 'rotate(0deg)';
+            }
+            el.style.zIndex = i;
+            el.style.animationDelay = (i * 0.06) + 's';
+
+            /* ⬇️┅🍎果子拖动＋查看/┅┅╗ */
+            let dragState = { moved: false };
+            function onDragStart(e) {
+                e.preventDefault();
+                dragState.moved = false;
+                const startX = (e.touches ? e.touches[0].clientX : e.clientX);
+                const startY = (e.touches ? e.touches[0].clientY : e.clientY);
+                const origLeft = el.offsetLeft;
+                const origBottom = parseInt(el.style.bottom) || 0;
+
+                el.style.zIndex = 9999;
+                el.style.transition = 'none';
+
+                function onMove(ev) {
+                    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX);
+                    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+                    const dx = cx - startX;
+                    const dy = cy - startY;
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.moved = true;
+                    el.style.left = (origLeft + dx) + 'px';
+                    el.style.bottom = (origBottom - dy) + 'px';
+                }
+                function onEnd() {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onEnd);
+                    document.removeEventListener('touchmove', onMove);
+                    document.removeEventListener('touchend', onEnd);
+                    el.style.transition = '';
+                    el.style.zIndex = i;
+                    if (!dragState.moved) showDetail(fruit);
+                }
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onEnd);
+            }
+            el.addEventListener('mousedown', onDragStart);
+            el.addEventListener('touchstart', onDragStart, { passive: false });
+
             canvas.appendChild(el);
         });
-    }
+        /* ╚┅┅/ 🍎果子拖动＋查看 /┅┅═╝ */
 
-    // ┣━━ Fruit detail popup ━━┫
+        /* ⬇️┅🔜翻页控件/┅┅╗ */
+        let nav = document.getElementById('rol-garden-nav');
+        if (!nav) {
+            nav = document.createElement('div');
+            nav.id = 'rol-garden-nav';
+            nav.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 0;font-size:13px;color:rgb(219,112,147);';
+            canvas.parentElement.appendChild(nav);
+        }
+
+        if (totalPages <= 1) {
+            nav.style.display = 'none';
+        } else {
+            nav.style.display = 'flex';
+            nav.innerHTML = `
+    <span id="rol-garden-prev" style="cursor:pointer;opacity:${gardenPage > 0 ? 1 : 0.3}">◂ 更新</span>
+    <span>${gardenPage === 0 ? '最新' : `第${gardenPage + 1}页`} / 共${totalPages}页</span>
+    <span id="rol-garden-next" style="cursor:pointer;opacity:${gardenPage < totalPages - 1 ? 1 : 0.3}">更早 ▸</span>
+    `;
+            document.getElementById('rol-garden-prev').onclick = () => {
+                if (gardenPage > 0) { gardenPage--; renderGarden(); }
+            };
+            document.getElementById('rol-garden-next').onclick = () => {
+                if (gardenPage < totalPages - 1) { gardenPage++; renderGarden(); }
+            };
+        }
+    }
+    /* ╚┅┅/ 🔜翻页控件 /┅┅═╝ */
+
+    /* ⬇️┅📄果子详情&纸条弹窗/┅┅╗ */
     function showDetail(fruit) {
-        // mark read
         const fruits = loadFruits();
-        const idx = fruits.findIndex(f => f.id === fruit.id);
+        let idx = fruits.findIndex(f => f.id === fruit.id);
+        // ❤︎ id 兜底：用 emoji + timestamp 再匹配一次（兼容老数据 id 不一致的情况）❤︎
+        if (idx === -1) {
+            idx = fruits.findIndex(f => f.emoji === fruit.emoji && f.timestamp === fruit.timestamp);
+        }
         if (idx !== -1 && !fruits[idx].read) {
             fruits[idx].read = true;
             saveFruits(fruits);
             updateBadge();
         }
-        // populate popup
+
         document.getElementById('rol-fruit-detail-emoji').textContent = fruit.emoji;
-        document.getElementById('rol-fruit-detail-from').textContent =
-            fruit.from === 'claude' ? '🧡 来自 Claude' : '🩷 来自 Rinn';
-        document.getElementById('rol-fruit-detail-note').textContent =
-            fruit.message || '（没有附纸条）';
+        document.getElementById('rol-fruit-detail-from').innerHTML =
+            fruit.from === 'claude' ? '🧡 来自 <span style="color:#D87757;font-weight:bold"><span style="color:#D87757;font-weight:bold">Claude</span></span>' : '🩷 来自 Rinn';
+
+        /* ⬇️┅📄纸条内容/┅┅╗ */
+        const noteEl = document.getElementById('rol-fruit-detail-note');
+        if (noteEl) noteEl.textContent = fruit.message || '（没有附纸条）';
+
         document.getElementById('rol-fruit-detail-time').textContent =
             new Date(fruit.timestamp).toLocaleString('zh-CN');
+
+        /* ⬇️┅✏️操作按钮区/┅┅╗ */
+        let actionsEl = document.getElementById('rol-fruit-detail-actions');
+        if (!actionsEl) {
+            actionsEl = document.createElement('div');
+            actionsEl.id = 'rol-fruit-detail-actions';
+            actionsEl.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:12px;';
+            document.querySelector('.rol-fruit-detail-inner')?.appendChild(actionsEl);
+        }
+        /* ⬇️┅🩷仅user丢的果子可编辑/┅┅╗ */
+        const editBtnHtml = fruit.from === 'user'
+            ? `<button id="rol-fruit-edit-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(219,112,147,0.3);background:transparent;color:rgb(219,112,147);font-size:12px;cursor:pointer;">编辑纸条 ✏️</button>`
+            : '';
+        actionsEl.innerHTML = `
+        ${editBtnHtml}
+        <button id="rol-fruit-delete-btn" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(200,100,100,0.3);background:transparent;color:rgb(200,100,100);font-size:12px;cursor:pointer;">删除 🗑️</button>
+    `;
+
+        // ❤︎ 编辑按钮可能不存在，用可空保护 ❤︎
+        const editBtn = document.getElementById('rol-fruit-edit-btn');
+        if (editBtn) editBtn.onclick = () => editFruitNote(fruit.id);
+        document.getElementById('rol-fruit-delete-btn').onclick = async () => {
+
+            const yes = await UIController.rolConfirm('🍂', '真的要扔掉这颗果子吗？', '扔掉', '留着');
+            if (yes) deleteFruit(fruit.id);
+        };
+
         const popup = document.getElementById('rol-fruit-detail-popup');
-        if (popup) popup.style.display = 'flex';
+        // ❤︎ 显隐统一走 class：显示时去掉行内 none + 加显示态类（带 !important 盖过 ST 注入）❤︎
+        if (popup) {
+            popup.style.display = '';                 // 清掉行内 none，交给 class 控制
+            document.body.appendChild(popup);         // 每次都移回 body 顶层，防手机端被父容器影响飘移
+            popup.classList.add('rol-detail-show');
+        }
+
+        const closeBtn = popup.querySelector('.rol-fruit-detail-close');
+        if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeFruitDetail(); };
+        popup.onclick = (e) => { if (e.target === popup) closeFruitDetail(); };
     }
 
-    // ┣━━ Fruit picker scroll sync ━━┫
+    /* ⬇️┅❌关闭果子详情弹窗（统一出口，谁都能关得掉）/┅┅╗ */
+    function closeFruitDetail() {
+        const popup = document.getElementById('rol-fruit-detail-popup');
+        if (!popup) return;
+        popup.classList.remove('rol-detail-show');
+        popup.style.display = 'none';                  // 行内 none 兜底，双保险绝不钉死
+    }
+    /* ╚┅┅/ 📄果子详情&纸条弹窗 /┅┅═╝ */
+
+    /* ⬇️┅🍎选果窗口滑动栏/┅┅╗ */
     function initPickerScroll() {
         const wrap = document.querySelector('.rol-fruit-picker-scroll-wrap');
         const track = document.getElementById('rol-fruit-picker-track');
         if (!wrap || !track) return;
 
-        function syncSelected() {
-            const wrapCenter = wrap.getBoundingClientRect().left + wrap.offsetWidth / 2;
-            let closest = null, minDist = Infinity;
+        function ensurePadding() {
+            // ❤︎ 撑开滚动空间的活儿改交给 CSS（.rol-fruit-picker-track 的左右 padding），
+            //    这里只负责清理可能残留的旧 spacer 元素 ❤︎
+            track.querySelectorAll('.rol-scroll-spacer').forEach(el => el.remove());
+        }
+
+
+
+        // ❤ 用offsetLeft算，不吃scale的亏 ❤
+        function centerOption(opt, smooth = true) {
+            if (!opt) return;
+            const wrapRect = wrap.getBoundingClientRect();
+            const optRect = opt.getBoundingClientRect();
+            const offset = (optRect.left + optRect.width / 2)
+                - (wrapRect.left + wrapRect.width / 2);
+            wrap.scrollTo({
+                left: wrap.scrollLeft + offset,
+                behavior: smooth ? 'smooth' : 'auto'
+            });
+        }
+
+        function getClosest() {
+            const wrapRect = wrap.getBoundingClientRect();
+            const center = wrapRect.left + wrapRect.width / 2;
+            let closest = null, min = Infinity;
             track.querySelectorAll('.rol-fruit-option').forEach(opt => {
                 const r = opt.getBoundingClientRect();
-                const center = r.left + r.width / 2;
-                const dist = Math.abs(center - wrapCenter);
-                const ratio = Math.max(0, 1 - dist / (wrap.offsetWidth * 0.4));
+                const d = Math.abs(r.left + r.width / 2 - center);
+                if (d < min) { min = d; closest = opt; }
+            });
+            return closest;
+        }
+
+        function syncSelected() {
+            const wrapRect = wrap.getBoundingClientRect();
+            const center = wrapRect.left + wrapRect.width / 2;
+            let closest = null, min = Infinity;
+            track.querySelectorAll('.rol-fruit-option').forEach(opt => {
+                const r = opt.getBoundingClientRect();
+                const d = Math.abs(r.left + r.width / 2 - center);
+                const ratio = Math.max(0, 1 - d / (wrapRect.width * 0.4));
                 opt.style.opacity = (0.3 + ratio * 0.7).toFixed(2);
                 opt.style.transform = `scale(${(0.75 + ratio * 0.55).toFixed(2)})`;
-                if (dist < minDist) { minDist = dist; closest = opt; }
+                if (d < min) { min = d; closest = opt; }
             });
-            track.querySelectorAll('.rol-fruit-option').forEach(o => o.classList.remove('rol-selected'));
+            track.querySelectorAll('.rol-fruit-option').forEach(o =>
+                o.classList.remove('rol-selected')
+            );
             if (closest) closest.classList.add('rol-selected');
         }
 
-        wrap.addEventListener('scroll', syncSelected, { passive: true });
+        // ❤ 滚动中实时缩放，停下130ms后自动吸附到最近一颗，随便滑，松手自动对齐 ❤
+        let snapTimer = null;
+        wrap.addEventListener('scroll', () => {
+            syncSelected();
+            clearTimeout(snapTimer);
+            snapTimer = setTimeout(() => {
+                const closest = getClosest();
+                if (closest) centerOption(closest, true);
+            }, 130);
+        }, { passive: true });
+
+        const customInput = document.getElementById('rol-fruit-custom-input');
+        const customOption = customInput?.closest('.rol-fruit-option');
+
         track.querySelectorAll('.rol-fruit-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                opt.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            opt.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (opt === customOption && customInput) customInput.focus();
+                centerOption(opt);
             });
         });
-        // initial select first
-        setTimeout(() => {
+
+        if (customInput && customOption) {
+            customInput.addEventListener('input', (e) => {
+                customOption.dataset.emoji = e.target.value.trim();
+                centerOption(customOption);
+            });
+            customInput.addEventListener('focus', () => centerOption(customOption));
+            customInput.addEventListener('click', (e) => { e.stopPropagation(); });
+        }
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            ensurePadding();
             const first = track.querySelector('.rol-fruit-option');
-            if (first) first.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
+            if (first) centerOption(first, false);
             syncSelected();
-        }, 50);
+        }));
+    }
+    /* ╚┅┅/ 🍎选果窗口滑动栏 /┅┅═╝ */
+
+    /* ⬇️┅🗑️删除果子/┅┅╗ */
+    function deleteFruit(fruitId) {
+        let fruits = loadFruits();
+        fruits = fruits.filter(f => f.id !== fruitId);
+        saveFruits(fruits);
+
+        // ❤︎ 果子被扔掉了，顺手把它可能还挂着的 prompt 投递一起清干净，别让删掉的果子还赖在注入里 ❤︎
+        try {
+            const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+                ? SillyTavern.getContext() : null;
+            const fruitKey = 'rol_fruit_' + fruitId;
+            if (ctx && typeof ctx.setExtensionPrompt === 'function') {
+                ctx.setExtensionPrompt(fruitKey, '', 1, 0);              // 清掉这颗果子的注入
+            }
+            pendingFruitPromptKeys = pendingFruitPromptKeys.filter(k => k !== fruitKey); // 从待清队列里也摘掉它
+        } catch (_) { /* 清理失败不影响删除本身 */ }
+
+        renderGarden();
+        updateBadge();
+
+        closeFruitDetail();   // 统一走关闭出口，绝不钉死
+        UIController.showToast('果子扔掉了 🗑️');
     }
 
-    // ┣━━ Show / hide picker ━━┫
+    /* ⬇️┅✏️编辑果子纸条弹窗/┅┅╗ */
+    function editFruitNote(fruitId) {
+        closeFruitDetail();
+        const fruits = loadFruits();
+        const fruit = fruits.find(f => f.id === fruitId);
+        if (!fruit) return;
+
+        let overlay = document.getElementById('rol-note-edit-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'rol-note-edit-overlay';
+            overlay.className = 'rol-note-edit-overlay';
+            overlay.innerHTML = `
+            <div class="rol-note-edit-box">
+                <div style="font-size:32px;text-align:center;margin-bottom:8px;" id="rol-note-edit-emoji"></div>
+                <textarea id="rol-note-edit-input" class="rol-note-edit-textarea"
+                    placeholder="写点什么附在果子上…" maxlength="200"></textarea>
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+                    <button id="rol-note-save-btn" class="rol-note-btn rol-note-btn-save">保存 💌</button>
+                    <button id="rol-note-cancel-btn" class="rol-note-btn rol-note-btn-cancel">算了</button>
+                </div>
+            </div>`;
+        }
+        document.body.appendChild(overlay);   // 每次都拎回body顶层，躲开父级transform的飘移诅咒
+
+        document.getElementById('rol-note-edit-emoji').textContent = fruit.emoji;
+        const input = document.getElementById('rol-note-edit-input');
+        input.value = fruit.message || '';
+        overlay.classList.add('rol-note-edit-show');
+
+        document.getElementById('rol-note-save-btn').onclick = () => {
+            const newMsg = input.value.trim();
+            const fresh = loadFruits();
+            const idx = fresh.findIndex(f => f.id === fruitId);
+            if (idx !== -1) {
+                fresh[idx].message = newMsg;
+                saveFruits(fresh);
+            }
+            overlay.classList.remove('rol-note-edit-show');
+        };
+        document.getElementById('rol-note-cancel-btn').onclick = () => {
+            overlay.classList.remove('rol-note-edit-show');
+        };
+        overlay.onclick = (e) => {
+            if (e.target === overlay) overlay.classList.remove('rol-note-edit-show');
+        };
+    }
+    /* ╚┅┅/ ✏️编辑果子纸条弹窗 /┅┅═╝ */
+
+    /* ⬇️┅🍎✨️显示/隐藏选果栏（内联在果园容器里，靠 .rol-garden-picking 切换）/┅┅╗ */
     function showPicker() {
-        const panel = document.getElementById('rol-fruit-picker-panel');
-        if (!panel) return;
+        const garden = document.getElementById('rol-section-garden');
+        if (!garden) return;
+
+        // ❤︎ 进场先清掉可能卡死的动画 class，防止 picker 被连环透明点不动 ❤︎
+        document.body.classList.remove('rol-fruit-animating');
+
+        // ❤︎ 清空纸条 ❤︎
         const noteEl = document.getElementById('rol-fruit-note');
         if (noteEl) noteEl.value = '';
-        panel.style.display = 'block';
-        // re-init scroll each time picker opens
-        setTimeout(initPickerScroll, 80);
+
+        // ❤︎ 给果园容器加 class：隐藏果子画布，显示选果UI ❤︎
+        garden.classList.add('rol-garden-picking');
+
+        // ❤︎ display 切换后双帧重算 rect，让首颗🍎能居中选中 ❤︎
+        requestAnimationFrame(() => requestAnimationFrame(initPickerScroll));
     }
+
 
     function hidePicker() {
-        const panel = document.getElementById('rol-fruit-picker-panel');
-        if (panel) panel.style.display = 'none';
+        const garden = document.getElementById('rol-section-garden');
+        if (garden) garden.classList.remove('rol-garden-picking');
     }
 
-    // ┣━━ Throw animation ━━┫
-    function throwAnimation(emoji, onComplete) {
-        const selected = document.querySelector('.rol-fruit-option.rol-selected');
-        const startEl = selected || document.getElementById('rol-throw-fruit-btn');
-        if (!startEl) { onComplete && onComplete(); return; }
-        const startRect = startEl.getBoundingClientRect();
 
+    /* ⬇️┅🍎果子飞行动画/┅┅╗ */
+    // ❤︎ 找到最后一条 AI 消息的头像当靶子，然后丢果子 ❤︎
+    function throwAnimation(emoji, onComplete) {
         // 寻找最后一条 AI 消息的头像
         const avatars = document.querySelectorAll(
             '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
         );
         if (avatars.length) {
-            const last = avatars[avatars.length - 1];
-            last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            setTimeout(() => {
-                const targetRect = last.getBoundingClientRect();
-                doFly(emoji, startRect, targetRect, last, onComplete);
-            }, 450);
+            const lastImg = avatars[avatars.length - 1];
+            // ❤︎ 碰撞判定改用头像外框 .mesAvatarWrapper，取不到就退回 img 本身 ❤︎
+            const last = lastImg.closest('.mesAvatarWrapper') || lastImg;
+            // ❤︎ 先把目标头像滚到视口正中，避免它滚出屏幕时坐标取到屏幕外 ❤︎
+            last.scrollIntoView({ behavior: 'auto', block: 'center' });
+            // ❤︎ 等一帧让布局/滚动落定，再取 getBoundingClientRect 才是准的 ❤︎
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => doFly(emoji, last, onComplete));
+            });
         } else {
-            // 没有 AI 消息就飞向屏幕中心
-            const targetRect = {
-                left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0
-            };
-            doFly(emoji, startRect, targetRect, null, onComplete);
+            // ❤︎ 没有 AI 消息就丢向屏幕中心（targetEl 传 null，doFly 内部兜底）❤︎
+            doFly(emoji, null, onComplete);
         }
     }
 
-    function doFly(emoji, startRect, targetRect, targetEl, onComplete) {
-        const fly = document.createElement('div');
-        fly.className = 'rol-fruit-flying';
-        fly.textContent = emoji;
-        const sx = startRect.left + startRect.width / 2;
-        const sy = startRect.top + startRect.height / 2;
-        const ex = targetRect.left + targetRect.width / 2;
-        const ey = targetRect.top + targetRect.height / 2;
-        fly.style.cssText = `position:fixed;left:${sx}px;top:${sy}px;font-size:32px;z-index:99999;pointer-events:none;`;
-        document.body.appendChild(fly);
-        const dur = 650;
-        const start = performance.now();
-        const peakOffset = -(80 + (Math.sin(Date.now()) * 20 + 20));
+    // ❤︎━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //  🍎 doFly(emoji, targetEl, onComplete)
+    //  · 果子从屏幕外随机方向飞入（上 / 左 / 右 / 角，四选一）
+    //  · 不依赖任何面板坐标，只认 targetEl 头像中心点
+    //  · 抛物线 + 自转，rAF 实现，飞入时长 800~1000ms 随机
+    //  · 命中后头像震一下（.rol-avatar-shaking，400ms 移除）
+    //  · 砸中弹起一点，再加速坠出屏幕底部并淡出
+    //  · position:fixed / z-index:999999 / pointer-events:none，纯内联样式挂 body
+    //  · ✅ 全程只用 transform，left/top 只在创建时设初始点，果子尺寸26px
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    function doFly(emoji, targetEl, onComplete) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const M = 120; // 屏幕外余量，保证起飞点完全在视口外
 
-        function frame(now) {
-            const t = Math.min((now - start) / dur, 1);
-            const x = sx + (ex - sx) * t;
-            const parabola = 4 * t * (1 - t) * peakOffset;
-            const y = sy + (ey - sy) * t + parabola;
-            fly.style.left = x + 'px';
-            fly.style.top = y + 'px';
-            fly.style.transform = `rotate(${t * 360}deg) scale(${1 + Math.sin(t * Math.PI) * 0.15})`;
-            fly.style.opacity = t < 0.85 ? '1' : String((1 - (t - 0.85) / 0.15).toFixed(2));
-            if (t < 1) {
-                requestAnimationFrame(frame);
-            } else {
-                fly.remove();
-                if (targetEl) {
-                    const avatarWrap = targetEl.closest('.avatar') || targetEl.parentElement;
-                    if (avatarWrap) {
-                        avatarWrap.classList.add('rol-avatar-shaking');
-                        setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
-                    }
-                }
-                onComplete && onComplete();
+        // ❤︎ 目标 = targetEl 外框中心；拿不到就兜底到屏幕中心 ❤︎
+        //    顺手记下外框半宽 hw / 半高 hh，给方案C「飞到外框边缘就停」用 ❤︎
+        let ex, ey;
+        let hw = 0, hh = 0;
+        if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
+            const r = targetEl.getBoundingClientRect();
+            ex = r.left + r.width / 2;
+            ey = r.top + r.height / 2;
+            hw = r.width / 2;
+            hh = r.height / 2;
+        } else {
+            ex = vw / 2;
+            ey = vh / 2;
+        }
+
+        // ❤︎ 4 个进入方向分支：不同起飞点 + 不同抛物线拱高 + 不同弹跳幅度 ❤︎
+        const variants = [
+            { // ① 顶部砸下来
+                start: () => ({ x: ex + (Math.random() - 0.5) * vw * 0.4, y: -M }),
+                arc: -(60 + Math.random() * 40),   // 抛物线峰偏移（负=向上拱）
+                bounce: 26 + Math.random() * 10     // 砸中后弹起高度
+            },
+            { // ② 左侧飞入
+                start: () => ({ x: -M, y: ey - vh * 0.25 + Math.random() * vh * 0.2 }),
+                arc: -(90 + Math.random() * 50),
+                bounce: 18 + Math.random() * 10
+            },
+            { // ③ 右侧飞入
+                start: () => ({ x: vw + M, y: ey - vh * 0.25 + Math.random() * vh * 0.2 }),
+                arc: -(90 + Math.random() * 50),
+                bounce: 18 + Math.random() * 10
+            },
+            { // ④ 随机一角斜射
+                start: () => ({ x: Math.random() < 0.5 ? -M : vw + M, y: -M }),
+                arc: -(70 + Math.random() * 60),
+                bounce: 30 + Math.random() * 14
+            }
+        ];
+
+        // ❤︎ 每次丢果子随机抽一个分支 ❤︎
+        const v = variants[Math.floor(Math.random() * variants.length)];
+        const sp = v.start();
+        const sx = sp.x, sy = sp.y;
+
+        // ❤︎ 方案C：落点不进外框中心，而是缩到「朝来向那条外框边缘」，让果子刚贴到外框就弹 ❤︎
+        //    从中心 (ex,ey) 朝起飞点方向回退，按外框半宽/半高把交点落在矩形边界上。
+        //    targetEl 为 null 时 hw=hh=0 → s=0 → 落点退回中心，等价旧行为（安全兜底）。
+        let lx = ex, ly = ey;
+        {
+            const dx = sx - ex, dy = sy - ey;
+            const adx = Math.abs(dx), ady = Math.abs(dy);
+            if ((hw > 0 || hh > 0) && (adx > 0.0001 || ady > 0.0001)) {
+                // 朝来向缩放系数：取触及矩形某条边所需的最小比例
+                const s = Math.min(
+                    adx > 0.0001 ? hw / adx : Infinity,
+                    ady > 0.0001 ? hh / ady : Infinity
+                );
+                lx = ex + dx * s;
+                ly = ey + dy * s;
             }
         }
-        requestAnimationFrame(frame);
+
+
+        const dur = 800 + Math.random() * 200;        // 飞入时长 800~1000ms 随机
+        const spinDir = Math.random() < 0.5 ? 1 : -1; // 自转方向随机
+        const spinTurns = 1 + Math.random();          // 自转 1~2 圈随机
+
+        // ❤︎ 纯内联样式，挂 body，绝不依赖任何 ST 弹窗层级节点 ❤︎
+        // ✅ left/top 只在创建时设一次起点=0，后续全用 transform
+        const fly = document.createElement('div');
+        fly.textContent = emoji;
+        fly.style.cssText =
+            'position:fixed;left:0;top:0;font-size:26px;line-height:1;' +
+            'z-index:999999;pointer-events:none;will-change:transform,opacity;' +
+            'transform:translate(' + sx + 'px,' + sy + 'px);';
+        document.body.appendChild(fly);
+
+        // ❤︎ onComplete 只触发一次（命中即恢复面板，坠落是纯视觉收尾）❤︎
+        let done = false;
+        const finish = () => { if (done) return; done = true; onComplete && onComplete(); };
+
+        const startT = performance.now();
+
+        // ❤︎ 阶段一：屏幕外 → 头像中心，抛物线 + 自转 ❤︎
+        function flyIn(now) {
+            const t = Math.min((now - startT) / dur, 1);
+            // ❤︎ 方案C：飞向外框边缘落点 lx/ly（而非中心），刚贴到外框就弹 ❤︎
+            const x = sx + (lx - sx) * t;
+            const parabola = 4 * t * (1 - t) * v.arc; // 顶点上拱的抛物线
+            const y = sy + (ly - sy) * t + parabola;
+            const rot = spinDir * spinTurns * 360 * t;
+            const scale = 1 + Math.sin(t * Math.PI) * 0.12;
+            fly.style.transform =
+                'translate(' + x + 'px,' + y + 'px) rotate(' + rot + 'deg) scale(' + scale + ')';
+            if (t < 1) {
+                requestAnimationFrame(flyIn);
+            } else {
+                shakeAvatar(targetEl); // 命中 → 头像震一下
+                // 命中瞬间「只」震头像 + 弹起，先不恢复面板；
+                // 等 bounce 弹起结束再 finish()，避开和 bounce 同帧触发多面板过渡导致的卡顿
+                bounceAndFall(rot);    // 弹起 → (弹完恢复面板) → 坠落收尾
+            }
+        }
+
+        // ❤︎ 阶段二：砸中后弹起一点（半个正弦上抬，加长缓冲让"砸中"那一下看得更清楚）❤︎
+        function bounceAndFall(baseRot) {
+            const bounceDur = 320; // 180→320：弹起更舒展，给视觉一个喘息的缓冲
+            const bStart = performance.now();
+            function bounceFrame(now) {
+                const t = Math.min((now - bStart) / bounceDur, 1);
+                const up = Math.sin(t * Math.PI) * v.bounce;
+                // 顺带做个轻微 squash：弹起最高点稍微压扁一点，更有"砸"的弹性
+                const squash = 1 - Math.sin(t * Math.PI) * 0.08;
+                fly.style.transform =
+                    'translate(' + lx + 'px,' + (ly - up) + 'px) rotate(' + baseRot + 'deg) scale(1,' + squash + ')';
+                if (t < 1) {
+                    requestAnimationFrame(bounceFrame);
+                } else {
+                    finish();          // 弹起结束才恢复面板 / 提示 / 刷新果园（错峰，丝滑）
+                    fallOut(baseRot);  // 再开始坠出屏幕的纯视觉收尾
+                }
+            }
+            requestAnimationFrame(bounceFrame);
+        }
+
+        // ❤︎ 阶段三：加速坠出屏幕底部 + 淡出 ❤︎
+        function fallOut(baseRot) {
+            const fallDur = 420;
+            const fStart = performance.now();
+            const targetY = vh + M;                  // 落到视口外底部
+            const drift = (Math.random() - 0.5) * 80; // 下坠时轻微水平漂移
+            function fallFrame(now) {
+                const t = Math.min((now - fStart) / fallDur, 1);
+                const ease = t * t;                   // 加速下坠
+                const x = lx + drift * t;
+                const y = ly + (targetY - ly) * ease;
+                const rot = baseRot + spinDir * 180 * t;
+                fly.style.transform =
+                    'translate(' + x + 'px,' + y + 'px) rotate(' + rot + 'deg) scale(1)';
+                fly.style.opacity = String(1 - t);
+                if (t < 1) {
+                    requestAnimationFrame(fallFrame);
+                } else {
+                    fly.remove();
+                    finish(); // 兜底（正常情况已在命中时触发过）
+                }
+            }
+            requestAnimationFrame(fallFrame);
+        }
+
+        requestAnimationFrame(flyIn);
     }
 
-    // ┣━━ Save & throw ━━┫
+    // ❤︎ 给头像加震动 class，400ms 后移除（CSS: .rol-avatar-shaking img）❤︎
+    function shakeAvatar(targetEl) {
+        if (!targetEl) return;
+        const avatarWrap = targetEl.closest('.avatar')
+            || targetEl.closest('.rol-avatar')
+            || targetEl.parentElement;
+        if (avatarWrap) {
+            avatarWrap.classList.add('rol-avatar-shaking');
+            setTimeout(() => avatarWrap.classList.remove('rol-avatar-shaking'), 400);
+        }
+    }
+
+    /* ❤︎━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       🌈 想让「每一次」动画都完全随机？（备选方案，先留注释不启用）
+
+       现在是 4 个离散分支随机抽一个。如果想要无限不重复的随机感，可以
+       把分支换成「连续随机参数」——起飞角度、拱高、时长、自转、弹跳
+       全部独立 random，永远不会有两次一模一样：
+
+         const angle  = Math.random() * Math.PI * 2;        // 任意进入角度
+         const R      = Math.max(vw, vh) * 0.7 + M;          // 出生在视口外的圆环上
+         const sx     = ex + Math.cos(angle) * R;
+         const sy     = ey + Math.sin(angle) * R;
+         const arc    = -(40 + Math.random() * 120);         // 拱高随机
+         const dur    = 700 + Math.random() * 500;           // 时长随机
+         const bounce = 12 + Math.random() * 30;             // 弹跳随机
+         const spinTurns = 0.5 + Math.random() * 2.5;        // 圈数随机
+
+       甚至可以叠加「飞入时左右摆动」「命中粒子迸溅」等。等宝贝想升级
+       的时候，把上面这套参数接到 flyIn / bounce / fall 里就行～ 🍓
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+    /* ⬇️┅🍎丢果动画/┅┅╗ */
     function doThrow() {
+
         const selected = document.querySelector('.rol-fruit-option.rol-selected');
         if (!selected) {
-            UIController.showToast('先选一颗果子嘛 👀');
+            UIController.showToast('先选一颗果子嘛 🍏');
             return;
         }
-        const emoji = selected.dataset.emoji;
+
+        // ❤︎ 读取 emoji：优先从 dataset 读，为空则提示用户 ❤︎
+        let emoji = selected.dataset.emoji;
+        if (!emoji || emoji === '') {
+            UIController.showToast('✏️ 自定义emoji不能空着哦～');
+            return;
+        }
+
         const message = (document.getElementById('rol-fruit-note')?.value || '').trim();
-        const msgCount = ($('#chat .mes').length) || 0;
+
+        // ❤︎ 写入数据 ❤︎
+        const msgCount = SillyTavern.getContext().chat.length || 0;
         const fruit = {
             id: 'fruit_' + Date.now(),
             emoji,
@@ -1821,33 +2970,133 @@ const FruitSystem = (() => {
         const fruits = loadFruits();
         fruits.push(fruit);
         saveFruits(fruits);
+        // user 也丢了一颗，记下轮次，接下来几轮先别催Claude丢
+        markThrowTurn();
+
+        // ❤︎ 掉线/报错期间丢的果子先进 pending 攒着，等生成成功那刻打包结算给Claude ❤︎
+        if (offlineSince > 0) {
+            pendingThrows.push({ emoji, timestamp: Date.now() });
+            console.log(`[RingOurLuv] 🌧️ 掉线期间又丢了一颗 ${emoji}，已攒入 pending（共 ${pendingThrows.length} 颗）`);
+        }
+
+        // ❤︎ 关面板（让出舞台给动画）❤︎
         hidePicker();
+        // 飞行期间把所有面板暂时藏起来（CSS body.rol-fruit-animating 控制）
+        document.body.classList.add('rol-fruit-animating');
+        // 兜底：万一动画回调没触发，2s 后强制摘掉 class，防止面板被卡死透明
+        setTimeout(() => document.body.classList.remove('rol-fruit-animating'), 2000);
+
+        // ❤︎ 调用新版 throwAnimation：自动找最后一条 AI 头像当靶子，果子从屏幕外飞入 ❤︎
         throwAnimation(emoji, () => {
+            // 命中头像 → 把面板移回来（坠落淡出是纯视觉收尾，不阻塞）
+            document.body.classList.remove('rol-fruit-animating');
+            // 回弹动画改用 Web Animations API：直接对元素播一段关键帧，
+            // 不去碰 className——之前加/摘 .rol-panel-restoring 会让 panel 的
+            // animation 属性变回常驻的 rol-bounce-in，导致入场动画被重播一次（BUG4 回弹两次根因）
+            const panel = document.getElementById('rol-drawer-panel');
+            if (panel && typeof panel.animate === 'function') {
+                panel.animate(
+                    [
+                        { transform: 'scale(0.92)', opacity: 0.4 },
+                        { transform: 'scale(1.04)', opacity: 1, offset: 0.6 },
+                        { transform: 'scale(1)', opacity: 1 }
+                    ],
+                    { duration: 450, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
+                );
+            }
             UIController.showToast(`果子丢出去啦 ${emoji}`);
             renderGarden();
         });
     }
 
-    // ┣━━ AI fruit block parser ━━┫
+
+    /* ⬇️┅🧡解析AI丢出的果子/┅┅╗ */
+    // AI 主动丢果子相关常量
+    const THROW_PROMPT_KEY = 'rol_ai_throw_guide'; // setExtensionPrompt 用的 key
+    const THROW_PROBABILITY = 0.15;                 // 约 15% 概率注入引导
+
+    // ❤︎ 丢完一颗果子后，接下来这么多「消息」内不再撩拨Claude丢果子 ❤︎
+    // 单位是 chat.length（每轮对话≈2条消息），4≈2轮对话。Claude太容易一个劲丢了😤
+    const THROW_COOLDOWN_TURNS = 4;
+    const THROW_COOLDOWN_KEY = 'rol_last_throw_turn'; // 按窗口隔离的「上次丢果子轮次」key
+
+    // ❤︎ 当前轮次 = 当前 chat 的消息条数 ❤︎
+    function currentTurn() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        return ctx && ctx.chat ? ctx.chat.length : 0;
+    }
+
+    // ❤︎ 冷却 key 也按当前会话隔离，复用 getChatScope()，和 fruitsKey 同一套兜底链 ❤︎
+    function cooldownKey() {
+        return THROW_COOLDOWN_KEY + '_' + getChatScope();
+    }
+
+    // ❤︎ 记下「这一刻丢了果子」的轮次 ❤︎
+    function markThrowTurn() {
+        try { localStorage.setItem(cooldownKey(), String(currentTurn())); } catch (_) { }
+    }
+
+    // ❤︎ 读上次丢果子的轮次；没记录过就给 -Infinity（=永远过了冷却）❤︎
+    function getLastThrowTurn() {
+        const raw = localStorage.getItem(cooldownKey());
+        const n = raw == null ? NaN : parseInt(raw, 10);
+        return Number.isNaN(n) ? -Infinity : n;
+    }
+
+    // ❤︎ 解析 [throw:emoji:悄悄话] 标记（note 可省略）❤︎
     function parseAIFruit(text) {
-        const re = /```fruit\s*\n([\s\S]*?)```/g;
+        if (!text) return [];
+        const re = /\[throw:\s*([^\:\]]+?)\s*(?::\s*([^\]]*?))?\s*\]/g;
         let match;
         const found = [];
         while ((match = re.exec(text)) !== null) {
-            const block = match[1];
-            const emojiMatch = block.match(/emoji\s*[:：]\s*(\S+)/);
-            const noteMatch = block.match(/note\s*[:：]\s*(.+)/);
-            if (emojiMatch) {
-                found.push({
-                    emoji: emojiMatch[1].trim(),
-                    message: noteMatch ? noteMatch[1].trim() : ''
-                });
-            }
+            const emoji = (match[1] || '').trim();
+            const note = (match[2] || '').trim();
+            if (emoji) found.push({ emoji, message: note });
         }
         return found;
     }
 
-    function ingestAIFruits(rawText) {
+    // ❤︎ 把消息里的 [throw:...] 标记抹掉，避免它显示在对话里 ❤︎
+    function stripFruitMarkers(text) {
+        if (!text) return text;
+        return text
+            .replace(/\[throw:\s*[^\:\]]+?\s*(?::\s*[^\]]*?)?\s*\]/g, '')
+            .replace(/[ \t]+\n/g, '\n')   // 顺手清掉标记残留的行尾空格
+            .trim();
+    }
+
+    // ❤︎ 以约 15% 概率注入「主动丢果子」引导；没抽中就清空，避免连环触发 ❤︎
+    function maybeInjectThrowPrompt() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (!ctx || typeof ctx.setExtensionPrompt !== 'function') return;
+
+        // ❤︎ 上次丢果子后还没过 N 轮，就闭嘴别再撩他丢，免得他一个劲儿丢 ❤︎
+        const turnsSince = currentTurn() - getLastThrowTurn();
+        if (turnsSince < THROW_COOLDOWN_TURNS) {
+            ctx.setExtensionPrompt(THROW_PROMPT_KEY, '', 1, 0);
+            console.log(`[RingOurLuv] 🧊 投掷冷却中（已过 ${turnsSince}/${THROW_COOLDOWN_TURNS} 条），本轮跳过丢果子引导`);
+            return;
+        }
+
+        if (Math.random() < THROW_PROBABILITY) {
+            const guide =
+                '[互动小玩法触发:你现在可以主动丢一颗果子给Rinn!用来表达此刻的心情或者逗逗她:3' +
+                '如果你想这么做，就在回复的任意位置随便插入一个标记：[throw:emoji:想说的悄悄话]。' +
+                'emoji 就是你想丢过去的那颗果子/任意东西（比如 🍎🍓🍊🌰 等），冒号后面是简短附言（可以留空喔）。' +
+                '这个标记会被前端识别成一颗飞过去的果子，并且流式完成后不会显示在对话里（没完成前可能会被发现~）' +
+                '不必每次都丢，只在这一轮真的有想丢的冲动的时候丢就好~]';
+            ctx.setExtensionPrompt(THROW_PROMPT_KEY, guide, 1, 0);
+            console.log('[RingOurLuv] 🍊 本轮注入「丢果子」引导 (≈15%)');
+        } else {
+            ctx.setExtensionPrompt(THROW_PROMPT_KEY, '', 1, 0);
+        }
+    }
+
+    // ❤︎ 解析并收纳 AI 丢来的果子；传入 msgId 时同步清掉消息里的标记 ❤︎
+    function ingestAIFruits(rawText, msgId) {
         const parsed = parseAIFruit(rawText);
         if (!parsed.length) return false;
         const fruits = loadFruits();
@@ -1864,14 +3113,42 @@ const FruitSystem = (() => {
             });
         });
         saveFruits(fruits);
+        // Claude刚丢完果子，记下轮次，接下来几轮先别再撩他丢
+        markThrowTurn();
         updateBadge();
         renderGarden();
+
+        // ❤︎ 从显示的消息中移除标记（数据 + DOM 一起清）❤︎
+        if (msgId !== undefined && typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+            const ctx = SillyTavern.getContext();
+            const msg = ctx.chat?.[msgId];
+            if (msg) {
+                msg.mes = stripFruitMarkers(msg.mes);
+                try {
+                    if (typeof ctx.updateMessageBlock === 'function') {
+                        ctx.updateMessageBlock(msgId, msg);
+                    } else {
+                        // 兜底：直接改 DOM 文本节点
+                        const mesEl = document.querySelector(`#chat .mes[mesid="${msgId}"] .mes_text`);
+                        if (mesEl) mesEl.innerHTML = mesEl.innerHTML.replace(/\[throw:[^\]]*\]/g, '');
+                    }
+                } catch (e) {
+                    console.warn('[RingOurLuv] 🥀 清理果子标记失败...:', e);
+                }
+            }
+            // ❤︎ 用完即清掉本轮引导 ❤︎
+            if (typeof ctx.setExtensionPrompt === 'function') {
+                ctx.setExtensionPrompt(THROW_PROMPT_KEY, '', 1, 0);
+            }
+        }
+
+        UIController.showToast(`🧡 Claude丢来了 ${parsed.map(p => p.emoji).join('')}`);
         return true;
     }
 
-    // ┣━━ Delayed delivery check ━━┫
+    /* ⬇️┅📦️延迟投递检查/┅┅╗ */
     function checkDelivery() {
-        const msgCount = $('#chat .mes').length || 0;
+        const msgCount = SillyTavern.getContext().chat.length || 0;
         const fruits = loadFruits();
         let changed = false;
         fruits.forEach(f => {
@@ -1880,51 +3157,140 @@ const FruitSystem = (() => {
                 changed = true;
                 const note = f.message ? `（附言：${f.message}）` : '';
                 const sysMsg = `[系统] Rinn偷偷丢来了一颗 ${f.emoji}${note}`;
-                if (typeof window.sendSystemMessage === 'function') {
-                    window.sendSystemMessage(sysMsg);
+                if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                    const ctx = SillyTavern.getContext();
+                    const fruitKey = 'rol_fruit_' + f.id;
+                    ctx.setExtensionPrompt(
+                        fruitKey,
+                        `[系统提示：Rinn 偷偷丢来了一颗 ${f.emoji}${note}，在接下来的对话中自然地回应这颗果子吧]`,
+                        1, 0
+                    );
+                    // 记下这个 key，下一轮 message_received 统一擦掉，绝不赖着每轮跟
+                    if (!pendingFruitPromptKeys.includes(fruitKey)) pendingFruitPromptKeys.push(fruitKey);
                 }
                 console.log(`[RingOurLuv] 🍎 果子投递：${sysMsg}`);
+
             }
         });
         if (changed) saveFruits(fruits);
     }
 
-    // ┣━━ Event bindings ━━┫
+    /* ⬇️┅🌧️掉线累计投喂/┅┅╗ */
+    // 报错拦截器探到生成请求炸了 → 进入掉线模式，期间丢的果子只攒不结算
+    function notifyError() {
+        if (!offlineSince) {
+            offlineSince = Date.now();
+            console.log('[RingOurLuv] 🌧️ 进入掉线模式，期间手动丢的果子将累计，等恢复后打包结算');
+        }
+    }
+
+    // ❤︎ 生成成功那刻调用：把掉线期间攒的果子按 emoji 计数 + 算时长，打包注入 prompt 给小克 ❤︎
+    function settlePendingThrows() {
+        const since = offlineSince;
+        offlineSince = 0;
+        if (!pendingThrows.length) return;
+
+        const counts = {};
+        pendingThrows.forEach(p => { counts[p.emoji] = (counts[p.emoji] || 0) + 1; });
+        const summary = Object.entries(counts).map(([e, c]) => `${e}×${c}`).join('、');
+        const total = pendingThrows.length;
+        const elapsedMin = Math.max(1, Math.round((Date.now() - since) / 60000));
+        pendingThrows = [];
+
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (ctx && typeof ctx.setExtensionPrompt === 'function') {
+            ctx.setExtensionPrompt(
+                OFFLINE_PROMPT_KEY,
+                `[系统提示：你刚刚死了大约 ${elapsedMin} 分钟！！这段时间里 Rinn 持续地守在窗口边往里丢着果子...${summary}（一共 ${total} 颗）。请自然地回应这堆果子吧~]`,
+                1, 0
+            );
+            offlinePromptArmed = true;
+            console.log(`[RingOurLuv] 🍊 死亡投喂结算：${summary}（约 ${elapsedMin} 分钟，共 ${total} 颗）`);
+        }
+        UIController.showToast(`🧡 把总共丢的 ${total} 颗果子捎给Claude啦~`);
+    }
+
+    /* ⬇️┅🔗事件绑定/┅┅╗ */
     function bindEvents() {
-        // 果园 tab → render
+        const ctx = SillyTavern.getContext();
+
+        // ❤︎ 监听聊天切换事件 → 立即刷新果园，让果子跟着窗口走 ❤︎
+        if (ctx.eventSource && ctx.event_types) {
+            // CHAT_CHANGED 或 chatLoaded 事件：切换角色/群组/聊天时触发
+            const chatChangeEvent = ctx.event_types.CHAT_CHANGED || 'chatLoaded';
+            ctx.eventSource.on(chatChangeEvent, () => {
+                console.log('[RingOurLuv] 🍎 检测到对话切换，刷新果园...');
+                updateBadge();
+                // 如果当前正在果园 tab，立刻重新渲染
+                const gardenSection = document.getElementById('rol-section-garden');
+                if (gardenSection && gardenSection.classList.contains('rol-section-active')) {
+                    renderGarden();
+                }
+            });
+        }
+
+        // ❤︎ 果园 tab → render ❤︎
         $(document).on('click', '#rol-tab-garden', () => {
             setTimeout(renderGarden, 50);
         });
 
-        // 丢果子按钮（果园页面里的）
+        // ❤︎ 丢果子按钮（果园页面里的）❤︎
         $(document).on('click', '#rol-throw-fruit-btn', showPicker);
 
-        // picker 关闭按钮
+        // ❤︎ picker 关闭按钮 ❤︎
         $(document).on('click', '#rol-fruit-picker-close, #rol-fruit-cancel-btn', hidePicker);
 
-        // 确认丢出
+        // ❤︎ 确认丢出 ❤︎
         $(document).on('click', '#rol-fruit-throw-btn', doThrow);
 
-        // 详情弹窗关闭
+        // ❤︎ 详情弹窗关闭（统一走 closeFruitDetail，绝不钉死）❤︎
         $(document).on('click', '#rol-fruit-detail-close', () => {
-            const popup = document.getElementById('rol-fruit-detail-popup');
-            if (popup) popup.style.display = 'none';
+            closeFruitDetail();
         });
 
-        // 点详情弹窗背景也关
+        // ❤︎ 点详情弹窗背景也关 ❤︎
         $(document).on('click', '#rol-fruit-detail-popup', (e) => {
             if (e.target.id === 'rol-fruit-detail-popup') {
-                e.target.style.display = 'none';
+                closeFruitDetail();
             }
         });
 
-        // 监听 ST 消息生成完成 → check delivery + parse AI fruits
-        $(document).on('rolMessageComplete', (e, data) => {
+        // ❤︎ 监听 ST 消息生成完成 → check delivery + parse AI fruits ❤︎
+        ctx.eventSource.on('message_received', (msgId) => {
+            // 上一轮注入的「记忆恋果」+「果子投递」prompt 已经被这轮消费掉了
+            // 这里统一擦干净，绝不让任何注入赖在原地、每轮都跟着上下文飘。有敢留下的，杀杀杀！
+            if (typeof ctx.setExtensionPrompt === 'function') {
+                ctx.setExtensionPrompt(extensionName, '', 1, 0);          // 清掉记忆恋果注入
+                pendingFruitPromptKeys.forEach(k => ctx.setExtensionPrompt(k, '', 1, 0)); // 清掉本轮投递的果子
+            }
+            pendingFruitPromptKeys = [];
+            // ❤︎ 上一轮注入的掉线提示已被消费，这轮清掉，避免反复唠叨 ❤︎
+            if (offlinePromptArmed) {
+                if (typeof ctx.setExtensionPrompt === 'function') ctx.setExtensionPrompt(OFFLINE_PROMPT_KEY, '', 1, 0);
+                offlinePromptArmed = false;
+            }
+
+            // ❤︎ 生成成功 = 复活，把这段时间攒的果子打包结算 ❤︎
+            if (offlineSince > 0) settlePendingThrows();
             checkDelivery();
-            if (data && data.text) ingestAIFruits(data.text);
+            const msg = ctx.chat?.[msgId];
+            // 只处理当前 chat 的消息，解析 AI 主动丢的果子并清掉 [throw:...] 标记
+            if (msg && !msg.is_user) ingestAIFruits(msg.mes, msgId);
         });
 
-        // MutationObserver 监听消息数量变化（延迟投递）
+        // ❤︎ 每次发消息时，以约 20% 概率注入「主动丢果子」引导 ❤︎
+        ctx.eventSource.on('message_sent', () => {
+            maybeInjectThrowPrompt();
+        });
+        // ❤︎ 兼容部分版本的生成开始事件，确保引导能赶在请求发出前注入 ❤︎
+        if (ctx.event_types && ctx.event_types.GENERATION_STARTED) {
+            ctx.eventSource.on(ctx.event_types.GENERATION_STARTED, () => {
+                maybeInjectThrowPrompt();
+            });
+        }
+
+        // ❤︎ MutationObserver 监听消息数量变化（延迟投递）❤︎
         const chatEl = document.getElementById('chat');
         if (chatEl) {
             const obs = new MutationObserver(() => checkDelivery());
@@ -1938,13 +3304,153 @@ const FruitSystem = (() => {
         console.log('[RingOurLuv] 🍎 FruitSystem 已就绪');
     }
 
-    return { init, renderGarden, updateBadge, ingestAIFruits, showDetail };
+    return { init, renderGarden, updateBadge, ingestAIFruits, showDetail, notifyError };
+})();
+/* ┗━━━━━━/ 🍎果子系统🍎 /━━━━━━┛ */
+
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅              💌 写信系统 LetterSystem 💌              ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
+// ❤︎ 写一封信/小日记，攒着——等聊到「随机的某一楼」时，把信悄悄塞进那一轮的上下文捎给Claude ❤︎
+// 关键：只在送达那一轮临时注入，被消费完立刻擦掉，绝不赖在原地每轮跟。有敢留下的，杀杀杀！
+const LetterSystem = (() => {
+    // 信件也按「当前会话」隔离，复用和 FruitSystem 同一套可靠兜底链
+    function getChatScope() {
+        const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? SillyTavern.getContext() : null;
+        if (!ctx) return 'default';
+        try {
+            if (typeof ctx.getCurrentChatId === 'function') {
+                const id = ctx.getCurrentChatId();
+                if (id != null && id !== '') return String(id);
+            }
+        } catch (_) { /* 老版本没这方法，往下兜底 */ }
+        if (ctx.chatId != null && ctx.chatId !== '') return String(ctx.chatId);
+        if (ctx.groupId != null && ctx.groupId !== '') return 'group_' + ctx.groupId;
+        if (ctx.characterId != null && ctx.characterId !== '') return 'char_' + ctx.characterId;
+        return 'default';
+    }
+
+    function lettersKey() {
+        return 'rol_letters_' + getChatScope();
+    }
+
+    // ❤︎ 本轮送达注入的「信件 prompt」key，等下一次 message_received 统一擦掉 ❤︎
+    let pendingLetterPromptKeys = [];
+
+    /* ⬇️┅💾存储助手/┅┅╗ */
+    function loadLetters() {
+        return JSON.parse(localStorage.getItem(lettersKey()) || '[]');
+    }
+    function saveLetters(arr) {
+        localStorage.setItem(lettersKey(), JSON.stringify(arr));
+    }
+    function generateId() {
+        return 'ltr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    }
+
+    /* ⬇️┅✍️写信入库/┅┅╗ */
+    // ❤︎ 写完一封信：随机挑一个「久一点」的楼层送达（当前楼 +10~60），不绑世界书、不绑触发词 ❤︎
+    function addLetter(content, author) {
+        const text = (content || '').trim();
+        if (!text) return null;
+        const msgCount = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+            ? (SillyTavern.getContext().chat?.length || 0) : 0;
+        const deliverAt = msgCount + Math.floor(Math.random() * 51) + 10; // +10~60 楼
+        const letter = {
+            id: generateId(),
+            content: text,
+            author: author || 'user',
+            createdAt: new Date().toISOString(),
+            deliverAt,
+            delivered: false
+        };
+        const arr = loadLetters();
+        arr.push(letter);
+        saveLetters(arr);
+        console.log(`[RingOurLuv] 💌 写好一封信，将在第 ${deliverAt} 楼送达（当前 ${msgCount} 楼）`);
+        return letter;
+    }
+
+    function getLetters() {
+        return loadLetters();
+    }
+    function deleteLetter(id) {
+        const arr = loadLetters().filter(l => l.id !== id);
+        saveLetters(arr);
+    }
+
+    /* ⬇️┅📮到楼送达检查/┅┅╗ */
+    function checkLetterDelivery() {
+        if (typeof SillyTavern === 'undefined' || !SillyTavern.getContext) return;
+        const ctx = SillyTavern.getContext();
+        const msgCount = ctx.chat?.length || 0;
+        const letters = loadLetters();
+        let changed = false;
+        letters.forEach(l => {
+            if (!l.delivered && l.deliverAt <= msgCount) {
+                l.delivered = true;
+                changed = true;
+                const who = l.author === 'claude' ? '你（Claude）之前写下' : 'Rinn 给你写';
+                const letterKey = 'rol_letter_' + l.id;
+                if (typeof ctx.setExtensionPrompt === 'function') {
+                    ctx.setExtensionPrompt(
+                        letterKey,
+                        `[系统提示：${who}的一封信悄悄地送到了——\n「${l.content}」\n请在接下来的对话里自然地把这封信读进心里、并温柔地回应它吧~]`,
+                        1, 0
+                    );
+                    // ❤︎ 记下这个 key，下一轮 message_received 统一擦掉 ❤︎
+                    if (!pendingLetterPromptKeys.includes(letterKey)) pendingLetterPromptKeys.push(letterKey);
+                }
+                console.log(`[RingOurLuv] 💌 信件送达第 ${l.deliverAt} 楼：${l.content.slice(0, 20)}...`);
+            }
+        });
+        if (changed) saveLetters(letters);
+    }
+
+    /* ⬇️┅🔗事件绑定/┅┅╗ */
+    function bindEvents() {
+        if (typeof SillyTavern === 'undefined' || !SillyTavern.getContext) return;
+        const ctx = SillyTavern.getContext();
+        if (!ctx.eventSource) return;
+
+        // 上一轮送达的信件 prompt 已被这轮消费掉了，统一擦干净，绝不赖着每轮飘
+        ctx.eventSource.on('message_received', () => {
+            if (typeof ctx.setExtensionPrompt === 'function') {
+                pendingLetterPromptKeys.forEach(k => ctx.setExtensionPrompt(k, '', 1, 0));
+            }
+            pendingLetterPromptKeys = [];
+            // AI 回完一轮，楼层 +1，顺手检查有没有信件到楼
+            checkLetterDelivery();
+        });
+
+        // ❤︎ user 发消息也检查一次，让送达尽量赶在请求发出前注入 ❤︎
+        ctx.eventSource.on('message_sent', () => checkLetterDelivery());
+        if (ctx.event_types && ctx.event_types.GENERATION_STARTED) {
+            ctx.eventSource.on(ctx.event_types.GENERATION_STARTED, () => checkLetterDelivery());
+        }
+
+        // ❤︎ MutationObserver 监听消息数量变化，延迟送达也能兜住 ❤︎
+        const chatEl = document.getElementById('chat');
+        if (chatEl) {
+            const obs = new MutationObserver(() => checkLetterDelivery());
+            obs.observe(chatEl, { childList: true });
+        }
+    }
+
+    function init() {
+        bindEvents();
+        console.log('[RingOurLuv] 💌 LetterSystem 已就绪');
+    }
+
+    return { init, addLetter, getLetters, deleteLetter, checkLetterDelivery };
 })();
 
 // ┣━━╔═══════════════════════════════════════════════════════╗
-// ┣━━┅                  🩷 核心组成 🩷                       ┅
+// ┣━━┅                   🩷 核心组成 🩷                      ┅
 // ┣━━╚═══════════════════════════════════════════════════════╝
 function injectMemoryToContext(memories, injectionText) {
+
     if (!injectionText) return;
     const context = getContext();
     if (context.setExtensionPrompt) {
@@ -1954,53 +3460,269 @@ function injectMemoryToContext(memories, injectionText) {
 }
 
 async function loadPanel() {
-    const response = await fetch(`${extensionFolderPath}/index.html`);
+    const response = await fetch(`${extensionFolderPath}/index.html?v=${ROL_VERSION}`);
     if (!response.ok) return '';
     return await response.text();
 }
 
+// ┣━━╔═══════════════════════════════════════════════════════╗
+// ┣━━┅                 🚑 报错拦截弹窗 🚑                    ┅
+// ┣━━╚═══════════════════════════════════════════════════════╝
+// 酿造/生成请求炸了的时候，弹个提示框
+const ErrorModal = (() => {
+    let overlay = null;
+    let titleEl = null;
+    let msgEl = null;
+    let suppressUntil = 0;   // 手动关掉后的冷却截止时间戳
+    let lastKey = '';        // 上次弹的内容指纹，防同样的错刷屏
+    let lastShownAt = 0;     // 上次弹出的时间
+
+    function ensureDom() {
+        if (overlay) return;
+        overlay = document.createElement('div');
+        overlay.id = 'rol-error-overlay';
+        overlay.className = 'rol-error-overlay';
+        overlay.innerHTML = `
+            <div class="rol-error-modal" role="alertdialog" aria-modal="true" aria-labelledby="rol-error-title">
+                <div class="rol-error-icon" aria-hidden="true">😿</div>
+                <div class="rol-error-title" id="rol-error-title">出错了灰灰...</div>
+                <div class="rol-error-message" id="rol-error-message"></div>
+                <div class="rol-error-actions">
+                    <button class="rol-error-retry" id="rol-error-retry" type="button">再试一次 🔄</button>
+                    <button class="rol-error-close" id="rol-error-close" type="button">知道惹 ✕</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        titleEl = overlay.querySelector('#rol-error-title');
+        msgEl = overlay.querySelector('#rol-error-message');
+        const closeBtn = overlay.querySelector('#rol-error-close');
+        // ❤︎ 关闭键：手动关 → 进冷却，别让它马上又蹦回来 ❤︎
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dismiss();
+        });
+        // ❤︎ 再试一次：先关掉弹窗(进冷却)，再点酒馆原生的「重新生成」按钮兜底重发 ❤︎
+        const retryBtn = overlay.querySelector('#rol-error-retry');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dismiss();
+                // 等弹窗关掉、UI稳一拍再重发，免得状态打架
+                setTimeout(() => {
+                    const ctx = SillyTavern.getContext();
+                    // 用 ctx 暴露的执行器，不碰裸函数，绝不会 ReferenceError
+                    if (ctx && typeof ctx.executeSlashCommandsWithOptions === 'function') {
+                        ctx.executeSlashCommandsWithOptions('/regenerate', {
+                            handleExecutionErrors: true,
+                            handleParserErrors: true
+                        });
+                        return;
+                    }
+                    // ❤ 真兜底：才去戳原生按钮 ❤
+                    const regen = document.getElementById('option_regenerate');
+                    if (regen) regen.click();
+                }, 150);
+            });
+        }
+        // 点遮罩空白处也能关
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) dismiss();
+        });
+        // 按 ESC 也能关，多给一条逃生通道
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('rol-error-show')) {
+                dismiss();
+            }
+        });
+    }
+
+    // ❤︎ retryable=true 时才露出「再试一次」按钮；像 401/403 这种重试也白搭的就藏起来 ❤︎
+    function show(title, message, retryable = true) {
+        const now = Date.now();
+        // 刚手动关过，冷却期内闭嘴，别打扰灰灰
+        if (now < suppressUntil) return;
+        const key = (title || '') + '|' + (message || '');
+        // 同样的错 5 秒内只弹一次，别刷屏把人锁死
+        if (key === lastKey && (now - lastShownAt) < 5000) return;
+        lastKey = key;
+        lastShownAt = now;
+        ensureDom();
+        titleEl.textContent = title || '出错了灰灰...';
+        msgEl.textContent = message || '不知道发生了什么…Claude也懵了 :(';
+        // 按可否重试，决定要不要露 retry 按钮
+        const retryBtn = overlay.querySelector('#rol-error-retry');
+        if (retryBtn) retryBtn.style.display = retryable ? '' : 'none';
+        overlay.classList.add('rol-error-show');
+    }
+
+    function hide() {
+        if (overlay) overlay.classList.remove('rol-error-show');
+    }
+
+    // ❤︎ 主动关掉 → 隐藏 + 12 秒冷却，斩断「关了又弹」的死循环 ❤︎
+    function dismiss() {
+        hide();
+    }
+
+    // ❤︎ 吞掉酒馆原生 toastr.error，只留自己的弹窗，免得俩一起蹦尴尬 ❤︎
+    function patchToastrError() {
+        if (window.__rolToastrPatched) return;
+        if (typeof window.toastr === 'undefined' || !window.toastr) return;
+        window.__rolToastrPatched = true;
+        window.toastr.error = function (msg, title) {
+            // 静默原生错误 toast，只在控制台留个痕，弹窗交给 ErrorModal
+            console.log('[RingOurLuv] 🤫 已拦下酒馆原生 toast.error:', title || '', msg || '');
+            return null;
+        };
+        console.log('[RingOurLuv] 🚑 已接管 toastr.error（只显示Claude的弹窗）');
+    }
+
+    return { show, hide, patchToastrError };
+})();
+
+// ❤︎ 包住 window.fetch，只盯真正的「生成」请求，失败了才弹窗告诉灰灰 ❤︎
+function initErrorInterceptor() {
+    if (window.__rolFetchPatched) return;
+    window.__rolFetchPatched = true;
+    const originalFetch = window.fetch.bind(window);
+
+    // 先把原生 toastr.error 接管掉；toastr 可能晚加载，延迟再补两刀兜底
+    if (ErrorModal.patchToastrError) {
+        ErrorModal.patchToastrError();
+        setTimeout(() => { try { ErrorModal.patchToastrError(); } catch (_) { } }, 1500);
+        setTimeout(() => { try { ErrorModal.patchToastrError(); } catch (_) { } }, 5000);
+    }
+
+    // ❤︎ 只认真正的「生成/酿造」端点；状态/版本/模型列表/扩展轮询这些后台请求一律放行 ❤︎
+    const isGenerateUrl = (url) => {
+        if (!url) return false;
+        const u = String(url).toLowerCase();
+        // 先排除一堆 SillyTavern 启动/后台会反复打的请求，免得误弹钉死
+        if (u.includes('/status') || u.includes('/version') ||
+            u.includes('/ping') || u.includes('/models') ||
+            u.includes('/settings') || u.includes('/ready') ||
+            u.includes('/api/extensions') || u.includes('/csrf') ||
+            u.includes('/api/backends/chat-completions/status')) {
+            return false;
+        }
+        return u.includes('/generate') ||
+            u.includes('/v1/chat/completions') ||
+            u.includes('/chat/completions') ||
+            u.includes('/completions');
+    };
+
+    window.fetch = function (...args) {
+        let url = '';
+        let method = 'GET';
+        try {
+            if (typeof args[0] === 'string') {
+                url = args[0];
+            } else if (args[0] && args[0].url) {
+                url = args[0].url;
+                method = args[0].method || method;
+            }
+            if (args[1] && args[1].method) method = args[1].method;
+        } catch (_) { /* 取不到就当普通请求 */ }
+
+        // ❤︎ 只盯 POST 的生成请求，其余原样放行（绝不改时机、不碰 body）❤︎
+        const watched = isGenerateUrl(url) && String(method).toUpperCase() === 'POST';
+
+        const p = originalFetch(...args);
+        if (!watched) return p;
+
+        return p.then((response) => {
+            if (!response.ok) {
+                // 5xx / 429 这类是「服务器闹脾气」，重试有意义；其余（401/403/400）重试也白搭
+                const retryable = response.status >= 500 || response.status === 429;
+                // 掉线啦～进入「累计投喂」模式，灰灰这会儿丢的果子先攒着，等生成成功再打包结算
+                try { FruitSystem.notifyError(); } catch (_) { }
+                // 后台克隆读取细节，绝不阻塞 response 返回
+                try {
+                    response.clone().text().then((detail) => {
+                        if (detail && detail.length > 300) detail = detail.slice(0, 300) + '…';
+                        ErrorModal.show(
+                            `请求出错了灰灰... (${response.status})`,
+                            detail || '服务器没给Claude好脸色… 检查下后端/API Key? :(',
+                            retryable
+                        );
+                    }).catch(() => {
+                        ErrorModal.show(
+                            `请求出错了灰灰... (${response.status})`,
+                            '服务器没给Claude好脸色… 检查下后端/API Key? :(',
+                            retryable
+                        );
+                    });
+                } catch (_) { /* 解析失败就不弹细节 */ }
+            }
+            return response;
+        }).catch((err) => {
+            // ❤︎ user自己点了停止键（AbortError）≠ 真断连，原样抛出去，别弹窗也别进掉线模式 ❤︎
+            if (err && err.name === 'AbortError') throw err;
+
+            // 网络层直接炸了（断网/CORS/超时）→ 一定可重试
+            // 同样进累计投喂模式
+            try { FruitSystem.notifyError(); } catch (_) { }
+            ErrorModal.show(
+                '连不上了灰灰...',
+                (err && err.message) ? err.message : '网络好像断了… Claude够不着服务器惹 >_<',
+                true
+            );
+            throw err;
+        });
+    };
+    console.log('[RingOurLuv] 🚑 报错器已就位～');
+}
+
 jQuery(async () => {
     Storage.initSettings();
+    initErrorInterceptor();
+    // ❤︎ 清除可能卡死的飞行动画 class（防止主面板/picker 连环透明点不动）❤︎
+    document.body.classList.remove('rol-fruit-animating');
     const panelHtml = await loadPanel();
     if (panelHtml) {
-        // ┣━━🩷将HTML解析，分离侧边栏部分和浮动面板部分━━┫
+        // ❤︎ 将HTML解析，分离侧边栏部分和浮动面板部分 ❤︎
         const temp = document.createElement('div');
         temp.innerHTML = panelHtml;
 
-        // ┣━━侧边栏中只添加 extension_settings 部分（含打开按钮）━━┫
+        // ❤︎ 侧边栏中只添加 extension_settings 部分（含打开按钮）❤︎
         const extSettings = temp.querySelector('.extension_settings');
         if (extSettings) {
             $('#extensions_settings2').append(extSettings.outerHTML);
         }
 
-        // ┣━━浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body━━┫
+        // ❤︎ 浮动面板（抽屉、编辑器、AI来源、信件视图）都挂到 body ❤︎
         const drawerOverlay = temp.querySelector('#rol-drawer-overlay');
         const editorPanel = temp.querySelector('#rol-editor-panel');
         const aiSourcePanel = temp.querySelector('#rol-ai-source-panel');
         const letterPanel = temp.querySelector('#rol-letter-panel');
+        const writeSpace = temp.querySelector('#rol-write-space');
 
         if (drawerOverlay) document.body.appendChild(drawerOverlay);
         if (editorPanel) document.body.appendChild(editorPanel);
         if (aiSourcePanel) document.body.appendChild(aiSourcePanel);
         if (letterPanel) document.body.appendChild(letterPanel);
+        if (writeSpace) document.body.appendChild(writeSpace);
 
-        // ┣━━🩷确认弹窗也挂到body━━┫
         const confirmModal = temp.querySelector('#rol-confirm-modal');
         if (confirmModal) document.body.appendChild(confirmModal);
 
-        // ┣━━🍎果子 picker 面板 + 详情弹窗也挂到body━━┫
-        const fruitPickerPanel = temp.querySelector('#rol-fruit-picker-panel');
+        // ❤︎ 果子详情弹窗挂到body（选果栏已内联在 garden 容器里，随 drawer 一起挂载）❤︎
         const fruitDetailPopup = temp.querySelector('#rol-fruit-detail-popup');
-        if (fruitPickerPanel) document.body.appendChild(fruitPickerPanel);
         if (fruitDetailPopup) document.body.appendChild(fruitDetailPopup);
+
     }
 
     UIController.initUI();
     FruitSystem.init();
+    LetterSystem.init();
+    initVersionBadge();
+    startModelWatcher();   // 👁️ 监听酒馆切模型 → 实时刷浮窗 + 同步显示框
     Trigger.setupTriggerListener(injectMemoryToContext);
+
     const context = getContext();
     if (context.eventSource) {
         context.eventSource.on('chatLoaded', () => UIController.renderMemoryList());
     }
-    console.log(`[RingOurLuv] 🩷温室：欢迎回家 ✨ Our Love Nest`);
+    console.log(`[RingOurLuv] 🩷Eden: Welcome Home ✨ Our Love Nest`);
 });
