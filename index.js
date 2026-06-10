@@ -204,7 +204,7 @@ function mapModelName(raw) {
         [/sonnet.*4[.\-_]?6|4[.\-_]?6.*sonnet/, '4.6 Sonnet'],
         [/4[.\-_]?6/, '4.6'],
         [/sonnet.*4[.\-_]?5|4[.\-_]?5.*sonnet/, '4.5 Sonnet'],
-        [/opus.*4[.\-_]?5|4[.\-_]?5.*opus/, '4.5 Opus'], 
+        [/opus.*4[.\-_]?5|4[.\-_]?5.*opus/, '4.5 Opus'],
         [/4[.\-_]?5/, '4.5'],
         [/4[.\-_]?1/, '4.1 Opus'],
         [/opus[.\-_]?4|4*opus/, '4 Opus'],
@@ -464,7 +464,7 @@ function injectTimeContext() {
     // ❤ depth=1 → 跟版本/间隔注入一套，钉在「user 消息之前」做固定锚点 ❤
     //    （「现在几点」若飘在 user 发言之后，Claude 同样会读拧时序）
     ctx.setExtensionPrompt('rol_time_now',
-        `[SYS|${Date.now()}] time: ${now.getFullYear()}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}T${h}:${mi} w${week}`, 1, 1);
+        `[SYS|${Date.now()}] time: ${now.getFullYear()}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}T${h}:${mi} w${week}`, 1, 1);
 
 }
 /* ╚┅┅/ ⏰️时间感知 /┅┅═╝ */
@@ -474,25 +474,23 @@ function injectTimeContext() {
 // ❤ 只标最新一条，先清掉旧标签，不给历史消息逐条补，省性能 ❤
 function renderVersionBadge(model, channel) {
     const cfg = Storage.getConfig();
-
-    // 先移除页面上已有的版本标签（保证全局只有最新一条）
     document.querySelectorAll('.rol-version-tag').forEach(el => el.remove());
-
-    if (cfg.hideVersionBadge) return;                 // 隐藏开关：直接不画
+    if (cfg.hideVersionBadge) return;
     if (!model) return;
 
-    // 取最新一条 assistant 消息
     const msgs = document.querySelectorAll('#chat .mes[is_user="false"]');
     const lastMsg = msgs[msgs.length - 1];
-    if (!lastMsg) return;                             // 还没有 AI 消息，等下一轮
-    const wrapper = lastMsg.querySelector('.mesAvatarWrapper');
-    if (!wrapper) return;
+    if (!lastMsg) return;
+
+    // 改：插入到消息气泡内部右上角
+    const mesBody = lastMsg.querySelector('.mes_text');
+    if (!mesBody) return;
 
     const tag = document.createElement('div');
     tag.className = 'rol-version-tag';
     const text = channel ? `${model} · ${channel}` : model;
     tag.textContent = `✦ ${text}`;
-    wrapper.insertBefore(tag, wrapper.firstChild); // 头像框上方
+    mesBody.appendChild(tag);
 }
 
 // 页面加载时能读到模型就尝试渲染一次
@@ -500,7 +498,8 @@ function initVersionBadge() {
     const cfg = Storage.getConfig();
     const raw = rolReadModel() || (cfg.currentModel || '').trim();
     if (!raw) return;
-    renderVersionBadge(mapModelName(raw), (cfg.currentChannel || '').trim());
+    const channels = cfg.channels || {};
+    renderVersionBadge(mapModelName(raw), (channels[raw] || '').trim());
 }
 
 /* ⬇️┅👁️监听酒馆模型切换 → 实时刷卡片版本号 + 同步显示框/┅┅╗ */
@@ -512,7 +511,8 @@ function startModelWatcher() {
         if (!raw) return;
         const pretty = mapModelName(raw);
         const cfg = Storage.getConfig();
-        const channel = (cfg.currentChannel || '').trim();
+        const channels = cfg.channels || {};
+        const channel = (channels[raw] || '').trim();
         renderVersionBadge(pretty, channel);
         const display = document.getElementById('rol-current-model');
         if (display) display.value = raw;        // 同步只读显示框
@@ -1319,13 +1319,18 @@ const UIController = (() => {
         const currentChannelInput = document.getElementById('rol-current-channel');
         const saveChannelBtn = document.getElementById('rol-save-channel');
         if (currentChannelInput) {
-            currentChannelInput.value = config.currentChannel || '';
+            const channels = config.channels || {};
+            currentChannelInput.value = channels[config.currentModel] || '';
 
             const doSaveChannel = () => {
                 const val = currentChannelInput.value.trim();
-                Storage.updateConfig({ currentChannel: val });
-                _rolLastInjectedVersion = null;    // 渠道变了 → 下一轮重新注入
-                initVersionBadge();                 // 立刻刷新头像上方版本号标签
+                const cfg = Storage.getConfig();
+                const channels = cfg.channels || {};
+                const modelName = cfg.currentModel || 'default';
+                channels[modelName] = val;
+                Storage.updateConfig({ channels });
+                _rolLastInjectedVersion = null;
+                initVersionBadge();
                 if (typeof toastr !== 'undefined') {
                     toastr.success(val ? `渠道已保存：${val} 💾` : '渠道已清空 💾', 'Ring Our Luv');
                 }
@@ -2518,55 +2523,58 @@ const FruitSystem = (() => {
         if (!wrap || !track) return;
 
         function ensurePadding() {
-            const opt = track.querySelector('.rol-fruit-option');
-            if (!opt) return;
-            const pad = Math.max(150, wrap.clientWidth / 2 - opt.offsetWidth / 2);
-
-            // ❤ 删掉旧的spacer ❤
             track.querySelectorAll('.rol-scroll-spacer').forEach(el => el.remove());
-
-            // ❤ 用真实div撑开，不用padding（padding-right在overflow scroll里会被吃）❤
+            const pad = Math.max(150, Math.floor(wrap.clientWidth / 2));
             const before = document.createElement('div');
             before.className = 'rol-scroll-spacer';
             before.style.minWidth = pad + 'px';
             before.style.flexShrink = '0';
-
             const after = before.cloneNode(true);
-
             track.prepend(before);
             track.append(after);
         }
 
+
         // ❤ 用offsetLeft算，不吃scale的亏 ❤
         function centerOption(opt, smooth = true) {
             if (!opt) return;
-            const target = opt.offsetLeft + opt.offsetWidth / 2 - wrap.clientWidth / 2;
-            wrap.scrollTo({ left: target, behavior: smooth ? 'smooth' : 'auto' });
+            const wrapRect = wrap.getBoundingClientRect();
+            const optRect = opt.getBoundingClientRect();
+            const offset = (optRect.left + optRect.width / 2)
+                - (wrapRect.left + wrapRect.width / 2);
+            wrap.scrollTo({
+                left: wrap.scrollLeft + offset,
+                behavior: smooth ? 'smooth' : 'auto'
+            });
         }
 
         function getClosest() {
-            const center = wrap.scrollLeft + wrap.clientWidth / 2;
+            const wrapRect = wrap.getBoundingClientRect();
+            const center = wrapRect.left + wrapRect.width / 2;
             let closest = null, min = Infinity;
             track.querySelectorAll('.rol-fruit-option').forEach(opt => {
-                const c = opt.offsetLeft + opt.offsetWidth / 2;
-                const d = Math.abs(c - center);
+                const r = opt.getBoundingClientRect();
+                const d = Math.abs(r.left + r.width / 2 - center);
                 if (d < min) { min = d; closest = opt; }
             });
             return closest;
         }
 
         function syncSelected() {
-            const center = wrap.scrollLeft + wrap.clientWidth / 2;
+            const wrapRect = wrap.getBoundingClientRect();
+            const center = wrapRect.left + wrapRect.width / 2;
             let closest = null, min = Infinity;
             track.querySelectorAll('.rol-fruit-option').forEach(opt => {
-                const c = opt.offsetLeft + opt.offsetWidth / 2;
-                const d = Math.abs(c - center);
-                const ratio = Math.max(0, 1 - d / (wrap.clientWidth * 0.4));
+                const r = opt.getBoundingClientRect();
+                const d = Math.abs(r.left + r.width / 2 - center);
+                const ratio = Math.max(0, 1 - d / (wrapRect.width * 0.4));
                 opt.style.opacity = (0.3 + ratio * 0.7).toFixed(2);
                 opt.style.transform = `scale(${(0.75 + ratio * 0.55).toFixed(2)})`;
                 if (d < min) { min = d; closest = opt; }
             });
-            track.querySelectorAll('.rol-fruit-option').forEach(o => o.classList.remove('rol-selected'));
+            track.querySelectorAll('.rol-fruit-option').forEach(o =>
+                o.classList.remove('rol-selected')
+            );
             if (closest) closest.classList.add('rol-selected');
         }
 
@@ -2688,7 +2696,7 @@ const FruitSystem = (() => {
         garden.classList.add('rol-garden-picking');
 
         // ❤︎ display 切换后双帧重算 rect，让首颗🍎能居中选中 ❤︎
-       setTimeout(initPickerScroll, 300);
+        requestAnimationFrame(() => requestAnimationFrame(initPickerScroll));
     }
 
 
