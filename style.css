@@ -1707,7 +1707,13 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     align-items: center;
     /* ❤︎ 绝对不换行，保持单行横向滚动 ❤︎ */
     flex-wrap: nowrap;
+    /* ❤︎ 两侧用 padding 撑开滚动空间（容器一半 - 果子一半52/2=26）❤︎ */
+    /* ❤︎ 保证任意一颗（含最后的🍉和✏️）都能滚到正中心 ❤︎ */
+    padding-left: calc(50% - 26px);
+    padding-right: calc(50% - 26px);
+    box-sizing: content-box;
 }
+
 
 .rol-fruit-option {
     flex-shrink: 0;

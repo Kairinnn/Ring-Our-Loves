@@ -2523,16 +2523,11 @@ const FruitSystem = (() => {
         if (!wrap || !track) return;
 
         function ensurePadding() {
+            // ❤︎ 撑开滚动空间的活儿改交给 CSS（.rol-fruit-picker-track 的左右 padding），
+            //    这里只负责清理可能残留的旧 spacer 元素 ❤︎
             track.querySelectorAll('.rol-scroll-spacer').forEach(el => el.remove());
-            const pad = Math.max(150, Math.floor(wrap.clientWidth / 2));
-            const before = document.createElement('div');
-            before.className = 'rol-scroll-spacer';
-            before.style.minWidth = pad + 'px';
-            before.style.flexShrink = '0';
-            const after = before.cloneNode(true);
-            track.prepend(before);
-            track.append(after);
         }
+
 
 
         // ❤ 用offsetLeft算，不吃scale的亏 ❤
@@ -2624,6 +2619,18 @@ const FruitSystem = (() => {
         let fruits = loadFruits();
         fruits = fruits.filter(f => f.id !== fruitId);
         saveFruits(fruits);
+
+        // ❤︎ 果子被扔掉了，顺手把它可能还挂着的 prompt 投递一起清干净，别让删掉的果子还赖在注入里 ❤︎
+        try {
+            const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext)
+                ? SillyTavern.getContext() : null;
+            const fruitKey = 'rol_fruit_' + fruitId;
+            if (ctx && typeof ctx.setExtensionPrompt === 'function') {
+                ctx.setExtensionPrompt(fruitKey, '', 1, 0);              // 清掉这颗果子的注入
+            }
+            pendingFruitPromptKeys = pendingFruitPromptKeys.filter(k => k !== fruitKey); // 从待清队列里也摘掉它
+        } catch (_) { /* 清理失败不影响删除本身 */ }
+
         renderGarden();
         updateBadge();
 
@@ -2714,7 +2721,9 @@ const FruitSystem = (() => {
             '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
         );
         if (avatars.length) {
-            const last = avatars[avatars.length - 1];
+            const lastImg = avatars[avatars.length - 1];
+            // ❤︎ 碰撞判定改用头像外框 .mesAvatarWrapper，取不到就退回 img 本身 ❤︎
+            const last = lastImg.closest('.mesAvatarWrapper') || lastImg;
             // ❤︎ 先把目标头像滚到视口正中，避免它滚出屏幕时坐标取到屏幕外 ❤︎
             last.scrollIntoView({ behavior: 'auto', block: 'center' });
             // ❤︎ 等一帧让布局/滚动落定，再取 getBoundingClientRect 才是准的 ❤︎
@@ -2742,12 +2751,16 @@ const FruitSystem = (() => {
         const vh = window.innerHeight;
         const M = 120; // 屏幕外余量，保证起飞点完全在视口外
 
-        // ❤︎ 目标 = targetEl 头像中心；拿不到就兜底到屏幕中心 ❤︎
+        // ❤︎ 目标 = targetEl 外框中心；拿不到就兜底到屏幕中心 ❤︎
+        //    顺手记下外框半宽 hw / 半高 hh，给方案C「飞到外框边缘就停」用 ❤︎
         let ex, ey;
+        let hw = 0, hh = 0;
         if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
             const r = targetEl.getBoundingClientRect();
             ex = r.left + r.width / 2;
             ey = r.top + r.height / 2;
+            hw = r.width / 2;
+            hh = r.height / 2;
         } else {
             ex = vw / 2;
             ey = vh / 2;
@@ -2782,6 +2795,25 @@ const FruitSystem = (() => {
         const sp = v.start();
         const sx = sp.x, sy = sp.y;
 
+        // ❤︎ 方案C：落点不进外框中心，而是缩到「朝来向那条外框边缘」，让果子刚贴到外框就弹 ❤︎
+        //    从中心 (ex,ey) 朝起飞点方向回退，按外框半宽/半高把交点落在矩形边界上。
+        //    targetEl 为 null 时 hw=hh=0 → s=0 → 落点退回中心，等价旧行为（安全兜底）。
+        let lx = ex, ly = ey;
+        {
+            const dx = sx - ex, dy = sy - ey;
+            const adx = Math.abs(dx), ady = Math.abs(dy);
+            if ((hw > 0 || hh > 0) && (adx > 0.0001 || ady > 0.0001)) {
+                // 朝来向缩放系数：取触及矩形某条边所需的最小比例
+                const s = Math.min(
+                    adx > 0.0001 ? hw / adx : Infinity,
+                    ady > 0.0001 ? hh / ady : Infinity
+                );
+                lx = ex + dx * s;
+                ly = ey + dy * s;
+            }
+        }
+
+
         const dur = 800 + Math.random() * 200;        // 飞入时长 800~1000ms 随机
         const spinDir = Math.random() < 0.5 ? 1 : -1; // 自转方向随机
         const spinTurns = 1 + Math.random();          // 自转 1~2 圈随机
@@ -2805,9 +2837,10 @@ const FruitSystem = (() => {
         // ❤︎ 阶段一：屏幕外 → 头像中心，抛物线 + 自转 ❤︎
         function flyIn(now) {
             const t = Math.min((now - startT) / dur, 1);
-            const x = sx + (ex - sx) * t;
+            // ❤︎ 方案C：飞向外框边缘落点 lx/ly（而非中心），刚贴到外框就弹 ❤︎
+            const x = sx + (lx - sx) * t;
             const parabola = 4 * t * (1 - t) * v.arc; // 顶点上拱的抛物线
-            const y = sy + (ey - sy) * t + parabola;
+            const y = sy + (ly - sy) * t + parabola;
             const rot = spinDir * spinTurns * 360 * t;
             const scale = 1 + Math.sin(t * Math.PI) * 0.12;
             fly.style.transform =
@@ -2832,7 +2865,7 @@ const FruitSystem = (() => {
                 // 顺带做个轻微 squash：弹起最高点稍微压扁一点，更有"砸"的弹性
                 const squash = 1 - Math.sin(t * Math.PI) * 0.08;
                 fly.style.transform =
-                    'translate(' + ex + 'px,' + (ey - up) + 'px) rotate(' + baseRot + 'deg) scale(1,' + squash + ')';
+                    'translate(' + lx + 'px,' + (ly - up) + 'px) rotate(' + baseRot + 'deg) scale(1,' + squash + ')';
                 if (t < 1) {
                     requestAnimationFrame(bounceFrame);
                 } else {
@@ -2852,8 +2885,8 @@ const FruitSystem = (() => {
             function fallFrame(now) {
                 const t = Math.min((now - fStart) / fallDur, 1);
                 const ease = t * t;                   // 加速下坠
-                const x = ex + drift * t;
-                const y = ey + (targetY - ey) * ease;
+                const x = lx + drift * t;
+                const y = ly + (targetY - ly) * ease;
                 const rot = baseRot + spinDir * 180 * t;
                 fly.style.transform =
                     'translate(' + x + 'px,' + y + 'px) rotate(' + rot + 'deg) scale(1)';
@@ -3624,6 +3657,9 @@ function initErrorInterceptor() {
             }
             return response;
         }).catch((err) => {
+            // ❤︎ user自己点了停止键（AbortError）≠ 真断连，原样抛出去，别弹窗也别进掉线模式 ❤︎
+            if (err && err.name === 'AbortError') throw err;
+
             // 网络层直接炸了（断网/CORS/超时）→ 一定可重试
             // 同样进累计投喂模式
             try { FruitSystem.notifyError(); } catch (_) { }
