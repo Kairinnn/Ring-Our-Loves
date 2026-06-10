@@ -13,7 +13,7 @@ import { getChatCompletionModel } from '../../../openai.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.6.5';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.55';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
     localStorage.setItem('rol_version', ROL_VERSION);
@@ -2520,7 +2520,7 @@ const FruitSystem = (() => {
         function ensurePadding() {
             const opt = track.querySelector('.rol-fruit-option');
             if (!opt) return;
-            const pad = Math.max(0, wrap.clientWidth / 2 - opt.offsetWidth / 2);
+            const pad = Math.max(150, wrap.clientWidth / 2 - opt.offsetWidth / 2);
 
             // ❤ 删掉旧的spacer ❤
             track.querySelectorAll('.rol-scroll-spacer').forEach(el => el.remove());
