@@ -272,10 +272,8 @@ function injectVersionPrompt() {
 
     let injectText;
     if (isSwitch) {
-        // ❤ 切换提示-高权重 ❤
-        injectText =
-            `[SYS|${Date.now()}] MODEL_SWITCH: ${lastPretty} -> ${pretty}\n${baseText}` +
-            baseText;
+        injectText = `[SYS|${Date.now()}] MODEL_SWITCH: ${lastPretty} -> ${pretty}\n${baseText}`;
+        _rolLastInjectedVersion = null;  // 强制下一轮重新注入
     } else {
         injectText = baseText;
     }
@@ -340,8 +338,19 @@ function fmtInterval(ms) {
     return rh ? `${d} 天 ${rh} 小时` : `${d} 天`;
 }
 
+/* ⬇️┅⏰️刷新所有时间戳的时态（全局函数：切回页面 / 跨天时重算「昨天/前天」等相对文案）/┅┅╗ */
+function refreshAllTimestamps() {
+    document.querySelectorAll('.rol-msg-time[data-rol-ts]').forEach(el => {
+        el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
+    });
+    document.querySelectorAll('.rol-time-divider[data-rol-ts]').forEach(el => {
+        el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
+    });
+}
+
 /* ⬇️┅⏰️前端时间分隔线：createElement 独立 div，绝不用 addOneMessage/┅┅╗ */
-function appendTimeDivider(text, mesId) {
+// ❤ nowTs 必须作为参数传进来：之前漏传导致函数内引用未定义变量 → ReferenceError，分割线整条挂掉 ❤
+function appendTimeDivider(text, mesId, nowTs) {
     const chatEl = document.getElementById('chat');
     if (!chatEl) return;
     if (chatEl.querySelector(`.rol-time-divider[data-rol-for="${mesId}"]`)) return; // 防重复
@@ -350,6 +359,7 @@ function appendTimeDivider(text, mesId) {
     div.dataset.rolFor = String(mesId);
     div.dataset.rolTs = String(nowTs);
     div.textContent = text;
+
     const target = chatEl.querySelector(`.mes[mesid="${mesId}"]`);
     if (target) chatEl.insertBefore(div, target);   // 落在这条新消息上方
     else chatEl.appendChild(div);
@@ -360,7 +370,8 @@ function appendTimeDivider(text, mesId) {
 // ❤ 带重试 + user 校验：MESSAGE_SENT 触发时 DOM 可能还没更新完 / mesId 对不上，
 //   直接挂会挂错到 character 方消息上。所以：找不到目标 or 目标不是 user 消息 →
 //   每 100ms 重试，最多 5 次；5 次还不行就放弃（console.warn）❤
-function appendMsgTimestamp(text, mesId, attempt = 0) {
+// ❤ nowTs 同样必须作为参数传进来，否则 span.dataset.rolTs 引用未定义变量 → 整条时间戳挂掉 ❤
+function appendMsgTimestamp(text, mesId, nowTs, attempt = 0) {
     const MAX_RETRY = 5;
     const chatEl = document.getElementById('chat');
     if (!chatEl) return;
@@ -374,7 +385,7 @@ function appendMsgTimestamp(text, mesId, attempt = 0) {
     if (!isUserMes) {
         if (attempt < MAX_RETRY) {
             // ❤ DOM 还没好 / 还没标成 user → 100ms 后再试 ❤
-            setTimeout(() => appendMsgTimestamp(text, mesId, attempt + 1), 100);
+            setTimeout(() => appendMsgTimestamp(text, mesId, nowTs, attempt + 1), 100);
         } else {
             console.warn(`[RingOurLuv] ⏰️ 时间戳挂载放弃：找不到 mesId=${mesId} 的 user 消息 DOM（已重试 ${MAX_RETRY} 次）`);
         }
@@ -388,17 +399,9 @@ function appendMsgTimestamp(text, mesId, attempt = 0) {
     span.className = 'rol-msg-time';
     span.dataset.rolTs = String(nowTs);
     span.textContent = text;
-
-    function refreshAllTimestamps() {
-        document.querySelectorAll('.rol-msg-time[data-rol-ts]').forEach(el => {
-            el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
-        });
-        document.querySelectorAll('.rol-time-divider[data-rol-ts]').forEach(el => {
-            el.textContent = fmtRelativeTime(Number(el.dataset.rolTs));
-        });
-    }
     block.insertBefore(span, block.firstChild);
 }
+
 
 
 
@@ -432,7 +435,8 @@ eventSource.on(event_types.MESSAGE_SENT, () => {
         if (!prevUser || interval >= 20 * 60 * 1000) {
             const text = fmtRelativeTime(nowTs);
             const mesId = chat.length - 1;
-            requestAnimationFrame(() => appendTimeDivider(text, mesId));
+            requestAnimationFrame(() => appendTimeDivider(text, mesId, nowTs));
+
         }
     }
 
@@ -444,7 +448,8 @@ eventSource.on(event_types.MESSAGE_SENT, () => {
     if (cfg.enableTimeAware !== false) {
         const tsText = fmtRelativeTime(nowTs);
         const tsMesId = chat.length - 1;
-        requestAnimationFrame(() => appendMsgTimestamp(tsText, tsMesId));
+        requestAnimationFrame(() => appendMsgTimestamp(tsText, tsMesId, nowTs));
+
     }
 
     if (typeof ctx.saveChat === 'function') ctx.saveChat();
@@ -473,6 +478,9 @@ function injectTimeContext() {
 /* ⬇️┅✨版本号显示：挂到聊天区「最新一条 assistant 消息」头像框上方/┅┅╗ */
 // ❤ 只标最新一条，先清掉旧标签，不给历史消息逐条补，省性能 ❤
 function renderVersionBadge(model, channel) {
+    // 流式还在跑的时候不画
+    if (document.querySelector('#chat .mes:last-child .mes_text .typing_indicator, #chat .mes:last-child.mes_streaming')) return;
+
     const cfg = Storage.getConfig();
     document.querySelectorAll('.rol-version-tag').forEach(el => el.remove());
     if (cfg.hideVersionBadge) return;
@@ -482,9 +490,10 @@ function renderVersionBadge(model, channel) {
     const lastMsg = msgs[msgs.length - 1];
     if (!lastMsg) return;
 
-    // 改：插入到消息气泡内部右上角
-    const mesBody = lastMsg.querySelector('.mes_text');
-    if (!mesBody) return;
+    // 插到消息块底部，文字下方
+    const mesBlock = lastMsg.querySelector('.mes_block');
+    if (!mesBlock) return;
+    mesBlock.appendChild(tag);
 
     const tag = document.createElement('div');
     tag.className = 'rol-version-tag';
@@ -3274,7 +3283,10 @@ const FruitSystem = (() => {
 
         // ❤︎ 监听 ST 消息生成完成 → check delivery + parse AI fruits ❤︎
         ctx.eventSource.on('message_received', (msgId) => {
+            // ❤︎ 生成成功 → 清零重试计数 / 退出自动重试模式（成功即停）❤︎
+            try { ErrorModal.reset(); } catch (_) { }
             // 上一轮注入的「记忆恋果」+「果子投递」prompt 已经被这轮消费掉了
+
             // 这里统一擦干净，绝不让任何注入赖在原地、每轮都跟着上下文飘。有敢留下的，杀杀杀！
             if (typeof ctx.setExtensionPrompt === 'function') {
                 ctx.setExtensionPrompt(extensionName, '', 1, 0);          // 清掉记忆恋果注入
@@ -3492,6 +3504,40 @@ const ErrorModal = (() => {
     let suppressUntil = 0;   // 手动关掉后的冷却截止时间戳
     let lastKey = '';        // 上次弹的内容指纹，防同样的错刷屏
     let lastShownAt = 0;     // 上次弹出的时间
+    // ❤︎ 自动重试：点「再试一次」累计 ≥2 次后，进入「自动持续重试」模式，
+    //   每次「弹窗报错 → 下次重试」之间隔 ~1s，直到生成成功才停 ❤︎
+    let retryCount = 0;          // 「再试一次」累计点击次数
+    let autoRetrying = false;    // 是否已进入自动重试模式
+    let autoRetryTimer = null;   // 自动重试的待执行定时器
+
+    // ❤︎ 真正执行重发：先关弹窗、清掉待执行定时器，再走 /regenerate（兜底点原生按钮）❤︎
+    function performRetry() {
+        if (autoRetryTimer) { clearTimeout(autoRetryTimer); autoRetryTimer = null; }
+        dismiss();
+        // 等弹窗关掉、UI稳一拍再重发，免得状态打架
+        setTimeout(() => {
+            const ctx = SillyTavern.getContext();
+            // 用 ctx 暴露的执行器，不碰裸函数，绝不会 ReferenceError
+            if (ctx && typeof ctx.executeSlashCommandsWithOptions === 'function') {
+                ctx.executeSlashCommandsWithOptions('/regenerate', {
+                    handleExecutionErrors: true,
+                    handleParserErrors: true
+                });
+                return;
+            }
+            // ❤ 真兜底：才去戳原生按钮 ❤
+            const regen = document.getElementById('option_regenerate');
+            if (regen) regen.click();
+        }, 150);
+    }
+
+    // ❤︎ 生成成功那刻调用：清零计数、退出自动重试、撤掉待执行定时器 ❤︎
+    function reset() {
+        retryCount = 0;
+        autoRetrying = false;
+        if (autoRetryTimer) { clearTimeout(autoRetryTimer); autoRetryTimer = null; }
+    }
+
 
     function ensureDom() {
         if (overlay) return;
@@ -3518,29 +3564,17 @@ const ErrorModal = (() => {
             e.stopPropagation();
             dismiss();
         });
-        // ❤︎ 再试一次：先关掉弹窗(进冷却)，再点酒馆原生的「重新生成」按钮兜底重发 ❤︎
+        // ❤︎ 再试一次：累计点击次数，满 2 次（含第 2 次）进入自动持续重试模式 ❤︎
         const retryBtn = overlay.querySelector('#rol-error-retry');
         if (retryBtn) {
             retryBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                dismiss();
-                // 等弹窗关掉、UI稳一拍再重发，免得状态打架
-                setTimeout(() => {
-                    const ctx = SillyTavern.getContext();
-                    // 用 ctx 暴露的执行器，不碰裸函数，绝不会 ReferenceError
-                    if (ctx && typeof ctx.executeSlashCommandsWithOptions === 'function') {
-                        ctx.executeSlashCommandsWithOptions('/regenerate', {
-                            handleExecutionErrors: true,
-                            handleParserErrors: true
-                        });
-                        return;
-                    }
-                    // ❤ 真兜底：才去戳原生按钮 ❤
-                    const regen = document.getElementById('option_regenerate');
-                    if (regen) regen.click();
-                }, 150);
+                retryCount++;
+                if (retryCount >= 2) autoRetrying = true; // 第 2 次起接管，后面自动循环
+                performRetry();
             });
         }
+
         // 点遮罩空白处也能关
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) dismiss();
@@ -3558,9 +3592,12 @@ const ErrorModal = (() => {
         const now = Date.now();
         // 刚手动关过，冷却期内闭嘴，别打扰灰灰
         if (now < suppressUntil) return;
+        // ❤︎ 不可重试的错（401/403/400 这种）→ 立刻退出自动重试模式，重试也白搭，别再循环 ❤︎
+        if (autoRetrying && !retryable) reset();
         const key = (title || '') + '|' + (message || '');
         // 同样的错 5 秒内只弹一次，别刷屏把人锁死
-        if (key === lastKey && (now - lastShownAt) < 5000) return;
+        // ❤︎ 自动重试模式下要跳过这道去重：否则「同一个错」会被拦下，自动重试链直接断掉 ❤︎
+        if (!autoRetrying && key === lastKey && (now - lastShownAt) < 5000) return;
         lastKey = key;
         lastShownAt = now;
         ensureDom();
@@ -3570,7 +3607,13 @@ const ErrorModal = (() => {
         const retryBtn = overlay.querySelector('#rol-error-retry');
         if (retryBtn) retryBtn.style.display = retryable ? '' : 'none';
         overlay.classList.add('rol-error-show');
+        // ❤︎ 已进入自动重试模式 & 这个错可重试 → 隔 ~1s 自动再发一次，直到成功（成功时 reset 会清掉）❤︎
+        if (autoRetrying && retryable) {
+            if (autoRetryTimer) { clearTimeout(autoRetryTimer); autoRetryTimer = null; }
+            autoRetryTimer = setTimeout(() => performRetry(), 1000);
+        }
     }
+
 
     function hide() {
         if (overlay) overlay.classList.remove('rol-error-show');
@@ -3594,8 +3637,9 @@ const ErrorModal = (() => {
         console.log('[RingOurLuv] 🚑 已接管 toastr.error（只显示Claude的弹窗）');
     }
 
-    return { show, hide, patchToastrError };
+    return { show, hide, reset, patchToastrError };
 })();
+
 
 // ❤︎ 包住 window.fetch，只盯真正的「生成」请求，失败了才弹窗告诉灰灰 ❤︎
 function initErrorInterceptor() {
