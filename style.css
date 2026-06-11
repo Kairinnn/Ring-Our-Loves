@@ -1707,12 +1707,14 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     align-items: center;
     /* ❤︎ 绝对不换行，保持单行横向滚动 ❤︎ */
     flex-wrap: nowrap;
-    /* ❤︎ 两侧用 padding 撑开滚动空间（容器一半 - 果子一半52/2=26）❤︎ */
-    /* ❤︎ 保证任意一颗（含最后的🍉和✏️）都能滚到正中心 ❤︎ */
-    padding-left: calc(50% - 26px);
-    padding-right: calc(50% - 26px);
+    /* ❤︎ 撑开滚动空间的活儿改由 JS 里 ensurePadding() 插入的首尾 spacer DIV 接管，
+       这里 padding 必须归零，否则 spacer + CSS padding 双倍叠加会过冲、末两颗反而滚不到正中心。
+       （Chrome 下 flex 滚动容器的左右 padding 本来也不计入可滚动宽度，留着没用还添乱）❤︎ */
+    padding-left: 0;
+    padding-right: 0;
     box-sizing: content-box;
 }
+
 
 
 .rol-fruit-option {

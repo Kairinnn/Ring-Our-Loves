@@ -2523,10 +2523,23 @@ const FruitSystem = (() => {
         if (!wrap || !track) return;
 
         function ensurePadding() {
-            // ❤︎ 撑开滚动空间的活儿改交给 CSS（.rol-fruit-picker-track 的左右 padding），
-            //    这里只负责清理可能残留的旧 spacer 元素 ❤︎
+            // ❤︎ 选果栏首尾各插一个透明占位块，撑开可滚动宽度，
+            //    让「第一颗」和「最后两颗（🍉/自定义✏️）」都能滚到容器正中被选中。❤︎
+            //    （Chrome 下 flex 滚动容器的左右 padding 不计入可滚动宽度，撑不开，
+            //      所以这里改用真实的 spacer 元素；宽度按 wrap 实际宽度精确算，不靠百分比。）
             track.querySelectorAll('.rol-scroll-spacer').forEach(el => el.remove());
+            const pad = Math.max(0, wrap.clientWidth / 2 - 26); // 26 = 选项半宽(52/2)
+            const makeSpacer = () => {
+                const s = document.createElement('div');
+                s.className = 'rol-scroll-spacer';
+                // flex 不收缩 + 显式宽度双保险，pointer-events:none 防误点
+                s.style.cssText = `flex:0 0 ${pad}px;width:${pad}px;height:1px;pointer-events:none;`;
+                return s;
+            };
+            track.insertBefore(makeSpacer(), track.firstChild); // 头部占位
+            track.appendChild(makeSpacer());                    // 尾部占位
         }
+
 
 
 
@@ -2774,18 +2787,19 @@ const FruitSystem = (() => {
                 bounce: 26 + Math.random() * 10     // 砸中后弹起高度
             },
             { // ② 左侧飞入
-                start: () => ({ x: -M, y: ey - vh * 0.25 + Math.random() * vh * 0.2 }),
-                arc: -(90 + Math.random() * 50),
+                // ❤︎ 起飞点压低到接近头像高度（别再从老高的地方兜弧），抛物线也调缓 ❤︎
+                start: () => ({ x: -M, y: ey - vh * 0.15 + Math.random() * vh * 0.12 }),
+                arc: -(45 + Math.random() * 30),
                 bounce: 18 + Math.random() * 10
             },
             { // ③ 右侧飞入
-                start: () => ({ x: vw + M, y: ey - vh * 0.25 + Math.random() * vh * 0.2 }),
-                arc: -(90 + Math.random() * 50),
+                start: () => ({ x: vw + M, y: ey - vh * 0.15 + Math.random() * vh * 0.12 }),
+                arc: -(45 + Math.random() * 30),
                 bounce: 18 + Math.random() * 10
             },
             { // ④ 随机一角斜射
                 start: () => ({ x: Math.random() < 0.5 ? -M : vw + M, y: -M }),
-                arc: -(70 + Math.random() * 60),
+                arc: -(55 + Math.random() * 40),
                 bounce: 30 + Math.random() * 14
             }
         ];
@@ -2795,19 +2809,21 @@ const FruitSystem = (() => {
         const sp = v.start();
         const sx = sp.x, sy = sp.y;
 
-        // ❤︎ 方案C：落点不进外框中心，而是缩到「朝来向那条外框边缘」，让果子刚贴到外框就弹 ❤︎
-        //    从中心 (ex,ey) 朝起飞点方向回退，按外框半宽/半高把交点落在矩形边界上。
-        //    targetEl 为 null 时 hw=hh=0 → s=0 → 落点退回中心，等价旧行为（安全兜底）。
+        // ❤︎ 落点：先朝来向算出「触及外框边缘」的点，再朝中心内收 INSET 系数，
+        //    让果子实打实砸进头像身上（而不是擦着外框边缘飞过去就走）。❤︎
+        //    内收前是边缘(贴边)，乘 0.62 后落在「中心↔边缘」的 62% 处 = 头像偏外侧。
+        //    targetEl 为 null 时 hw=hh=0 → 落点退回中心，等价旧行为（安全兜底）。
+        const INSET = 0.62; // ← 落点内收比例：1=贴边缘，0=正中心；斜飞/左右飞靠它真正命中
         let lx = ex, ly = ey;
         {
             const dx = sx - ex, dy = sy - ey;
             const adx = Math.abs(dx), ady = Math.abs(dy);
             if ((hw > 0 || hh > 0) && (adx > 0.0001 || ady > 0.0001)) {
-                // 朝来向缩放系数：取触及矩形某条边所需的最小比例
+                // 朝来向缩放系数：取触及矩形某条边所需的最小比例，再乘内收系数
                 const s = Math.min(
                     adx > 0.0001 ? hw / adx : Infinity,
                     ady > 0.0001 ? hh / ady : Infinity
-                );
+                ) * INSET;
                 lx = ex + dx * s;
                 ly = ey + dy * s;
             }
