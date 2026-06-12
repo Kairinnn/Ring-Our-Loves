@@ -252,7 +252,9 @@ function injectVersionPrompt() {
     const raw = rolReadModel();
     if (!raw) return;
     const pretty = mapModelName(raw);
-    const channel = (cfg.currentChannel || '').trim();
+    // ❤ 渠道按「当前模型」从 channels 映射里取，跟保存/显示用同一套，别再读永远空着的 currentChannel ❤
+    const channels = cfg.channels || {};
+    const channel = (channels[raw] || '').trim();
     const label = channel ? `${pretty}·${channel}` : pretty;
 
     // ❤ 实时刷新卡片版本号显示 ❤
@@ -493,13 +495,14 @@ function renderVersionBadge(model, channel) {
     // 插到消息块底部，文字下方
     const mesBlock = lastMsg.querySelector('.mes_block');
     if (!mesBlock) return;
-    mesBlock.appendChild(tag);
 
+    // ❤ 之前这里 tag 还没声明就 appendChild(tag) → TDZ 直接抛 ReferenceError，
+    //   后面又引用了根本不存在的 mesBody，函数一跑就崩，badge 永远画不出来。修正：先建 tag 再挂 ❤
     const tag = document.createElement('div');
     tag.className = 'rol-version-tag';
     const text = channel ? `${model} · ${channel}` : model;
     tag.textContent = `✦ ${text}`;
-    mesBody.appendChild(tag);
+    mesBlock.appendChild(tag);
 }
 
 // 页面加载时能读到模型就尝试渲染一次
@@ -525,7 +528,13 @@ function startModelWatcher() {
         renderVersionBadge(pretty, channel);
         const display = document.getElementById('rol-current-model');
         if (display) display.value = raw;        // 同步只读显示框
-        if (raw !== cfg.currentModel) Storage.updateConfig({ currentModel: raw });
+        // ❤ 换模型时把渠道输入框刷成「这个模型」存过的渠道，没存过就清空，别一直挂着旧模型的渠道 ❤
+        const channelInput = document.getElementById('rol-current-channel');
+        if (channelInput && raw !== cfg.currentModel) channelInput.value = channel;
+        if (raw !== cfg.currentModel) {
+            Storage.updateConfig({ currentModel: raw });
+            _rolLastInjectedVersion = null;   // 模型变了 → 下一轮强制重新注入版本
+        }
     }
     el.addEventListener('input', refresh);
     el.addEventListener('change', refresh);
@@ -3509,6 +3518,11 @@ const ErrorModal = (() => {
     let retryCount = 0;          // 「再试一次」累计点击次数
     let autoRetrying = false;    // 是否已进入自动重试模式
     let autoRetryTimer = null;   // 自动重试的待执行定时器
+    // ❤︎ 「同模型 + 同报错」指纹计数：同一个坑第 2 次撞上就直接自动接管，
+    //   不用灰灰再手动点两次（一个聊天里反复 pvp 太常见了，解放双手）❤︎
+    const sigCount = {};         // { '模型|报错指纹': 撞墙次数 }
+    const SIG_AUTO_THRESHOLD = 2;// 同指纹撞到第 2 次 → 自动接管
+
 
     // ❤︎ 真正执行重发：先关弹窗、清掉待执行定时器，再走 /regenerate（兜底点原生按钮）❤︎
     function performRetry() {
@@ -3531,11 +3545,12 @@ const ErrorModal = (() => {
         }, 150);
     }
 
-    // ❤︎ 生成成功那刻调用：清零计数、退出自动重试、撤掉待执行定时器 ❤︎
+    // ❤︎ 生成成功那刻调用：清零计数、退出自动重试、撤掉待执行定时器、清空指纹计数 ❤︎
     function reset() {
         retryCount = 0;
         autoRetrying = false;
         if (autoRetryTimer) { clearTimeout(autoRetryTimer); autoRetryTimer = null; }
+        for (const k in sigCount) delete sigCount[k];   // 成功即停，指纹计数全清
     }
 
 
@@ -3594,6 +3609,17 @@ const ErrorModal = (() => {
         if (now < suppressUntil) return;
         // ❤︎ 不可重试的错（401/403/400 这种）→ 立刻退出自动重试模式，重试也白搭，别再循环 ❤︎
         if (autoRetrying && !retryable) reset();
+
+        // ❤︎ 「同模型 + 同报错」指纹：可重试的错才记。同一个坑第 2 次撞上，
+        //   不用灰灰手动点两次，直接进自动重试模式（一个聊天里反复 pvp 太常见啦~）❤︎
+        if (retryable) {
+            let model = '';
+            try { model = rolReadModel() || ''; } catch (_) { /* 读不到模型也不影响 */ }
+            const sig = model + '|' + (title || '') + '|' + (message || '');
+            sigCount[sig] = (sigCount[sig] || 0) + 1;
+            if (sigCount[sig] >= SIG_AUTO_THRESHOLD) autoRetrying = true;
+        }
+
         const key = (title || '') + '|' + (message || '');
         // 同样的错 5 秒内只弹一次，别刷屏把人锁死
         // ❤︎ 自动重试模式下要跳过这道去重：否则「同一个错」会被拦下，自动重试链直接断掉 ❤︎
