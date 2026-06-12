@@ -252,7 +252,9 @@ function injectVersionPrompt() {
     const raw = rolReadModel();
     if (!raw) return;
     const pretty = mapModelName(raw);
-    const channel = (cfg.currentChannel || '').trim();
+    // ❤ 渠道统一从 channels 映射按「当前模型」读，跟保存口径对齐（别再用 currentChannel 那条死路）❤
+    const channels = cfg.channels || {};
+    const channel = (channels[raw] || '').trim();
     const label = channel ? `${pretty}·${channel}` : pretty;
 
     // ❤ 实时刷新卡片版本号显示 ❤
@@ -282,7 +284,7 @@ function injectVersionPrompt() {
     //    （ephemeral 注入不写进 chat 数组，/hide 隐藏楼层抹不掉它，性质同世界书固定深度）
     ctx.setExtensionPrompt(ROL_VERSION_KEY, injectText, 1, 1);
 
-    Storage.updateConfig({ currentModel: raw, lastModel: pretty, lastChannel: channel });
+    Storage.updateConfig({ currentModel: raw, currentChannel: channel, lastModel: pretty, lastChannel: channel });
 
     console.log('[RingOurLuv] 🧡 版本注入更新:', label);
 }
@@ -493,13 +495,14 @@ function renderVersionBadge(model, channel) {
     // 插到消息块底部，文字下方
     const mesBlock = lastMsg.querySelector('.mes_block');
     if (!mesBlock) return;
-    mesBlock.appendChild(tag);
 
+    // ❤ 先建好 tag 再挂载：之前在声明前就 appendChild(tag) 撞 TDZ，
+    //   末尾又用了未定义的 mesBody，整个函数直接抛错 → 版本/渠道永远画不出来 ❤
     const tag = document.createElement('div');
     tag.className = 'rol-version-tag';
     const text = channel ? `${model} · ${channel}` : model;
     tag.textContent = `✦ ${text}`;
-    mesBody.appendChild(tag);
+    mesBlock.appendChild(tag);
 }
 
 // 页面加载时能读到模型就尝试渲染一次
@@ -525,6 +528,9 @@ function startModelWatcher() {
         renderVersionBadge(pretty, channel);
         const display = document.getElementById('rol-current-model');
         if (display) display.value = raw;        // 同步只读显示框
+        // ❤ 换模型时把「渠道输入框」也同步成这个模型存过的渠道，别让旧模型的渠道赖在框里 ❤
+        const channelInput = document.getElementById('rol-current-channel');
+        if (channelInput && channelInput.value !== channel) channelInput.value = channel;
         if (raw !== cfg.currentModel) Storage.updateConfig({ currentModel: raw });
     }
     el.addEventListener('input', refresh);
@@ -3509,6 +3515,18 @@ const ErrorModal = (() => {
     let retryCount = 0;          // 「再试一次」累计点击次数
     let autoRetrying = false;    // 是否已进入自动重试模式
     let autoRetryTimer = null;   // 自动重试的待执行定时器
+    // ❤︎ 记下「哪些 模型+报错 指纹」在本次会话内已经进过自动重试模式。
+    //   只要某个指纹进过一次，下次同样的模型+同样的报错再弹 → 直接进 max 自动重试，
+    //   不用再手动点两下。pvp 时解放双手🙌（成功 reset 不清这个集合，留着记仇）❤︎
+    let autoRetriedKeys = new Set();
+    // ❤︎ 当前这次弹窗的指纹，retry 按钮点击时也能拿到它去登记 ❤︎
+    let curFingerprint = '';
+    // ❤︎ 记下「哪些 模型+报错 指纹」这辈子（本次会话内）已经进过自动重试模式。
+    //   只要某个指纹进过一次，下次同样的模型+同样的报错再弹 → 直接进 max 自动重试，
+    //   不用再手动点两下。pvp 时解放双手🙌（成功 reset 不清这个集合，留着记仇）❤︎
+    let autoRetriedKeys = new Set();
+    // ❤︎ 当前这次弹窗的指纹，retry 按钮点击时也能拿到它去登记 ❤︎
+    let curFingerprint = '';
 
     // ❤︎ 真正执行重发：先关弹窗、清掉待执行定时器，再走 /regenerate（兜底点原生按钮）❤︎
     function performRetry() {
@@ -3570,7 +3588,11 @@ const ErrorModal = (() => {
             retryBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 retryCount++;
-                if (retryCount >= 2) autoRetrying = true; // 第 2 次起接管，后面自动循环
+                if (retryCount >= 2) {
+                    autoRetrying = true; // 第 2 次起接管，后面自动循环
+                    // ❤ 把这个「模型+报错」指纹记下：以后同样的错再弹，直接自动重试 ❤
+                    if (curFingerprint) autoRetriedKeys.add(curFingerprint);
+                }
                 performRetry();
             });
         }
@@ -3594,6 +3616,14 @@ const ErrorModal = (() => {
         if (now < suppressUntil) return;
         // ❤︎ 不可重试的错（401/403/400 这种）→ 立刻退出自动重试模式，重试也白搭，别再循环 ❤︎
         if (autoRetrying && !retryable) reset();
+
+        // ❤︎ 算这次弹窗的「模型+报错」指纹：模型名取当前真实模型，报错取 title（带状态码）❤︎
+        let model = '';
+        try { model = mapModelName(rolReadModel()) || ''; } catch (_) { /* 取不到就空着 */ }
+        curFingerprint = model + '||' + (title || '');
+        // ❤︎ 这个指纹之前已经进过自动重试 & 这次还可重试 → 直接进 max 自动重试，省掉手动两下 ❤︎
+        if (retryable && autoRetriedKeys.has(curFingerprint)) autoRetrying = true;
+
         const key = (title || '') + '|' + (message || '');
         // 同样的错 5 秒内只弹一次，别刷屏把人锁死
         // ❤︎ 自动重试模式下要跳过这道去重：否则「同一个错」会被拦下，自动重试链直接断掉 ❤︎
@@ -3609,6 +3639,8 @@ const ErrorModal = (() => {
         overlay.classList.add('rol-error-show');
         // ❤︎ 已进入自动重试模式 & 这个错可重试 → 隔 ~1s 自动再发一次，直到成功（成功时 reset 会清掉）❤︎
         if (autoRetrying && retryable) {
+            // ❤ 登记指纹：以后同模型+同报错再弹，直接自动重试，不用再手动点 ❤
+            if (curFingerprint) autoRetriedKeys.add(curFingerprint);
             if (autoRetryTimer) { clearTimeout(autoRetryTimer); autoRetryTimer = null; }
             autoRetryTimer = setTimeout(() => performRetry(), 1000);
         }
