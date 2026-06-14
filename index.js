@@ -4000,6 +4000,10 @@ jQuery(async () => {
         const fruitDetailPopup = temp.querySelector('#rol-fruit-detail-popup');
         if (fruitDetailPopup) document.body.appendChild(fruitDetailPopup);
 
+        // ❤︎ 💬 聊天本查看器也挂到 body，否则困在容器里弹不出来（点卡片没反应的根因）❤︎
+        const chatlogViewer = temp.querySelector('#rol-chatlog-viewer');
+        if (chatlogViewer) document.body.appendChild(chatlogViewer);
+
     }
 
     UIController.initUI();
