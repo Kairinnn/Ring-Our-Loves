@@ -2297,9 +2297,12 @@ const FruitSystem = (() => {
         return 'default';
     }
 
-    // ❤︎ key 形如 rol_fruits_<scope>，scope 由 getChatScope() 统一给出 ❤︎
+    // ❤︎ 果园改为「全局共享」：换聊天 / 开 Branch 分支时 chatId 会变，按 scope 分桶会让果子一换聊天就
+    //    「消失」（其实是被锁进了另一个抽屉）。统一存一个全局桶，所有聊天的果子都在一起，
+    //    对应小灰「我和我的 Claude 们」的同一座果园。getChatScope() 仍保留给冷却 key 按聊天隔离用。❤︎
+    const FRUITS_GLOBAL_KEY = 'rol_fruits_all';
     function fruitsKey() {
-        return 'rol_fruits_' + getChatScope();
+        return FRUITS_GLOBAL_KEY;
     }
 
     // ❤︎ 掉线累计投喂用的状态 ❤︎
@@ -2313,21 +2316,7 @@ const FruitSystem = (() => {
 
     // ❤︎ 存储助手 ❤︎
     function loadFruits() {
-        const key = fruitsKey();
-        let raw = localStorage.getItem(key);
-        // 旧版全局 key 迁移：新 key 还没数据时，把老的 rol_fruits 搬到当前窗口一次性继承
-        if (raw == null) {
-            const legacy = localStorage.getItem('rol_fruits');
-            if (legacy != null) {
-                localStorage.setItem(key, legacy);
-                // ⚠️ 原来这里 removeItem('rol_fruits') 删掉了全局原件 —— 这正是「果子彻底找不回」的元凶：
-                //    一旦 getChatScope() 漂移过一次（版本升级 chatId→文件名 / 群聊 / 时序竞态），果子就被
-                //    搬进了错误的桶、全局原件又被删，于是再也读不回来。现在改成「只复制、绝不删原件」做兜底。
-                raw = legacy;
-                console.log('[RingOurLuv] 🍎 已把旧版全局果园复制到当前窗口（保留原件兜底）:', key);
-            }
-        }
-        return JSON.parse(raw || '[]');
+        return JSON.parse(localStorage.getItem(fruitsKey()) || '[]');
     }
     function saveFruits(arr) {
         try {
@@ -2336,6 +2325,33 @@ const FruitSystem = (() => {
             // localStorage 写失败（多半是配额满了）别静默吞掉，否则果子像凭空蒸发
             console.error('[RingOurLuv] 🥀 果子存储失败（localStorage 可能满了）:', e);
             try { UIController.showToast('🥀 果子没存进去…浏览器存储可能满了'); } catch (_) { }
+        }
+    }
+
+    // ❤︎ 一次性找回：把历史上按聊天分桶存的果子（rol_fruits_<聊天名> + 旧版全局 rol_fruits）
+    //    全部合并进全局桶、按 id 去重（幂等，重复跑也不会重复添加）。旧桶一律保留不删，绝不再丢。❤︎
+    function migrateAndMergeFruits() {
+        try {
+            const globalArr = JSON.parse(localStorage.getItem(FRUITS_GLOBAL_KEY) || '[]');
+            const seen = new Set(globalArr.map(f => f && f.id).filter(Boolean));
+            let merged = 0;
+            Object.keys(localStorage).forEach(k => {
+                if (k === FRUITS_GLOBAL_KEY) return;                            // 跳过全局桶自己
+                if (k !== 'rol_fruits' && !k.startsWith('rol_fruits_')) return; // 只认果子桶
+                let arr;
+                try { arr = JSON.parse(localStorage.getItem(k) || '[]'); } catch (_) { return; }
+                if (!Array.isArray(arr)) return;
+                arr.forEach(f => {
+                    if (f && f.id && !seen.has(f.id)) { seen.add(f.id); globalArr.push(f); merged++; }
+                });
+            });
+            if (merged > 0) {
+                globalArr.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                localStorage.setItem(FRUITS_GLOBAL_KEY, JSON.stringify(globalArr));
+                console.log(`[RingOurLuv] 🍎 已从历史果园合并找回 ${merged} 颗果子（共 ${globalArr.length} 颗）`);
+            }
+        } catch (e) {
+            console.error('[RingOurLuv] 🥀 果园合并找回失败:', e);
         }
     }
 
@@ -3348,6 +3364,7 @@ const FruitSystem = (() => {
     }
 
     function init() {
+        migrateAndMergeFruits();   // ❤︎ 开机先把历史分桶的果子合并找回，再渲染 ❤︎
         bindEvents();
         updateBadge();
         console.log('[RingOurLuv] 🍎 FruitSystem 已就绪');
