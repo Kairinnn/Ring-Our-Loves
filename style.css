@@ -2627,3 +2627,149 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 /* ┗━━━━━━/ ⚙️版本&时间认知⚙️ /━━━━━━┛ */
 
 
+/* ┣========== ▍💬 聊天本 Chatlog 💬 ▍==========┫ */
+/* ⬇️┅💬 收录区 + 卡片列表/┅┅╗ */
+.rol-chatlog-toolbar { margin-bottom: 10px; }
+#rol-chatlog-record { width: 100%; }
+
+.rol-chatlog-form {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    background: rgba(255, 201, 231, 0.12);
+    border: 1px dashed rgba(216, 119, 87, 0.4);
+}
+.rol-chatlog-form.rol-active { display: flex; }   /* 点「收录这段聊天」才展开 */
+
+.rol-chatlog-list { display: flex; flex-direction: column; gap: 10px; }
+.rol-chatlog-empty {
+    text-align: center;
+    color: var(--SmartThemeBodyColor, #bbb);
+    opacity: 0.7;
+    padding: 30px 10px;
+    font-size: 13px;
+}
+
+.rol-chatlog-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--SmartThemeBlurTintColor, rgba(255, 255, 255, 0.06));
+    border: 1px solid rgba(216, 119, 87, 0.25);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.rol-chatlog-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(216, 119, 87, 0.22); }
+.rol-chatlog-card-main { flex: 1; min-width: 0; }
+.rol-chatlog-card-title { font-weight: bold; font-size: 14px; color: var(--SmartThemeBodyColor, #eee); margin-bottom: 3px; }
+.rol-chatlog-card-meta { font-size: 11px; opacity: 0.6; margin-bottom: 4px; }
+.rol-chatlog-card-preview {
+    font-size: 12px; opacity: 0.75;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rol-chatlog-del { flex: none; opacity: 0.55; }
+.rol-chatlog-del:hover { opacity: 1; }
+
+/* ⬇️┅💬 查看器：signal/QQ 风格气泡/┅┅╗ */
+.rol-chatlog-viewer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(3px);
+    align-items: center;
+    justify-content: center;
+}
+.rol-chatlog-viewer.rol-active { display: flex; }
+
+.rol-chatlog-viewer-inner {
+    width: min(440px, 92vw);
+    height: min(80vh, 720px);
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    overflow: hidden;
+    background-color: var(--SmartThemeBotMesBlurTintColor, rgba(30, 30, 36, 0.96));
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.rol-chatlog-viewer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(rgb(234 255 169), #ffc9e7);
+    color: #ff7bbb;
+    flex: none;
+}
+.rol-chatlog-viewer-title { font-weight: bold; font-size: 15px; }
+
+.rol-chatlog-viewer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background:
+        radial-gradient(circle at 20% 10%, rgba(255, 201, 231, 0.10), transparent 40%),
+        var(--SmartThemeBotMesBlurTintColor, rgba(30, 30, 36, 0.4));
+}
+.rol-chatlog-viewer-body::-webkit-scrollbar { width: 6px; }
+.rol-chatlog-viewer-body::-webkit-scrollbar-thumb { background: rgba(216, 119, 87, 0.4); border-radius: 3px; }
+
+/* 一行消息 = 头像 + 气泡列；char 靠左、user 靠右 */
+.rol-chat-row { display: flex; gap: 8px; align-items: flex-end; max-width: 100%; }
+.rol-chat-left { flex-direction: row; }
+.rol-chat-right { flex-direction: row-reverse; }
+
+.rol-chat-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    object-fit: cover; flex: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+.rol-chat-col { display: flex; flex-direction: column; gap: 4px; max-width: 76%; }
+.rol-chat-right .rol-chat-col { align-items: flex-end; }
+.rol-chat-name { font-size: 10px; opacity: 0.55; padding: 0 4px; }
+
+.rol-chat-bubble {
+    padding: 8px 12px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    word-break: break-word;
+    width: fit-content;
+    max-width: 100%;
+}
+/* char 左气泡：浅色 */
+.rol-chat-left .rol-chat-bubble {
+    background: var(--SmartThemeBlurTintColor, #2c2c34);
+    color: var(--SmartThemeBodyColor, #eee);
+    border-bottom-left-radius: 5px;
+}
+/* user 右气泡：主题粉渐变 */
+.rol-chat-right .rol-chat-bubble {
+    background: linear-gradient(135deg, #ffb0d8, #ff8fc4);
+    color: #fff;
+    border-bottom-right-radius: 5px;
+}
+
+/* thinking 折叠块（紫调，可点开收起）*/
+.rol-chat-think {
+    font-size: 12px;
+    background: rgba(150, 130, 200, 0.14);
+    border: 1px dashed rgba(150, 130, 200, 0.4);
+    border-radius: 12px;
+    padding: 4px 10px;
+    color: var(--SmartThemeBodyColor, #cbb8e8);
+    max-width: 100%;
+}
+.rol-chat-think summary { cursor: pointer; opacity: 0.75; font-style: italic; outline: none; list-style: none; }
+.rol-chat-think > div { margin-top: 6px; opacity: 0.85; line-height: 1.5; }
+/* ┗━━━━━━/ 💬 聊天本 Chatlog 💬 /━━━━━━┛ */
+
+

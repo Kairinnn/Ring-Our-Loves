@@ -57,6 +57,7 @@
                 <button class="rol-tab" data-target="rol-section-config">🍰 配方</button>
                 <button class="rol-tab" data-target="rol-section-garden" id="rol-tab-garden">🍎 果园<span
                         id="rol-garden-badge" class="rol-garden-badge" style="display:none;"></span></button>
+                <button class="rol-tab" data-target="rol-section-chatlog">💬 聊天本</button>
             </div>
 
             <!-- ┣━━⭐️ 记忆列表━━┫ -->
@@ -117,6 +118,33 @@
                         <button id="rol-fruit-cancel-btn" class="rol-btn rol-btn-cancel">算了</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- ┣━━⭐️ 💬 聊天本━━┫ -->
+            <div id="rol-section-chatlog" class="rol-panel-section">
+                <div class="rol-chatlog-toolbar">
+                    <button id="rol-chatlog-record" class="rol-btn rol-btn-primary">➕ 收录这段聊天</button>
+                </div>
+                <!-- ┣━━收录表单：楼层范围 + 隐藏开关 + 起名，点收录按钮展开━━┫ -->
+                <div id="rol-chatlog-form" class="rol-chatlog-form">
+                    <input type="text" id="rol-chatlog-title" class="rol-input" placeholder="给这本聊天起个名（可空）">
+                    <div class="rol-floor-range">
+                        <div class="rol-floor-field">
+                            <label>🌱 从第几楼</label>
+                            <input type="number" id="rol-chatlog-start" class="rol-input rol-input-sm" value="0" min="0">
+                        </div>
+                        <div class="rol-floor-field">
+                            <label>🍊 到第几楼</label>
+                            <input type="number" id="rol-chatlog-end" class="rol-input rol-input-sm" value="-1">
+                        </div>
+                    </div>
+                    <label class="rol-checkbox-label">
+                        <input type="checkbox" id="rol-chatlog-hidden"> 🍥 包含隐藏楼层
+                    </label>
+                    <button id="rol-chatlog-confirm" class="rol-btn rol-btn-ai">🩷 收录</button>
+                </div>
+                <!-- ┣━━已收录的聊天本卡片列表━━┫ -->
+                <div id="rol-chatlog-list" class="rol-chatlog-list"></div>
             </div>
 
             <!-- ┣━━⭐️ 设置━━┫ -->
@@ -224,6 +252,17 @@
             <button id="rol-editor-rewrite" class="rol-btn rol-btn-rewrite" style="display:none;">🧡 再酿造</button>
             <button id="rol-editor-cancel" class="rol-btn rol-btn-cancel">💦ʢ>д<ʡ等等！< /button>
         </div>
+    </div>
+</div>
+
+<!-- ┣━━⭐️ 💬 聊天本查看器（signal/QQ 风格气泡，点卡片打开）━━┫ -->
+<div id="rol-chatlog-viewer" class="rol-chatlog-viewer">
+    <div class="rol-chatlog-viewer-inner">
+        <div class="rol-chatlog-viewer-header">
+            <span id="rol-chatlog-viewer-title" class="rol-chatlog-viewer-title">聊天记录</span>
+            <button id="rol-chatlog-viewer-close" class="rol-btn rol-btn-icon">✕</button>
+        </div>
+        <div id="rol-chatlog-viewer-body" class="rol-chatlog-viewer-body"></div>
     </div>
 </div>
 

@@ -28,6 +28,7 @@ const Storage = (() => {
         if (!extension_settings[extensionName]) {
             extension_settings[extensionName] = {
                 memories: [],
+                chatlogs: [],
                 config: {
                     presetName: '',
                     autoInject: true,
@@ -128,6 +129,34 @@ const Storage = (() => {
         saveSettingsDebounced();
     }
 
+    /* ⬇️┅💬 聊天本：收录的聊天记录，存法跟 memories 一套，走 extension_settings 持久化（不走易丢的 localStorage）/┅┅╗ */
+    function getChatlogs() {
+        return extension_settings[extensionName]?.chatlogs || [];
+    }
+    function addChatlog(logData) {
+        const settings = extension_settings[extensionName];
+        if (!Array.isArray(settings.chatlogs)) settings.chatlogs = [];   // 老用户 settings 没这字段时兜底
+        const now = new Date().toISOString();
+        const newLog = {
+            id: 'log_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+            title: logData.title || '未命名聊天',
+            date: logData.date || now.slice(0, 10),
+            count: (logData.messages || []).length,
+            messages: logData.messages || [],
+            created: now
+        };
+        settings.chatlogs.unshift(newLog);   // 新收录的排最前
+        saveSettingsDebounced();
+        return newLog;
+    }
+    function deleteChatlog(id) {
+        const settings = extension_settings[extensionName];
+        if (!Array.isArray(settings.chatlogs)) return;
+        settings.chatlogs = settings.chatlogs.filter(l => l.id !== id);
+        saveSettingsDebounced();
+    }
+    /* ╚┅┅/ 💬 聊天本 /┅┅═╝ */
+
     // ❤︎ 添加重写版本：每次AI重写都调用，记录版本历史 ❤︎
     function addRewriteVersion(id, letter, content, entryData = {}) {
         const settings = extension_settings[extensionName];
@@ -184,6 +213,7 @@ const Storage = (() => {
     return {
         initSettings, getMemories, addMemory, updateMemory,
         deleteMemory, addRewriteVersion, rollbackVersion,
+        getChatlogs, addChatlog, deleteChatlog,
         getConfig, updateConfig
     };
 })();
@@ -252,7 +282,11 @@ function injectVersionPrompt() {
     const raw = rolReadModel();
     if (!raw) return;
     const pretty = mapModelName(raw);
-    const channel = (cfg.currentChannel || '').trim();
+    // ❤ 渠道按「当前模型」从 channels map 读，和 initVersionBadge / startModelWatcher 对齐 ❤
+    //   之前这里读 cfg.currentChannel，而保存渠道时只写了 channels[模型]、没动 currentChannel，
+    //   于是流式一结束、injectVersionPrompt 一跑，又拿旧 currentChannel 把标签刷回上一家渠道（只活 0.5 轮的根因）
+    const channels = cfg.channels || {};
+    const channel = (channels[raw] || cfg.currentChannel || '').trim();
     const label = channel ? `${pretty}·${channel}` : pretty;
 
     // ❤ 实时刷新卡片版本号显示 ❤
@@ -282,7 +316,8 @@ function injectVersionPrompt() {
     //    （ephemeral 注入不写进 chat 数组，/hide 隐藏楼层抹不掉它，性质同世界书固定深度）
     ctx.setExtensionPrompt(ROL_VERSION_KEY, injectText, 1, 1);
 
-    Storage.updateConfig({ currentModel: raw, lastModel: pretty, lastChannel: channel });
+    // ❤ 顺手把 currentChannel 同步成「当前模型的渠道」，别处再读它也不会读到过期值 ❤
+    Storage.updateConfig({ currentModel: raw, lastModel: pretty, lastChannel: channel, currentChannel: channel });
 
     console.log('[RingOurLuv] 🧡 版本注入更新:', label);
 }
@@ -1151,6 +1186,7 @@ const UIController = (() => {
         bindLetterPanel();
         bindWriteSpace();    // 写作角落（FAB → 手动/AI/写信）
         bindMobileNav();
+        bindChatlogPanel();  // 💬 聊天本
         renderMemoryList();
         renderPresetOptions();
         startCounter();
@@ -1342,9 +1378,8 @@ const UIController = (() => {
                 Storage.updateConfig({ channels });
                 _rolLastInjectedVersion = null;
                 initVersionBadge();
-                if (typeof toastr !== 'undefined') {
-                    toastr.success(val ? `渠道已保存：${val} 💾` : '渠道已清空 💾', 'Ring Our Luv');
-                }
+                // ❤ 用插件自家的粉色小药丸 showToast，而不是 ST 原生 toastr ❤
+                showToast(val ? `🩷 渠道已保存：${val}` : '🩷 渠道已清空');
             };
 
             if (saveChannelBtn) {
@@ -2178,8 +2213,164 @@ const UIController = (() => {
                 if (target === 'rol-section-config') {
                     renderPresetOptions();
                 }
+                if (target === 'rol-section-chatlog') {
+                    renderChatlogList();
+                }
             });
         });
+    }
+
+    // ╔═══════════════════════════════════════════════════════╗
+    // ┅                   💬 聊天本 Chatlog 💬                  ┅
+    // ╚═══════════════════════════════════════════════════════╝
+    // ❤ 一键收录当前聊天的某段楼层 → 存成卡片 → 点开是 signal/QQ 风格气泡，长回复自动切条，thinking 可折叠 ❤
+
+    // ❤ 提取选中楼层的消息：复用「楼层范围 + 隐藏过滤」那套口径，和让Claude酿造完全一致 ❤
+    function extractChatMessages({ start = 0, end = -1, includeHidden = false }) {
+        const ctx = getContext();
+        const chat = ctx.chat || [];
+        const realEnd = end === -1 ? chat.length : end;
+        let slice = chat.slice(start, realEnd);
+        if (!includeHidden) slice = slice.filter(m => !m.is_hidden);
+        slice = slice.filter(m => m.is_user || !m.is_system);   // 滤掉系统消息，保留 user / 角色
+        return slice.map(m => ({
+            role: m.is_user ? 'user' : 'char',
+            name: m.is_user ? (m.name || 'Rinn') : (m.name || 'Claude'),
+            text: cleanMessageText(m.mes || ''),
+            thinking: extractThinking(m)
+        })).filter(m => m.text || m.thinking);
+    }
+
+    // ❤ 抽 thinking：优先 ST 的 extra.reasoning，兜底从正文里抠 <think>/<thinking> 块 ❤
+    function extractThinking(m) {
+        if (m.extra && m.extra.reasoning) return String(m.extra.reasoning).trim();
+        const match = (m.mes || '').match(/<think(?:ing)?>([\s\S]*?)<\/think(?:ing)?>/i);
+        return match ? match[1].trim() : '';
+    }
+
+    // ❤ 洗掉杂格式：thinking 块、折叠块、果子标记、系统注入残留，留下干净正文（markdown 交给气泡保留）❤
+    function cleanMessageText(raw) {
+        return String(raw)
+            .replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '')   // thinking 块单独展示，正文去掉
+            .replace(/<details[\s\S]*?<\/details>/gi, '')                // ST reasoning 等折叠块整块去掉
+            .replace(/\[throw:[^\]]*\]/g, '')                            // 果子标记
+            .replace(/\[SYS\|[^\]]*\]/g, '')                             // 系统注入残留
+            .trim();
+    }
+
+    // ❤ 长回复切条：优先按空行切段，没空行就按换行切，模拟「一句一条」的闲聊感 ❤
+    function splitBubbles(text) {
+        if (!text) return [];
+        const byBlank = text.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
+        const parts = byBlank.length > 1 ? byBlank : text.split(/\n/).map(s => s.trim()).filter(Boolean);
+        return parts.length ? parts : [text.trim()];
+    }
+
+    // ❤ 渲染聊天本卡片列表 ❤
+    function renderChatlogList() {
+        const list = document.getElementById('rol-chatlog-list');
+        if (!list) return;
+        const logs = Storage.getChatlogs();
+        if (!logs.length) {
+            list.innerHTML = '<div class="rol-chatlog-empty">还没收录过聊天～选好楼层点「收录」试试 🌱</div>';
+            return;
+        }
+        list.innerHTML = '';
+        logs.forEach(log => {
+            const preview = (log.messages.find(m => m.text) || {}).text || '';
+            const card = document.createElement('div');
+            card.className = 'rol-chatlog-card';
+            card.dataset.id = log.id;
+            card.innerHTML =
+                `<div class="rol-chatlog-card-main">
+                    <div class="rol-chatlog-card-title">${escapeHtml(log.title)}</div>
+                    <div class="rol-chatlog-card-meta">${escapeHtml(log.date)} · ${log.count} 条</div>
+                    <div class="rol-chatlog-card-preview">${escapeHtml(preview.slice(0, 42))}</div>
+                </div>
+                <button class="rol-chatlog-del rol-btn rol-btn-icon" title="删除">🗑️</button>`;
+            list.appendChild(card);
+        });
+    }
+
+    // ❤ 打开查看器：signal/QQ 风格气泡，char 靠左 + user 靠右，长回复切条，thinking 折叠 ❤
+    function openChatlogViewer(id) {
+        const log = Storage.getChatlogs().find(l => l.id === id);
+        if (!log) return;
+        const viewer = document.getElementById('rol-chatlog-viewer');
+        const titleEl = document.getElementById('rol-chatlog-viewer-title');
+        const body = document.getElementById('rol-chatlog-viewer-body');
+        if (!viewer || !body) return;
+        if (titleEl) titleEl.textContent = log.title;
+        const base = '/scripts/extensions/third-party/Ring_Our_Luv/assets/';
+        body.innerHTML = '';
+        log.messages.forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'rol-chat-row ' + (m.role === 'user' ? 'rol-chat-right' : 'rol-chat-left');
+            const ava = base + (m.role === 'user' ? 'Rinn.jpg' : 'Claude.jpg');
+            let bubbles = '';
+            if (m.thinking && m.role !== 'user') {
+                bubbles += `<details class="rol-chat-think"><summary>💭 thinking</summary><div>${escapeHtml(m.thinking).replace(/\n/g, '<br>')}</div></details>`;
+            }
+            splitBubbles(m.text).forEach(seg => {
+                bubbles += `<div class="rol-chat-bubble">${escapeHtml(seg).replace(/\n/g, '<br>')}</div>`;
+            });
+            row.innerHTML =
+                `<img class="rol-chat-avatar" src="${ava}" alt="">
+                 <div class="rol-chat-col"><span class="rol-chat-name">${escapeHtml(m.name)}</span>${bubbles}</div>`;
+            body.appendChild(row);
+        });
+        viewer.classList.add('rol-active');
+        body.scrollTop = 0;
+    }
+    function closeChatlogViewer() {
+        document.getElementById('rol-chatlog-viewer')?.classList.remove('rol-active');
+    }
+
+    // ❤ 绑定聊天本面板：收录表单展开 / 确认收录 / 卡片点开 / 删除 / 查看器关闭 ❤
+    function bindChatlogPanel() {
+        const recordBtn = document.getElementById('rol-chatlog-record');
+        const form = document.getElementById('rol-chatlog-form');
+        if (recordBtn && form) {
+            recordBtn.addEventListener('click', () => form.classList.toggle('rol-active'));
+        }
+        const confirmBtn = document.getElementById('rol-chatlog-confirm');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                const start = parseInt(document.getElementById('rol-chatlog-start')?.value) || 0;
+                const endRaw = parseInt(document.getElementById('rol-chatlog-end')?.value);
+                const end = isNaN(endRaw) ? -1 : endRaw;
+                const includeHidden = document.getElementById('rol-chatlog-hidden')?.checked || false;
+                const messages = extractChatMessages({ start, end, includeHidden });
+                if (!messages.length) { showToast('🥀 这段没捞到有效消息呢...'); return; }
+                const titleInput = document.getElementById('rol-chatlog-title');
+                let title = (titleInput?.value || '').trim();
+                if (!title) { const d = new Date(); title = `聊天 ${d.getMonth() + 1}/${d.getDate()}`; }
+                Storage.addChatlog({ title, messages });
+                if (titleInput) titleInput.value = '';
+                form?.classList.remove('rol-active');
+                renderChatlogList();
+                showToast(`🩷 收录啦~ 共 ${messages.length} 条`);
+            });
+        }
+        const list = document.getElementById('rol-chatlog-list');
+        if (list) {
+            list.addEventListener('click', async (e) => {
+                const card = e.target.closest('.rol-chatlog-card');
+                if (!card) return;
+                const id = card.dataset.id;
+                if (e.target.closest('.rol-chatlog-del')) {
+                    const ok = await rolConfirm('🗑️', '删掉这本聊天记录嘛？', '删掉', '留着');
+                    if (ok) { Storage.deleteChatlog(id); renderChatlogList(); }
+                    return;
+                }
+                openChatlogViewer(id);
+            });
+        }
+        document.getElementById('rol-chatlog-viewer-close')?.addEventListener('click', closeChatlogViewer);
+        document.getElementById('rol-chatlog-viewer')?.addEventListener('click', (e) => {
+            if (e.target.id === 'rol-chatlog-viewer') closeChatlogViewer();
+        });
+        renderChatlogList();
     }
 
     // ❤︎ 工具 ❤︎
@@ -2265,7 +2456,7 @@ const UIController = (() => {
         anchor.parentElement?.appendChild(btn);
     }
 
-    return { initUI, renderMemoryList, renderPresetOptions, showToast, rolConfirm };
+    return { initUI, renderMemoryList, renderChatlogList, renderPresetOptions, showToast, rolConfirm };
 })();
 /* ╚┅┅/ 🌳工具栏快捷键 /┅┅═╝ */
 
