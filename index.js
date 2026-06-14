@@ -493,13 +493,15 @@ function renderVersionBadge(model, channel) {
     // 插到消息块底部，文字下方
     const mesBlock = lastMsg.querySelector('.mes_block');
     if (!mesBlock) return;
-    mesBlock.appendChild(tag);
 
+    // ⚠️ 之前这里在 tag 声明之前就 mesBlock.appendChild(tag)，触发
+    //    「Cannot access 'tag' before initialization」TDZ 报错，每次生成都抛；
+    //    末尾那句还误写成了未定义的 mesBody。改成：先建好 tag，最后只 append 一次。
     const tag = document.createElement('div');
     tag.className = 'rol-version-tag';
     const text = channel ? `${model} · ${channel}` : model;
     tag.textContent = `✦ ${text}`;
-    mesBody.appendChild(tag);
+    mesBlock.appendChild(tag);
 }
 
 // 页面加载时能读到模型就尝试渲染一次
@@ -1967,12 +1969,23 @@ const UIController = (() => {
         const rolStopBtn = document.querySelector('#rol-stop-gen');
         if (rolStopBtn) {
             rolStopBtn.addEventListener('click', () => {
-                if (rolAbortController) {
-                    rolAbortController.abort();
-                    // 光 abort 自己的 controller 停不掉 ST 的 /gen，必须 emit GENERATION_STOPPED 事件
-                    try { eventSource.emit(event_types.GENERATION_STOPPED); } catch (e) { console.warn('[RingOurLuv] emit STOP 失败', e); }
-                    console.log('[RingOurLuv] 🛑 手动停止');
+                // 光 abort 自己的 controller 停不掉 ST 的 /gen，必须 emit GENERATION_STOPPED 事件
+                // ↑ 旧注释：但实测 emit 也只是广播事件、掐不断正在飞的请求；真正能停的是 ST 官方 stopGeneration() / 原生停止键
+                const ctx = (typeof getContext === 'function') ? getContext() : null;
+                let stopped = false;
+                // ① ST 官方停止：直接 abort ST 内部 controller + 停掉 streamingProcessor，最干净
+                try {
+                    if (ctx && typeof ctx.stopGeneration === 'function') { ctx.stopGeneration(); stopped = true; }
+                } catch (e) { console.warn('[RingOurLuv] stopGeneration 失败', e); }
+                // ② 兜底：点一下原生停止按钮 #mes_stop（它内部也是走 stopGeneration）
+                if (!stopped) {
+                    const nativeStop = document.getElementById('mes_stop');
+                    if (nativeStop) nativeStop.click();
                 }
+                // ③ 双保险：仍 abort 自己的 controller + 广播停止事件
+                if (rolAbortController) { try { rolAbortController.abort(); } catch (_) { } }
+                try { eventSource.emit(event_types.GENERATION_STOPPED); } catch (e) { console.warn('[RingOurLuv] emit STOP 失败', e); }
+                console.log('[RingOurLuv] 🛑 手动停止（已请求 ST 终止生成）');
                 rolStopBtn.style.display = 'none';
             });
 
@@ -2307,15 +2320,23 @@ const FruitSystem = (() => {
             const legacy = localStorage.getItem('rol_fruits');
             if (legacy != null) {
                 localStorage.setItem(key, legacy);
-                localStorage.removeItem('rol_fruits');
+                // ⚠️ 原来这里 removeItem('rol_fruits') 删掉了全局原件 —— 这正是「果子彻底找不回」的元凶：
+                //    一旦 getChatScope() 漂移过一次（版本升级 chatId→文件名 / 群聊 / 时序竞态），果子就被
+                //    搬进了错误的桶、全局原件又被删，于是再也读不回来。现在改成「只复制、绝不删原件」做兜底。
                 raw = legacy;
-                console.log('[RingOurLuv] 🍎 已把旧版全局果园迁移到当前窗口:', key);
+                console.log('[RingOurLuv] 🍎 已把旧版全局果园复制到当前窗口（保留原件兜底）:', key);
             }
         }
         return JSON.parse(raw || '[]');
     }
     function saveFruits(arr) {
-        localStorage.setItem(fruitsKey(), JSON.stringify(arr));
+        try {
+            localStorage.setItem(fruitsKey(), JSON.stringify(arr));
+        } catch (e) {
+            // localStorage 写失败（多半是配额满了）别静默吞掉，否则果子像凭空蒸发
+            console.error('[RingOurLuv] 🥀 果子存储失败（localStorage 可能满了）:', e);
+            try { UIController.showToast('🥀 果子没存进去…浏览器存储可能满了'); } catch (_) { }
+        }
     }
 
     // ❤︎ 更新果子的阅览状态 ❤︎
