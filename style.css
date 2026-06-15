@@ -190,8 +190,9 @@ body.rol-light-mode .rol-editor-panel {
     justify-content: center;
     align-items: center;
 }
-.rol-drawer-overlay.rol-drawer-open {
-    /* ❤︎ 强制覆盖ST注入的定位/尺寸样式，防止面板乱飞 */
+body #rol-drawer-overlay.rol-drawer-open {
+    /* ❤︎ 用 body + ID 把优先级抬到 movingUI/st-pdo/st-uao 等布局插件之上，
+       强制覆盖它们注入的定位/尺寸样式，防止面板乱飞（纯 CSS 提权，不碰内联，免得惊动它们的监听器）❤︎ */
     display: flex !important;
     position: fixed !important;
     top: 0 !important;
@@ -240,8 +241,8 @@ body.rol-light-mode .rol-editor-panel {
 }
 /* ❤︎ webkit 内核也隐藏滚动条，配合上面的 scrollbar-width:none 统一面板宽度 ❤︎ */
 #rol-drawer-panel::-webkit-scrollbar { display: none; }
-.rol-drawer-overlay.rol-drawer-open .rol-drawer-panel {
-    /* ❤︎ 强制覆盖 ST 注入的定位/尺寸样式，恢复居中浮窗（别再变窄竖条贴右边了TT） */
+body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
+    /* ❤︎ 双 ID 提权，压过布局插件的样式表，恢复居中浮窗（别再变窄竖条贴右边了TT）❤︎ */
     position: relative !important;
     top: auto !important;
     left: auto !important;
