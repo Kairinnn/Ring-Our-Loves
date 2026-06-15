@@ -2645,22 +2645,31 @@ const FruitSystem = (() => {
     function migrateAndMergeFruits() {
         try {
             const globalArr = JSON.parse(localStorage.getItem(FRUITS_GLOBAL_KEY) || '[]');
-            const seen = new Set(globalArr.map(f => f && f.id).filter(Boolean));
-            let merged = 0;
+            const byId = new Map(globalArr.filter(f => f && f.id).map(f => [f.id, f]));
+            let changed = false;
             Object.keys(localStorage).forEach(k => {
                 if (k === FRUITS_GLOBAL_KEY) return;                            // 跳过全局桶自己
                 if (k !== 'rol_fruits' && !k.startsWith('rol_fruits_')) return; // 只认果子桶
+                // ❤︎ 桶名去掉 rol_fruits_ 前缀 = 来源对话 scope（旧全局 rol_fruits 没有 → 空）❤︎
+                const scope = k === 'rol_fruits' ? '' : k.slice('rol_fruits_'.length);
                 let arr;
                 try { arr = JSON.parse(localStorage.getItem(k) || '[]'); } catch (_) { return; }
                 if (!Array.isArray(arr)) return;
                 arr.forEach(f => {
-                    if (f && f.id && !seen.has(f.id)) { seen.add(f.id); globalArr.push(f); merged++; }
+                    if (!f || !f.id) return;
+                    const exist = byId.get(f.id);
+                    if (!exist) {
+                        const nf = Object.assign({}, f, { scope: f.scope || scope });
+                        globalArr.push(nf); byId.set(f.id, nf); changed = true;
+                    } else if (!exist.scope && scope) {
+                        exist.scope = scope; changed = true;   // 给已合并但没来源的旧果子补上 scope
+                    }
                 });
             });
-            if (merged > 0) {
+            if (changed) {
                 globalArr.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
                 localStorage.setItem(FRUITS_GLOBAL_KEY, JSON.stringify(globalArr));
-                console.log(`[RingOurLuv] 🍎 已从历史果园合并找回 ${merged} 颗果子（共 ${globalArr.length} 颗）`);
+                console.log('[RingOurLuv] 🍎 果园已合并/补全来源，共', globalArr.length, '颗');
             }
         } catch (e) {
             console.error('[RingOurLuv] 🥀 果园合并找回失败:', e);
@@ -2682,15 +2691,23 @@ const FruitSystem = (() => {
 
     const FRUITS_PER_PAGE = 12; // 每页显示最新X颗
     let gardenPage = 0;
+    let gardenFilter = 'all';   // 'all'=全部果园 / 'current'=只看当前对话的果子
 
     function renderGarden() {
         const canvas = document.getElementById('rol-garden-canvas');
         if (!canvas) return;
         canvas.innerHTML = '';
-        const allFruits = loadFruits();
+        let allFruits = loadFruits();
+        // ❤︎ 按筛选模式过滤：当前对话只看 scope 命中的（旧果子的 scope 在合并时已从桶名补好）❤︎
+        if (gardenFilter === 'current') {
+            const scope = getChatScope();
+            allFruits = allFruits.filter(f => (f.scope || '') === scope);
+        }
 
         if (allFruits.length === 0) {
-            canvas.innerHTML = '<div class="rol-garden-empty">还没有果子～扔一颗过来吧 🌱</div>';
+            canvas.innerHTML = gardenFilter === 'current'
+                ? '<div class="rol-garden-empty">这个对话还没有果子～换「全部」看看？🌱</div>'
+                : '<div class="rol-garden-empty">还没有果子～扔一颗过来吧 🌱</div>';
             return;
         }
 
@@ -3341,7 +3358,8 @@ const FruitSystem = (() => {
             timestamp: Date.now(),
             read: false,
             delivered: false,
-            deliverAt: msgCount + Math.floor(Math.random() * 30) + 5
+            deliverAt: msgCount + Math.floor(Math.random() * 30) + 5,
+            scope: getChatScope()   // 记下这颗属于哪个对话，给果园「当前对话」筛选用
         };
         const fruits = loadFruits();
         fruits.push(fruit);
@@ -3485,7 +3503,8 @@ const FruitSystem = (() => {
                 message: p.message,
                 timestamp: Date.now(),
                 read: false,
-                delivered: true
+                delivered: true,
+                scope: getChatScope()   // 这颗 Claude 丢的果子属于当前对话
             });
         });
         saveFruits(fruits);
@@ -3613,6 +3632,15 @@ const FruitSystem = (() => {
 
         // ❤︎ 丢果子按钮（果园页面里的）❤︎
         $(document).on('click', '#rol-throw-fruit-btn', showPicker);
+
+        // ❤︎ 果园筛选：全部 / 只看当前对话 ❤︎
+        $(document).on('click', '.rol-garden-filter-btn', function () {
+            gardenFilter = this.dataset.filter || 'all';
+            document.querySelectorAll('.rol-garden-filter-btn').forEach(b =>
+                b.classList.toggle('rol-active', b === this));
+            gardenPage = 0;
+            renderGarden();
+        });
 
         // ❤︎ picker 关闭按钮 ❤︎
         $(document).on('click', '#rol-fruit-picker-close, #rol-fruit-cancel-btn', hidePicker);

@@ -2894,6 +2894,27 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 .rol-chatlog-edit-bar { display: flex; gap: 10px; padding: 4px 0 2px; }
 .rol-chatlog-edit-bar .rol-btn { flex: 1; }
 /* ┗━━━━━━/ 💬 编辑态 /━━━━━━┛ */
+
+/* ⬇️┅🍎 果园筛选 tab（全部 / 当前对话）/┅┅╗ */
+.rol-garden-filter { display: flex; gap: 8px; margin: 4px 0 10px; }
+.rol-garden-filter-btn {
+    flex: 1;
+    font-size: 12px;
+    padding: 5px 0;
+    border-radius: 10px;
+    border: 1px solid rgba(216, 119, 87, 0.3);
+    background: rgba(255, 255, 255, 0.35);
+    color: #a86d8a;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.rol-garden-filter-btn.rol-active {
+    background: linear-gradient(135deg, #ffd6ec, #ffc0e0);
+    color: #d6558f;
+    font-weight: bold;
+    box-shadow: 0 2px 6px rgba(255, 143, 196, 0.3);
+}
+/* ┗━━━━━━/ 🍎 果园筛选 /━━━━━━┛ */
 /* ┗━━━━━━/ 💬 聊天本 Chatlog 💬 /━━━━━━┛ */
 
 
