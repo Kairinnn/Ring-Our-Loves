@@ -2697,6 +2697,7 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     --聊天-想法字: #8a7aa8;
     --聊天-对方边: #f0eee6;                    /* 官端奶油边 */
     --聊天-对方投影: rgba(150, 110, 130, 0.14);
+    --聊天-我投影: rgba(255, 127, 191, 0.28);
     --聊天-输入栏底: #ffffff;
     --聊天-输入框: #fdeef5;
     --聊天-摆设字: #c9a8bb;
@@ -2799,11 +2800,12 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     border: 1px solid var(--聊天-对方边);
     box-shadow: 0 3px 9px var(--聊天-对方投影);
 }
-/* user 右气泡：粉渐变白字 */
+/* user 右气泡：粉渐变白字 + 柔投影（os 风，跟左边对称立体）*/
 .rol-chat-right .rol-chat-bubble {
     background: linear-gradient(135deg, var(--聊天-我气泡1), var(--聊天-我气泡2));
     color: var(--聊天-我字);
     border-bottom-right-radius: 5px;
+    box-shadow: 0 3px 9px var(--聊天-我投影);
 }
 
 /* thinking 折叠块（紫调，可点开收起）*/
@@ -2848,6 +2850,50 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 }
 .rol-chatlog-fake-send { font-size: 16px; flex: none; }
 /* ┗━━━━━━/ 💬 仪式感 /━━━━━━┛ */
+
+/* ⬇️┅💬 编辑态：每条消息一个文本框，空行=切条/┅┅╗ */
+.rol-chatlog-viewer-body.rol-editing { gap: 12px; }
+.rol-chatlog-edit-tip {
+    font-size: 11px;
+    color: var(--聊天-摆设字);
+    background: var(--聊天-输入框);
+    border-radius: 10px;
+    padding: 7px 11px;
+    line-height: 1.5;
+}
+.rol-chat-edit-item {
+    background: var(--聊天-卡片底);
+    border: 1px solid var(--聊天-对方边);
+    border-radius: 12px;
+    padding: 9px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.rol-chat-edit-head { display: flex; align-items: center; justify-content: space-between; }
+.rol-chat-edit-role { font-size: 12px; font-weight: bold; padding: 1px 9px; border-radius: 8px; }
+.rol-chat-edit-char { background: #fff0f6; color: var(--聊天-头部字); }
+.rol-chat-edit-user { background: var(--聊天-我气泡1); color: #fff; }
+.rol-chat-edit-del { border: none; background: none; cursor: pointer; color: #d98aaa; font-size: 13px; opacity: 0.7; }
+.rol-chat-edit-del:hover { opacity: 1; }
+.rol-chat-edit-text,
+.rol-chat-edit-think {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--聊天-对方字);
+    background: #ffffff;
+    border: 1px solid var(--聊天-对方边);
+    border-radius: 8px;
+    padding: 6px 9px;
+    resize: vertical;
+}
+.rol-chat-edit-think { background: var(--聊天-想法底); color: var(--聊天-想法字); }
+.rol-chatlog-edit-bar { display: flex; gap: 10px; padding: 4px 0 2px; }
+.rol-chatlog-edit-bar .rol-btn { flex: 1; }
+/* ┗━━━━━━/ 💬 编辑态 /━━━━━━┛ */
 /* ┗━━━━━━/ 💬 聊天本 Chatlog 💬 /━━━━━━┛ */
 
 

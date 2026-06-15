@@ -155,6 +155,16 @@ const Storage = (() => {
         settings.chatlogs = settings.chatlogs.filter(l => l.id !== id);
         saveSettingsDebounced();
     }
+    function updateChatlog(id, updates) {
+        const settings = extension_settings[extensionName];
+        if (!Array.isArray(settings.chatlogs)) return null;
+        const log = settings.chatlogs.find(l => l.id === id);
+        if (!log) return null;
+        Object.assign(log, updates);
+        if (updates.messages) log.count = updates.messages.length;   // 条数跟着改
+        saveSettingsDebounced();
+        return log;
+    }
     /* ╚┅┅/ 💬 聊天本 /┅┅═╝ */
 
     // ❤︎ 添加重写版本：每次AI重写都调用，记录版本历史 ❤︎
@@ -213,7 +223,7 @@ const Storage = (() => {
     return {
         initSettings, getMemories, addMemory, updateMemory,
         deleteMemory, addRewriteVersion, rollbackVersion,
-        getChatlogs, addChatlog, deleteChatlog,
+        getChatlogs, addChatlog, deleteChatlog, updateChatlog,
         getConfig, updateConfig
     };
 })();
@@ -2301,17 +2311,45 @@ const UIController = (() => {
         });
     }
 
-    // ❤ 打开查看器：signal/QQ 风格气泡，char 靠左 + user 靠右，长回复切条，thinking 折叠 ❤
+    // ❤ 查看器状态：当前打开的聊天本 id + 是否处于编辑态 ❤
+    let currentChatlogId = null;
+    let chatlogEditing = false;
+
+    // ❤ 打开查看器（默认只读态）❤
     function openChatlogViewer(id) {
-        const log = Storage.getChatlogs().find(l => l.id === id);
+        if (!Storage.getChatlogs().some(l => l.id === id)) return;
+        currentChatlogId = id;
+        chatlogEditing = false;
+        renderViewer();
+        document.getElementById('rol-chatlog-viewer')?.classList.add('rol-active');
+    }
+    function closeChatlogViewer() {
+        chatlogEditing = false;
+        document.getElementById('rol-chatlog-viewer')?.classList.remove('rol-active');
+    }
+
+    // ❤ 按 chatlogEditing 渲染「只读气泡」或「编辑表单」，✏️ 在两态间切 ❤
+    function renderViewer() {
+        const log = Storage.getChatlogs().find(l => l.id === currentChatlogId);
         if (!log) return;
-        const viewer = document.getElementById('rol-chatlog-viewer');
         const titleEl = document.getElementById('rol-chatlog-viewer-title');
         const body = document.getElementById('rol-chatlog-viewer-body');
-        if (!viewer || !body) return;
+        const editBtn = document.getElementById('rol-chatlog-viewer-edit');
+        const fakeInput = document.querySelector('#rol-chatlog-viewer .rol-chatlog-fake-input');
         if (titleEl) titleEl.textContent = log.title;
-        const base = '/scripts/extensions/third-party/Ring_Our_Luv/assets/';
+        if (!body) return;
         body.innerHTML = '';
+        body.classList.toggle('rol-editing', chatlogEditing);
+        if (editBtn) editBtn.textContent = chatlogEditing ? '💾' : '✏️';
+        if (fakeInput) fakeInput.style.display = chatlogEditing ? 'none' : '';   // 编辑态藏掉假输入栏
+        if (chatlogEditing) renderViewerEdit(log, body);
+        else renderViewerRead(log, body);
+        body.scrollTop = 0;
+    }
+
+    // ❤ 只读态：signal/QQ 气泡（char 左 / user 右，长回复切条，thinking 折叠，带时间）❤
+    function renderViewerRead(log, body) {
+        const base = '/scripts/extensions/third-party/Ring_Our_Luv/assets/';
         log.messages.forEach(m => {
             const row = document.createElement('div');
             row.className = 'rol-chat-row ' + (m.role === 'user' ? 'rol-chat-right' : 'rol-chat-left');
@@ -2330,16 +2368,64 @@ const UIController = (() => {
                  <div class="rol-chat-col"><span class="rol-chat-name">${escapeHtml(m.name)}</span>${bubbles}</div>`;
             body.appendChild(row);
         });
-        // ❤ 结尾仪式感：一行浅浅的「到此为止」 ❤
         const endLine = document.createElement('div');
         endLine.className = 'rol-chatlog-end';
         endLine.textContent = '· 全部记录到此 ·';
         body.appendChild(endLine);
-        viewer.classList.add('rol-active');
-        body.scrollTop = 0;
     }
-    function closeChatlogViewer() {
-        document.getElementById('rol-chatlog-viewer')?.classList.remove('rol-active');
+
+    // ❤ 编辑态：每条消息一个文本框，空行=切条，可删整条、可补 markdown ❤
+    function renderViewerEdit(log, body) {
+        const tip = document.createElement('div');
+        tip.className = 'rol-chatlog-edit-tip';
+        tip.textContent = '✍️ 直接改文字 · 空行 = 切成下一条气泡 · 想删整条点它右上的 ✕';
+        body.appendChild(tip);
+
+        log.messages.forEach((m, idx) => {
+            const item = document.createElement('div');
+            item.className = 'rol-chat-edit-item';
+            item.dataset.idx = idx;
+            const who = m.role === 'user' ? (m.name || 'Rinn') : (m.name || 'Claude');
+            const thinkBox = m.role !== 'user'
+                ? `<textarea class="rol-chat-edit-think" rows="2" placeholder="💭 thinking（可空）">${escapeHtml(m.thinking || '')}</textarea>`
+                : '';
+            item.innerHTML =
+                `<div class="rol-chat-edit-head">
+                    <span class="rol-chat-edit-role rol-chat-edit-${m.role}">${escapeHtml(who)}</span>
+                    <button class="rol-chat-edit-del" title="删掉这条">✕</button>
+                 </div>
+                 <textarea class="rol-chat-edit-text" rows="3" placeholder="（正文，空着=只留 thinking）">${escapeHtml(m.text || '')}</textarea>
+                 ${thinkBox}`;
+            body.appendChild(item);
+        });
+
+        const bar = document.createElement('div');
+        bar.className = 'rol-chatlog-edit-bar';
+        bar.innerHTML =
+            `<button class="rol-btn rol-btn-cancel rol-chatlog-edit-cancel">取消</button>
+             <button class="rol-btn rol-btn-primary rol-chatlog-edit-save">💾 保存</button>`;
+        body.appendChild(bar);
+    }
+
+    // ❤ 收集编辑框 → 写回 storage → 回到只读态（整条清空=删掉）❤
+    function saveViewerEdit() {
+        const log = Storage.getChatlogs().find(l => l.id === currentChatlogId);
+        if (!log) return;
+        const body = document.getElementById('rol-chatlog-viewer-body');
+        if (!body) return;
+        const newMessages = [];
+        body.querySelectorAll('.rol-chat-edit-item').forEach(item => {
+            const orig = log.messages[parseInt(item.dataset.idx)] || {};
+            const text = (item.querySelector('.rol-chat-edit-text')?.value || '').trim();
+            const thinkEl = item.querySelector('.rol-chat-edit-think');
+            const thinking = thinkEl ? thinkEl.value.trim() : (orig.thinking || '');
+            if (!text && !thinking) return;   // 正文+thinking 都空 = 这条删掉
+            newMessages.push({ role: orig.role, name: orig.name, text, thinking, ts: orig.ts || '' });
+        });
+        Storage.updateChatlog(currentChatlogId, { messages: newMessages });
+        chatlogEditing = false;
+        renderViewer();
+        showToast('🩷 改好啦~');
     }
 
     // ❤ 绑定聊天本面板：收录表单展开 / 确认收录 / 卡片点开 / 删除 / 查看器关闭 ❤
@@ -2384,8 +2470,27 @@ const UIController = (() => {
         }
         document.getElementById('rol-chatlog-viewer-close')?.addEventListener('click', closeChatlogViewer);
         document.getElementById('rol-chatlog-viewer')?.addEventListener('click', (e) => {
-            if (e.target.id === 'rol-chatlog-viewer') closeChatlogViewer();
+            // 编辑态下点背景不关，免得手滑丢了改动
+            if (e.target.id === 'rol-chatlog-viewer' && !chatlogEditing) closeChatlogViewer();
         });
+        // ✏️ 顶栏按钮：只读态→进编辑；编辑态→直接保存（图标会变 💾）
+        document.getElementById('rol-chatlog-viewer-edit')?.addEventListener('click', () => {
+            if (chatlogEditing) saveViewerEdit();
+            else { chatlogEditing = true; renderViewer(); }
+        });
+        // 编辑态的删条/保存/取消，统一用 body 事件委托
+        const vbody = document.getElementById('rol-chatlog-viewer-body');
+        if (vbody) {
+            vbody.addEventListener('click', (e) => {
+                if (e.target.closest('.rol-chat-edit-del')) {
+                    e.target.closest('.rol-chat-edit-item')?.remove();
+                } else if (e.target.closest('.rol-chatlog-edit-save')) {
+                    saveViewerEdit();
+                } else if (e.target.closest('.rol-chatlog-edit-cancel')) {
+                    chatlogEditing = false; renderViewer();
+                }
+            });
+        }
         renderChatlogList();
     }
 
