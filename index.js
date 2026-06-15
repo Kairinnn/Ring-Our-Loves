@@ -1220,6 +1220,61 @@ const UIController = (() => {
             });
         }
 
+        /* ⬇️┅🛡️面板布局「贴身保镖」/┅┅╗
+           movingUI / st-pdo / st-uao 等第三方布局插件会在 resize（=开控制台）时
+           重新处理 DOM，用样式表把我们的居中/尺寸规则架空（面板变 display:block 大长条）。
+           对策：开面板时用「内联 !important」把关键定位/尺寸焊死——内联 important 优先级
+           高于任何外部样式表（连它们的 !important 也压得过），谁都顶不动。
+           再用 MutationObserver 盯 .rol-drawer-open 类（覆盖所有打开入口）+ resize 监听，
+           开/关控制台那一刻自动重焊，不用刷新就能恢复。 */
+        function enforceDrawerLayout() {
+            const ov = document.getElementById('rol-drawer-overlay');
+            if (!ov) return;
+            const panel = document.getElementById('rol-drawer-panel');
+            if (ov.classList.contains('rol-drawer-open')) {
+                const o = ov.style;
+                o.setProperty('display', 'flex', 'important');
+                o.setProperty('position', 'fixed', 'important');
+                o.setProperty('inset', '0', 'important');
+                o.setProperty('width', '100vw', 'important');
+                o.setProperty('height', '100vh', 'important');
+                o.setProperty('max-width', 'none', 'important');
+                o.setProperty('max-height', 'none', 'important');
+                o.setProperty('margin', '0', 'important');
+                o.setProperty('transform', 'none', 'important');
+                o.setProperty('align-items', 'center', 'important');
+                o.setProperty('justify-content', 'center', 'important');
+                if (panel) {
+                    const p = panel.style;
+                    p.setProperty('position', 'relative', 'important');
+                    p.setProperty('top', 'auto', 'important');
+                    p.setProperty('left', 'auto', 'important');
+                    p.setProperty('right', 'auto', 'important');
+                    p.setProperty('bottom', 'auto', 'important');
+                    p.setProperty('inset', 'auto', 'important');
+                    p.setProperty('width', '320px', 'important');
+                    p.setProperty('max-width', '92vw', 'important');
+                    p.setProperty('height', 'auto', 'important');
+                    p.setProperty('max-height', '82vh', 'important');
+                    p.setProperty('margin', 'auto', 'important');
+                    p.setProperty('flex', '0 0 auto', 'important');
+                    p.setProperty('align-self', 'center', 'important');
+                }
+            } else {
+                // 关闭：清掉内联，交还给 CSS（.rol-drawer-overlay{display:none} 负责藏起来）
+                ov.removeAttribute('style');
+                if (panel) panel.removeAttribute('style');
+            }
+        }
+        if (overlay) {
+            // 任何入口加/摘 rol-drawer-open 类都自动焊（打开按钮、消息楼层按钮等都覆盖到）
+            new MutationObserver(enforceDrawerLayout)
+                .observe(overlay, { attributes: true, attributeFilter: ['class'] });
+        }
+        // 开/关控制台 = window resize → 立刻重焊，关掉控制台也能秒恢复
+        window.addEventListener('resize', enforceDrawerLayout);
+        /* ╚┅┅/ 🛡️贴身保镖 /┅┅═╝ */
+
         /* ⬇️┅☀️Home区日夜主题切换按钮/┅┅╗ */
         const homeSection = document.querySelector('.rol-home');
         if (homeSection && !homeSection.querySelector('.rol-theme-toggle')) {
