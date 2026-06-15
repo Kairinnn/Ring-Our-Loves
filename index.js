@@ -2330,6 +2330,11 @@ const UIController = (() => {
                  <div class="rol-chat-col"><span class="rol-chat-name">${escapeHtml(m.name)}</span>${bubbles}</div>`;
             body.appendChild(row);
         });
+        // ❤ 结尾仪式感：一行浅浅的「到此为止」 ❤
+        const endLine = document.createElement('div');
+        endLine.className = 'rol-chatlog-end';
+        endLine.textContent = '· 全部记录到此 ·';
+        body.appendChild(endLine);
         viewer.classList.add('rol-active');
         body.scrollTop = 0;
     }

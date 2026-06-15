@@ -2695,6 +2695,11 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     --聊天-想法底: #f3effb;
     --聊天-想法边: #c9b8e8;
     --聊天-想法字: #8a7aa8;
+    --聊天-对方边: #f0eee6;                    /* 官端奶油边 */
+    --聊天-对方投影: rgba(150, 110, 130, 0.14);
+    --聊天-输入栏底: #ffffff;
+    --聊天-输入框: #fdeef5;
+    --聊天-摆设字: #c9a8bb;
 
     display: none;
     position: fixed;
@@ -2745,7 +2750,8 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     color: var(--聊天-头部字);
     flex: none;
 }
-.rol-chatlog-viewer-title { font-weight: bold; font-size: 15px; }
+.rol-chatlog-viewer-title { font-weight: bold; font-size: 15px; flex: 1; text-align: center; }
+.rol-chatlog-fake-menu { font-size: 17px; color: var(--聊天-头部字); opacity: 0.65; flex: none; }
 
 .rol-chatlog-viewer-body {
     flex: 1;
@@ -2785,11 +2791,13 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     max-width: 100%;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
-/* char 左气泡：白底深字 */
+/* char 左气泡：白底深字 + 官端奶油边 + 柔投影，比右边纯色粉气泡更立体 */
 .rol-chat-left .rol-chat-bubble {
     background: var(--聊天-对方气泡);
     color: var(--聊天-对方字);
     border-bottom-left-radius: 5px;
+    border: 1px solid var(--聊天-对方边);
+    box-shadow: 0 3px 9px var(--聊天-对方投影);
 }
 /* user 右气泡：粉渐变白字 */
 .rol-chat-right .rol-chat-bubble {
@@ -2810,6 +2818,36 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 }
 .rol-chat-think summary { cursor: pointer; opacity: 0.8; font-style: italic; outline: none; list-style: none; }
 .rol-chat-think > div { margin-top: 6px; opacity: 0.9; line-height: 1.5; color: var(--聊天-想法字); }
+
+/* ⬇️┅💬 仪式感：结尾提示 / 只能看的假输入栏/┅┅╗ */
+.rol-chatlog-end {
+    text-align: center;
+    font-size: 11px;
+    color: var(--聊天-时间);
+    opacity: 0.75;
+    letter-spacing: 1px;
+    padding: 8px 0 2px;
+}
+.rol-chatlog-fake-input {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 13px;
+    background: var(--聊天-输入栏底);
+    border-top: 1px solid var(--聊天-对方边);
+}
+.rol-chatlog-fake-plus { font-size: 18px; color: var(--聊天-摆设字); flex: none; }
+.rol-chatlog-fake-field {
+    flex: 1;
+    font-size: 13px;
+    color: var(--聊天-摆设字);
+    background: var(--聊天-输入框);
+    border-radius: 16px;
+    padding: 7px 14px;
+}
+.rol-chatlog-fake-send { font-size: 16px; flex: none; }
+/* ┗━━━━━━/ 💬 仪式感 /━━━━━━┛ */
 /* ┗━━━━━━/ 💬 聊天本 Chatlog 💬 /━━━━━━┛ */
 
 
