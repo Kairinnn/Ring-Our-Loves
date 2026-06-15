@@ -1171,7 +1171,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s, transform 0.3s;
-    z-index: 10000;
+    z-index: 20000;   /* 比聊天本查看器(12000)还高，否则「改好啦」小药丸会被压在弹窗底下 */
 }
 #rol-toast.rol-toast-show {
     opacity: 1;
@@ -2677,7 +2677,7 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 
 /* ⬇️┅💬 查看器：signal/QQ 风格气泡（配色全在下面这张「中文变量表」里，改色只改这一处）/┅┅╗ */
 .rol-chatlog-viewer {
-    /* 🎨🎀 聊天本配色表 —— 爱什么色改什么色，色盘挑完往这丢，绝不碰酒馆主题 🎀🎨 */
+    /* 🎨🎀 聊天本配色表 —— 爱什么色改什么色，色盘挑完往这丢 🎀🎨 */
     --聊天-遮罩: rgba(0, 0, 0, 0.45);
     --聊天-卡片底: #fff7fb;
     --聊天-聊天底: #fdeef5;

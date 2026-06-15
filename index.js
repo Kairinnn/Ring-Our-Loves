@@ -1388,7 +1388,7 @@ const UIController = (() => {
                 Storage.updateConfig({ channels });
                 _rolLastInjectedVersion = null;
                 initVersionBadge();
-                // ❤ 用插件自家的粉色小药丸 showToast，而不是 ST 原生 toastr ❤
+                // ❤ 用插件自家的粉色小药丸 showToast ❤
                 showToast(val ? `🩷 渠道已保存：${val}` : '🩷 渠道已清空');
             };
 
@@ -3093,8 +3093,10 @@ const FruitSystem = (() => {
         );
         if (avatars.length) {
             const lastImg = avatars[avatars.length - 1];
-            // ❤︎ 碰撞判定改用头像外框 .mesAvatarWrapper，取不到就退回 img 本身 ❤︎
-            const last = lastImg.closest('.mesAvatarWrapper') || lastImg;
+            // ❤︎ 碰撞框直接用头像图片 img 本身 = 脸的精确范围 ❤︎
+            //   之前用 .mesAvatarWrapper 外框：它往往比头像高大（头像在顶、下面跟着名字/留白），
+            //   外框中心落到了头像下方的文字区，果子朝那个「伪中心」飞 → 砸到脸旁边（离谱偏移的真凶）
+            const last = lastImg;
             // ❤︎ 先把目标头像滚到视口正中，避免它滚出屏幕时坐标取到屏幕外 ❤︎
             last.scrollIntoView({ behavior: 'auto', block: 'center' });
             // ❤︎ 等一帧让布局/滚动落定，再取 getBoundingClientRect 才是准的 ❤︎
@@ -3171,7 +3173,7 @@ const FruitSystem = (() => {
         //    让果子实打实砸进头像身上（而不是擦着外框边缘飞过去就走）。❤︎
         //    内收前是边缘(贴边)，乘 0.62 后落在「中心↔边缘」的 62% 处 = 头像偏外侧。
         //    targetEl 为 null 时 hw=hh=0 → 落点退回中心，等价旧行为（安全兜底）。
-        const INSET = 0.62; // ← 落点内收比例：1=贴边缘，0=正中心；斜飞/左右飞靠它真正命中
+        const INSET = 0.9; // ← 落点内收比例：1=正好贴脸边缘，0=正脸心。你要「碰到边边就弹震」→ 贴边(0.9)
         let lx = ex, ly = ey;
         {
             const dx = sx - ex, dy = sy - ey;
