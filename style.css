@@ -2675,13 +2675,32 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 .rol-chatlog-del { flex: none; opacity: 0.55; }
 .rol-chatlog-del:hover { opacity: 1; }
 
-/* ⬇️┅💬 查看器：signal/QQ 风格气泡（全套固定配色，不碰酒馆主题变量）/┅┅╗ */
+/* ⬇️┅💬 查看器：signal/QQ 风格气泡（配色全在下面这张「中文变量表」里，改色只改这一处）/┅┅╗ */
 .rol-chatlog-viewer {
+    /* 🎨🎀 聊天本配色表 —— 爱什么色改什么色，色盘挑完往这丢，绝不碰酒馆主题 🎀🎨 */
+    --聊天-遮罩: rgba(0, 0, 0, 0.45);
+    --聊天-卡片底: #fff7fb;
+    --聊天-聊天底: #fdeef5;
+    --聊天-头部1: #ffd6ec;
+    --聊天-头部2: #ffc0e0;
+    --聊天-头部字: #d6558f;
+    --聊天-我气泡1: #ff9ecb;
+    --聊天-我气泡2: #ff7fbf;
+    --聊天-我字: #ffffff;
+    --聊天-对方气泡: #ffffff;
+    --聊天-对方字: #4a4048;
+    --聊天-名字: #b98aa6;
+    --聊天-时间: #c9a8bb;
+    --聊天-头像底: #ffe3f1;
+    --聊天-想法底: #f3effb;
+    --聊天-想法边: #c9b8e8;
+    --聊天-想法字: #8a7aa8;
+
     display: none;
     position: fixed;
     inset: 0;
     z-index: 12000;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--聊天-遮罩);
     backdrop-filter: blur(3px);
     transform: none;
     justify-content: center;
@@ -2714,7 +2733,7 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     flex-direction: column;
     border-radius: 20px;
     overflow: hidden;
-    background-color: #fff7fb;          /* ← 固定奶白、不透明，不再透出后面的酒馆楼层 */
+    background-color: var(--聊天-卡片底);   /* 不透明，不再透出后面的酒馆楼层 */
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
     /* ❤︎ 入场动画放在内部卡片，不放遮罩层（遮罩要保持 transform: none）❤︎ */
     animation: rol-bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -2722,8 +2741,8 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 .rol-chatlog-viewer-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 13px 16px;
-    background: linear-gradient(135deg, #ffd6ec, #ffc0e0);
-    color: #d6558f;
+    background: linear-gradient(135deg, var(--聊天-头部1), var(--聊天-头部2));
+    color: var(--聊天-头部字);
     flex: none;
 }
 .rol-chatlog-viewer-title { font-weight: bold; font-size: 15px; }
@@ -2735,10 +2754,10 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     display: flex;
     flex-direction: column;
     gap: 22px;                          /* ← 气泡行间距拉开 */
-    background: #fdeef5;                /* ← 固定柔粉底，signal 那种纯色背景 */
+    background: var(--聊天-聊天底);
 }
 .rol-chatlog-viewer-body::-webkit-scrollbar { width: 6px; }
-.rol-chatlog-viewer-body::-webkit-scrollbar-thumb { background: rgba(255, 143, 196, 0.5); border-radius: 3px; }
+.rol-chatlog-viewer-body::-webkit-scrollbar-thumb { background: var(--聊天-我气泡2); border-radius: 3px; }
 
 /* 一行消息 = 头像 + 气泡列；char 靠左、user 靠右 */
 .rol-chat-row { display: flex; gap: 9px; align-items: flex-start; max-width: 100%; }
@@ -2748,12 +2767,13 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 .rol-chat-avatar {
     width: 36px; height: 36px; border-radius: 50%;
     object-fit: cover; flex: none;
-    background: #ffe3f1;                /* ← 头像没加载出来时的占位底，避免忽闪 */
+    background: var(--聊天-头像底);          /* 头像没加载出来时的占位底，避免忽闪 */
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 .rol-chat-col { display: flex; flex-direction: column; gap: 7px; max-width: 74%; }
 .rol-chat-right .rol-chat-col { align-items: flex-end; }
-.rol-chat-name { font-size: 10px; color: #b98aa6; padding: 0 4px 1px; }
+.rol-chat-name { font-size: 10px; color: var(--聊天-名字); padding: 0 4px 1px; }
+.rol-chat-time { font-size: 10px; color: var(--聊天-时间); padding: 1px 4px 0; }
 
 .rol-chat-bubble {
     padding: 9px 13px;
@@ -2767,29 +2787,29 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
 }
 /* char 左气泡：白底深字 */
 .rol-chat-left .rol-chat-bubble {
-    background: #ffffff;
-    color: #4a4048;
+    background: var(--聊天-对方气泡);
+    color: var(--聊天-对方字);
     border-bottom-left-radius: 5px;
 }
 /* user 右气泡：粉渐变白字 */
 .rol-chat-right .rol-chat-bubble {
-    background: linear-gradient(135deg, #ff9ecb, #ff7fbf);
-    color: #fff;
+    background: linear-gradient(135deg, var(--聊天-我气泡1), var(--聊天-我气泡2));
+    color: var(--聊天-我字);
     border-bottom-right-radius: 5px;
 }
 
 /* thinking 折叠块（紫调，可点开收起）*/
 .rol-chat-think {
     font-size: 12px;
-    background: #f3effb;
-    border: 1px dashed #c9b8e8;
+    background: var(--聊天-想法底);
+    border: 1px dashed var(--聊天-想法边);
     border-radius: 12px;
     padding: 5px 11px;
-    color: #8a7aa8;
+    color: var(--聊天-想法字);
     max-width: 100%;
 }
 .rol-chat-think summary { cursor: pointer; opacity: 0.8; font-style: italic; outline: none; list-style: none; }
-.rol-chat-think > div { margin-top: 6px; opacity: 0.9; line-height: 1.5; color: #6f5f8f; }
+.rol-chat-think > div { margin-top: 6px; opacity: 0.9; line-height: 1.5; color: var(--聊天-想法字); }
 /* ┗━━━━━━/ 💬 聊天本 Chatlog 💬 /━━━━━━┛ */
 
 

@@ -2237,7 +2237,8 @@ const UIController = (() => {
             role: m.is_user ? 'user' : 'char',
             name: m.is_user ? (m.name || 'Rinn') : (m.name || 'Claude'),
             text: cleanMessageText(m.mes || ''),
-            thinking: extractThinking(m)
+            thinking: extractThinking(m),
+            ts: m.send_date || ''   // 这条消息的发送时间，查看器里显示成 HH:mm
         })).filter(m => m.text || m.thinking);
     }
 
@@ -2264,6 +2265,14 @@ const UIController = (() => {
         const byBlank = text.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
         const parts = byBlank.length > 1 ? byBlank : text.split(/\n/).map(s => s.trim()).filter(Boolean);
         return parts.length ? parts : [text.trim()];
+    }
+
+    // ❤ 气泡时间：把 ST 的 send_date 解析成 HH:mm，解析不了（或旧卡片没存 ts）就不显示 ❤
+    function fmtChatTime(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        if (isNaN(d.getTime())) return '';
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     }
 
     // ❤ 渲染聊天本卡片列表 ❤
@@ -2314,6 +2323,8 @@ const UIController = (() => {
             splitBubbles(m.text).forEach(seg => {
                 bubbles += `<div class="rol-chat-bubble">${escapeHtml(seg).replace(/\n/g, '<br>')}</div>`;
             });
+            const timeStr = fmtChatTime(m.ts);
+            if (timeStr) bubbles += `<span class="rol-chat-time">${escapeHtml(timeStr)}</span>`;
             row.innerHTML =
                 `<img class="rol-chat-avatar" src="${ava}" alt="">
                  <div class="rol-chat-col"><span class="rol-chat-name">${escapeHtml(m.name)}</span>${bubbles}</div>`;
