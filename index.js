@@ -13,7 +13,7 @@ import { getChatCompletionModel } from '../../../openai.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.6.6';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.7';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
     localStorage.setItem('rol_version', ROL_VERSION);
@@ -29,6 +29,7 @@ const Storage = (() => {
             extension_settings[extensionName] = {
                 memories: [],
                 chatlogs: [],
+                fruits: [],   // ❤︎ 果子也搬进 extension_settings，跟记忆一样走服务器持久化，不再走易丢的 localStorage ❤︎
                 config: {
                     presetName: '',
                     autoInject: true,
@@ -2626,32 +2627,36 @@ const FruitSystem = (() => {
     let pendingFruitPromptKeys = [];
 
 
-    // ❤︎ 存储助手 ❤︎
+    // ❤︎ 存储助手：果子现在跟 memories 一套，存在 extension_settings 里走服务器持久化（跨设备、不丢）❤︎
     function loadFruits() {
-        return JSON.parse(localStorage.getItem(fruitsKey()) || '[]');
+        const s = extension_settings[extensionName];
+        return (s && Array.isArray(s.fruits)) ? s.fruits : [];
     }
     function saveFruits(arr) {
-        try {
-            localStorage.setItem(fruitsKey(), JSON.stringify(arr));
-        } catch (e) {
-            // localStorage 写失败（多半是配额满了）别静默吞掉，否则果子像凭空蒸发
-            console.error('[RingOurLuv] 🥀 果子存储失败（localStorage 可能满了）:', e);
-            try { UIController.showToast('🥀 果子没存进去…浏览器存储可能满了'); } catch (_) { }
+        const s = extension_settings[extensionName];
+        if (!s) {
+            console.error('[RingOurLuv] 🥀 果子存储失败：extension_settings 还没就绪');
+            return;
         }
+        s.fruits = arr;
+        saveSettingsDebounced();   // ❤︎ 防抖落盘到 ST 服务器 ❤︎
     }
 
     // ❤︎ 一次性找回：把历史上按聊天分桶存的果子（rol_fruits_<聊天名> + 旧版全局 rol_fruits）
     //    全部合并进全局桶、按 id 去重（幂等，重复跑也不会重复添加）。旧桶一律保留不删，绝不再丢。❤︎
+    //    现在的目的地从 localStorage 改成 extension_settings.fruits：每台设备开机都把自己
+    //    localStorage 里还剩的果子导进服务器存储，导完就跨设备同步、再不丢。localStorage 旧桶一律保留当备份。❤︎
     function migrateAndMergeFruits() {
         try {
-            const globalArr = JSON.parse(localStorage.getItem(FRUITS_GLOBAL_KEY) || '[]');
-            const byId = new Map(globalArr.filter(f => f && f.id).map(f => [f.id, f]));
+            const s = extension_settings[extensionName];
+            if (!s) return;
+            if (!Array.isArray(s.fruits)) s.fruits = [];
+            const byId = new Map(s.fruits.filter(f => f && f.id).map(f => [f.id, f]));
             let changed = false;
             Object.keys(localStorage).forEach(k => {
-                if (k === FRUITS_GLOBAL_KEY) return;                            // 跳过全局桶自己
-                if (k !== 'rol_fruits' && !k.startsWith('rol_fruits_')) return; // 只认果子桶
-                // ❤︎ 桶名去掉 rol_fruits_ 前缀 = 来源对话 scope（旧全局 rol_fruits 没有 → 空）❤︎
-                const scope = k === 'rol_fruits' ? '' : k.slice('rol_fruits_'.length);
+                if (k !== 'rol_fruits' && !k.startsWith('rol_fruits_')) return; // 只认果子桶（含旧全局 rol_fruits_all）
+                // ❤︎ 桶名去掉 rol_fruits_ 前缀 = 来源对话 scope；旧全局桶（rol_fruits / rol_fruits_all）没来源 → 空 ❤︎
+                const scope = (k === 'rol_fruits' || k === FRUITS_GLOBAL_KEY) ? '' : k.slice('rol_fruits_'.length);
                 let arr;
                 try { arr = JSON.parse(localStorage.getItem(k) || '[]'); } catch (_) { return; }
                 if (!Array.isArray(arr)) return;
@@ -2660,19 +2665,19 @@ const FruitSystem = (() => {
                     const exist = byId.get(f.id);
                     if (!exist) {
                         const nf = Object.assign({}, f, { scope: f.scope || scope });
-                        globalArr.push(nf); byId.set(f.id, nf); changed = true;
+                        s.fruits.push(nf); byId.set(f.id, nf); changed = true;
                     } else if (!exist.scope && scope) {
                         exist.scope = scope; changed = true;   // 给已合并但没来源的旧果子补上 scope
                     }
                 });
             });
             if (changed) {
-                globalArr.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                localStorage.setItem(FRUITS_GLOBAL_KEY, JSON.stringify(globalArr));
-                console.log('[RingOurLuv] 🍎 果园已合并/补全来源，共', globalArr.length, '颗');
+                s.fruits.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                saveSettingsDebounced();
+                console.log('[RingOurLuv] 🍎 果园已迁移/合并进 extension_settings，共', s.fruits.length, '颗');
             }
         } catch (e) {
-            console.error('[RingOurLuv] 🥀 果园合并找回失败:', e);
+            console.error('[RingOurLuv] 🥀 果园迁移找回失败:', e);
         }
     }
 

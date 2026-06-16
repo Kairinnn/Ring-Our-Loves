@@ -303,12 +303,12 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 9px 0 11px;
-    margin-top: 8px;
-    /* ❤︎ 手机下巴：底部一抹半透明粉白 + 上缘渐隐，内容从底下滚过去也不糊成一团 ❤︎ */
-    background: linear-gradient(to top, rgb(255 247 251 / 96%) 58%, rgb(255 247 251 / 0%));
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    padding: 11px 0 13px;
+    /* ❤︎ 手机下巴：完全不透明的实心外框，滚动时把底下透出来的黑/底色彻底挡住，home 键就钉在这块壳上 ❤︎ */
+    background: #fff0f7;
+    border-top: 1.5px solid #ffd0e8;
+    border-radius: 0 0 16px 16px;   /* 跟面板底部 16px 圆角对齐，像手机下边框 */
+    box-shadow: 0 -5px 14px #ffd9eccc;
 }
 #rol-drawer-panel .rol-home-btn {
     width: 42px;
@@ -669,8 +669,9 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
+    /* ❤︎ 不再给列表自己套滚动条：有多少恋果就铺多少，整个面板一起滚（面板滚动条已隐藏）❤︎ */
+    max-height: none;
+    overflow: visible;
     padding-right: 4px;
 }
 #rol-drawer-panel .rol-memory-card {
@@ -1492,7 +1493,7 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     .rol-toolbar .rol-input { width: 100%; }
     .rol-editor-inner { max-width: 100%; border-radius: 8px; padding: 16px; }
     .rol-letter-inner { max-width: 100%; padding: 20px 16px 16px; }
-    .rol-memory-list { max-height: 100vh; }
+    .rol-memory-list { max-height: none; overflow: visible; }
     .rol-card-actions { justify-content: flex-end; }
     /* ⬇️┅🍥移动端浮窗宽度/┅┅╗ */
     .rol-drawer-panel { width: 92vw; max-width: 92vw; }
