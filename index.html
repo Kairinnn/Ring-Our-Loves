@@ -14,10 +14,9 @@
 <!-- ┣━━⭐️ 面板（由JS移至body）━━┫ -->
 <div id="rol-drawer-overlay" class="rol-drawer-overlay">
     <div id="rol-drawer-panel" class="rol-drawer-panel">
-        <!-- ┣━━抽屉头部 + 收起按钮━━┫ -->
+        <!-- ┣━━抽屉头部（手机顶栏感，只留标题；收起键已挪到面板底部的 Home 键）━━┫ -->
         <div class="rol-drawer-header">
             <span class="rol-drawer-title">My Electronic Ether.</span>
-            <button id="rol-drawer-close" class="rol-btn rol-btn-icon rol-drawer-close-btn">🐾 收起</button>
         </div>
 
         <div class="rol-home">
@@ -200,6 +199,10 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <!-- ┣━━⭐️ 底部 Home 键：收起/退出，sticky 钉在面板底，滚到哪都点得到（手机 Home 键样式）━━┫ -->
+        <div class="rol-home-bar">
+            <button id="rol-drawer-close" class="rol-home-btn" type="button" title="收起" aria-label="收起"></button>
         </div>
     </div>
 </div>

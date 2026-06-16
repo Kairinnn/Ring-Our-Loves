@@ -264,7 +264,7 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
 /* ⬇️┅⭕️侧边栏标题┅┅╗ */
 #rol-drawer-panel .rol-drawer-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     padding: 6px 9px;
     background-color: #fffad742;
@@ -292,6 +292,52 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     border: 1.6px solid var(--SmartThemeBorderColor, #ffffff) !important;
     border-radius: 8px !important;
     background: var(--SmartThemeBlurTintColor, #444444) !important;
+}
+
+/* ⬇️┅⭕️底部 Home 键：收起/退出，永远钉在面板底（手机下巴 + iOS Home 键）/┅┅╗ */
+#rol-drawer-panel .rol-home-bar {
+    position: sticky;        /* ❤︎ 面板自己是滚动容器，sticky bottom 让它永远贴在可视底 ❤︎ */
+    bottom: 0;
+    z-index: 30;
+    flex-shrink: 0;          /* 别被上面的内容挤扁 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 9px 0 11px;
+    margin-top: 8px;
+    /* ❤︎ 手机下巴：底部一抹半透明粉白 + 上缘渐隐，内容从底下滚过去也不糊成一团 ❤︎ */
+    background: linear-gradient(to top, rgb(255 247 251 / 96%) 58%, rgb(255 247 251 / 0%));
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+#rol-drawer-panel .rol-home-btn {
+    width: 42px;
+    height: 42px;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    border: 2px solid #ffb6dd !important;
+    background: radial-gradient(circle at 50% 36%, #ffffff, #ffe3f1) !important;
+    box-shadow: 0 2px 10px #ffaedf99, inset 0 -2px 5px #ffd0e8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;            /* 藏掉任何文字，只留下面的方块 glyph */
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+/* ❤︎ 经典 iOS Home 键里那个圆角方块 ❤︎ */
+#rol-drawer-panel .rol-home-btn::before {
+    content: "";
+    width: 15px;
+    height: 15px;
+    border: 2.2px solid #ff7cc8;
+    border-radius: 5px;
+    box-shadow: 0 0 3px #ff7cc8aa;
+}
+#rol-drawer-panel .rol-home-btn:hover { transform: scale(1.07); }
+#rol-drawer-panel .rol-home-btn:active {
+    transform: scale(0.9);
+    box-shadow: 0 1px 5px #ffaedf, inset 0 2px 6px #ffb6dd;
 }
 
 /* ⬇️┅⭕️侧边栏Tab/┅┅╗ */
