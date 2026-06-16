@@ -13,7 +13,7 @@ import { getChatCompletionModel } from '../../../openai.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.6.9';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.10';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
     localStorage.setItem('rol_version', ROL_VERSION);
@@ -4208,22 +4208,35 @@ jQuery(async () => {
         const chatlogViewer = temp.querySelector('#rol-chatlog-viewer');
         if (chatlogViewer) document.body.appendChild(chatlogViewer);
 
-        // ❤︎ 自愈守卫：ST 新版在某些时机（开控制台触发的重排/重渲染等）会把我们挂在 body 上的浮层悄悄摘走，
-        //    导致子面板"点了没反应、布局像崩了"。这里盯住 body，自家浮层一旦被外部摘走就立刻拎回来，
-        //    顺手 console.warn 打出是谁、什么时机摘的，方便日后揪根因。一处搞定，不动现有打开逻辑。❤︎
+        // ❤︎ 自愈守卫：ST 新版在某些时机（开控制台触发的重排/重渲染等）会动我们挂在 body 上的浮层——
+        //    ①把它从 DOM 摘走，或 ②用 MovingUI 往面板内联强塞 transform/opacity(带!important)，
+        //    导致子面板"点了没反应、缩成一团透明、布局像崩了"。这里盯住 body 和每个浮层：
+        //    被摘走就立刻拎回来；被外部塞了内联 transform/opacity 就当场撕掉，让样式表的 !important 重新生效。
+        //    一处搞定，不动现有打开逻辑。❤︎
         const rolBodyPanels = [drawerOverlay, editorPanel, aiSourcePanel, letterPanel, writeSpace, confirmModal, fruitDetailPopup, chatlogViewer].filter(Boolean);
         if (window.MutationObserver && rolBodyPanels.length) {
+            // ❤︎ 撕掉 ST(MovingUI) 偷塞的内联 transform/opacity（我们自己从不在这些面板上内联这两个属性，撕了安全）❤︎
+            const stripForeignStyle = (el) => {
+                if (el.style && el.style.transform) el.style.removeProperty('transform');
+                if (el.style && el.style.opacity) el.style.removeProperty('opacity');
+            };
             const rolGuard = new MutationObserver((muts) => {
                 for (const m of muts) {
+                    // ① 被摘走 → 拎回 body
                     for (const node of m.removedNodes) {
                         if (rolBodyPanels.includes(node) && !node.isConnected) {
                             document.body.appendChild(node);
                             console.warn('[RingOurLuv] 🛟 浮层被外部摘走，已拎回 body:', node.id || node.className);
                         }
                     }
+                    // ② 被外部塞了内联 transform/opacity → 当场撕掉
+                    if (m.type === 'attributes' && rolBodyPanels.includes(m.target)) {
+                        stripForeignStyle(m.target);
+                    }
                 }
             });
             rolGuard.observe(document.body, { childList: true });
+            rolBodyPanels.forEach(p => rolGuard.observe(p, { attributes: true, attributeFilter: ['style'] }));
         }
     }
 

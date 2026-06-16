@@ -2248,7 +2248,9 @@ body.rol-fruit-animating .rol-ai-source-panel {
 }
 
 /* ⬇️┅🪶写作空间遮罩层（镜像 .rol-ai-source-panel 强制定位）/┅┅╗ */
-.rol-write-space {
+/* ❤︎ 同时挂 #id 选择器做双保险：万一 class 在某些解析时机丢了，靠 id 也能吃到定位样式 ❤︎ */
+.rol-write-space,
+#rol-write-space {
     display: none;
     position: fixed;
     inset: 0;
@@ -2258,7 +2260,8 @@ body.rol-fruit-animating .rol-ai-source-panel {
     align-items: center;
     padding: 16px;
 }
-.rol-write-space.rol-active {
+.rol-write-space.rol-active,
+#rol-write-space.rol-active {
     /* ❤︎ 强制覆盖 ST 注入的定位/尺寸样式，防止面板乱飞 ❤︎ */
     display: flex !important;
     position: fixed !important;
