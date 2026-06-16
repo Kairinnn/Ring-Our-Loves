@@ -13,7 +13,7 @@ import { getChatCompletionModel } from '../../../openai.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.6.8';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.9';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
     localStorage.setItem('rol_version', ROL_VERSION);
@@ -4208,6 +4208,23 @@ jQuery(async () => {
         const chatlogViewer = temp.querySelector('#rol-chatlog-viewer');
         if (chatlogViewer) document.body.appendChild(chatlogViewer);
 
+        // ❤︎ 自愈守卫：ST 新版在某些时机（开控制台触发的重排/重渲染等）会把我们挂在 body 上的浮层悄悄摘走，
+        //    导致子面板"点了没反应、布局像崩了"。这里盯住 body，自家浮层一旦被外部摘走就立刻拎回来，
+        //    顺手 console.warn 打出是谁、什么时机摘的，方便日后揪根因。一处搞定，不动现有打开逻辑。❤︎
+        const rolBodyPanels = [drawerOverlay, editorPanel, aiSourcePanel, letterPanel, writeSpace, confirmModal, fruitDetailPopup, chatlogViewer].filter(Boolean);
+        if (window.MutationObserver && rolBodyPanels.length) {
+            const rolGuard = new MutationObserver((muts) => {
+                for (const m of muts) {
+                    for (const node of m.removedNodes) {
+                        if (rolBodyPanels.includes(node) && !node.isConnected) {
+                            document.body.appendChild(node);
+                            console.warn('[RingOurLuv] 🛟 浮层被外部摘走，已拎回 body:', node.id || node.className);
+                        }
+                    }
+                }
+            });
+            rolGuard.observe(document.body, { childList: true });
+        }
     }
 
     UIController.initUI();
