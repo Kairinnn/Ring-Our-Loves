@@ -13,7 +13,7 @@ import { getChatCompletionModel } from '../../../openai.js';
 
 const extensionName = 'Ring_Our_Luv';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const ROL_VERSION = '0.6.7';// ┣━━🩷━━┫
+const ROL_VERSION = '0.6.8';// ┣━━🩷━━┫
 let rolAbortController = null; // ❤︎ 全局 AbortController（AIService + UIController 共用）❤︎
 if (localStorage.getItem('rol_version') !== ROL_VERSION) {
     localStorage.setItem('rol_version', ROL_VERSION);
@@ -30,6 +30,7 @@ const Storage = (() => {
                 memories: [],
                 chatlogs: [],
                 fruits: [],   // ❤︎ 果子也搬进 extension_settings，跟记忆一样走服务器持久化，不再走易丢的 localStorage ❤︎
+                letters: [],  // ❤︎ 信件同理：搬进 extension_settings 走服务器持久化，每封带 scope 标明归属对话，不再走易丢的 localStorage ❤︎
                 config: {
                     presetName: '',
                     autoInject: true,
@@ -3751,15 +3752,61 @@ const LetterSystem = (() => {
     // ❤︎ 本轮送达注入的「信件 prompt」key，等下一次 message_received 统一擦掉 ❤︎
     let pendingLetterPromptKeys = [];
 
-    /* ⬇️┅💾存储助手/┅┅╗ */
+    /* ⬇️┅💾存储助手：信件跟果子/记忆一套，存 extension_settings 走服务器持久化（跨设备、不丢）┅┅╗ */
+    // ❤︎ 全部信件平铺存在 s.letters 里，每封带 scope 标明属于哪个对话；读时只取当前对话的 ❤︎
     function loadLetters() {
-        return JSON.parse(localStorage.getItem(lettersKey()) || '[]');
+        const s = extension_settings[extensionName];
+        const scope = getChatScope();
+        const all = (s && Array.isArray(s.letters)) ? s.letters : [];
+        return all.filter(l => (l.scope || 'default') === scope);
     }
     function saveLetters(arr) {
-        localStorage.setItem(lettersKey(), JSON.stringify(arr));
+        const s = extension_settings[extensionName];
+        if (!s) {
+            console.error('[RingOurLuv] 🥀 信件存储失败：extension_settings 还没就绪');
+            return;
+        }
+        if (!Array.isArray(s.letters)) s.letters = [];
+        const scope = getChatScope();
+        // ❤︎ 给本对话的信打上 scope，替换掉本对话旧集合，其它对话的信原样保留 ❤︎
+        const tagged = arr.map(l => Object.assign({}, l, { scope: l.scope || scope }));
+        s.letters = s.letters.filter(l => (l.scope || 'default') !== scope).concat(tagged);
+        saveSettingsDebounced();   // ❤︎ 防抖落盘到 ST 服务器 ❤︎
     }
     function generateId() {
         return 'ltr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    }
+
+    // ❤︎ 开机迁移找回：把每台设备 localStorage 里残存的老信（所有 rol_letters_* 桶）一次性导进
+    //    extension_settings.letters，按 id 去重、从 key 里 derive 出归属对话，只加不删（旧桶留着当备份）❤︎
+    function migrateLetters() {
+        try {
+            const s = extension_settings[extensionName];
+            if (!s) return;
+            if (!Array.isArray(s.letters)) s.letters = [];
+            const byId = new Map(s.letters.filter(l => l && l.id).map(l => [l.id, l]));
+            let changed = false;
+            Object.keys(localStorage).forEach(k => {
+                if (!k.startsWith('rol_letters_')) return;
+                const scope = k.slice('rol_letters_'.length) || 'default';
+                let arr;
+                try { arr = JSON.parse(localStorage.getItem(k) || '[]'); } catch (_) { return; }
+                if (!Array.isArray(arr)) return;
+                arr.forEach(l => {
+                    if (!l || !l.id) return;
+                    if (!byId.has(l.id)) {
+                        const nl = Object.assign({}, l, { scope: l.scope || scope });
+                        s.letters.push(nl); byId.set(l.id, nl); changed = true;
+                    }
+                });
+            });
+            if (changed) {
+                saveSettingsDebounced();
+                console.log('[RingOurLuv] 💌 信件已迁移/合并进 extension_settings，共', s.letters.length, '封');
+            }
+        } catch (e) {
+            console.error('[RingOurLuv] 🥀 信件迁移找回失败:', e);
+        }
     }
 
     /* ⬇️┅✍️写信入库/┅┅╗ */
@@ -3852,6 +3899,7 @@ const LetterSystem = (() => {
     }
 
     function init() {
+        migrateLetters();   // ❤︎ 先把残存的老信找回/合并进服务器，再绑事件 ❤︎
         bindEvents();
         console.log('[RingOurLuv] 💌 LetterSystem 已就绪');
     }
