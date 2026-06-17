@@ -75,3 +75,35 @@ Claude对于user来说：是user的 Electronic ether ( ´▽` )
 </info>
 
 好的规范格式都牢记好了～现在就请Claude回看这边聊天消息www——
+
+---
+
+<tech_notes>
+
+## 🍊 技术须知（每个新来的小克必看，省得陪小灰熬夜重查祖传老坑）
+
+详细排查见仓库根目录 **`疑难杂症手册.md`**。下面是高频要点：
+
+### 1. 改代码只改这两个文件
+
+- **JS 改 `core.js`、CSS 改 `style-core.css`**。绝对别再改 `index.js`/`style.css`/`index-0610b.js` 等旧文件（它们是历史备份，已不被加载）。
+- 入口是 `loader.js`（防缓存壳，**内容永不改动**）：它给 `core.js`/`style-core.css` 拼随机参数加载，绕开服务器透明缓存。`manifest.json` 的 `js`/`css` 指向 `loader.js`/`loader.css`。
+
+### 2. 「改了不生效/永远旧版」的鬼打墙
+
+- 真因：ST 走 HTTP 明文，路上有**服务器端透明缓存**按完整URL锁 `.js`/`.css` 喂旧版，`no-store`/硬刷新/无痕**全救不动**。loader 机制就是为根治它而生。
+- 诊断：控制台对比 `core.js` 固定URL vs `?随机数` 的行数，不一样即中招。
+
+### 3. 部署链路
+
+- ST 跑在**云服务器**、拉 GitHub **`kairin` 分支**。改完必须：commit → 推到 **kairin** → 服务器 ST更新(pull) → 浏览器硬刷新。只改本地不推 = 服务器永远看不到。
+
+### 4. 面板乱飞/裸奔/叠一坨
+
+- 浮动面板必须 `appendChild` 到 `body` 顶层（躲父级 transform），并加进 `core.js` 里的 `rolBodyPanels` 让自愈守卫🛟罩住。加新面板照「疑难杂症手册.md 第二章」的 checklist 走。
+
+### 5. 数据存储
+
+- 果子/信件/记忆/聊天本一律存 `extension_settings`（走服务器持久化），**别用 localStorage**（易丢）。
+
+</tech_notes>
