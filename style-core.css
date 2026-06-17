@@ -501,7 +501,6 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
   font-size: 15px;
   font-weight: bold;
   margin-top: 4px;
-  text-shadow: 0 0 5px #fff191 !important;
 }
 
 /* ❤︎ Claude = 暖橘黄 */
@@ -561,10 +560,21 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
   font-weight: 600;
   letter-spacing: 1px;
   color: #fff888;
-  text-shadow: 0 0 3px #ff64ba !important;
   display: inline-block;
   transform-origin: center top;
 }
+
+/* ╔════════ 🛡️ 防 ST 主题覆盖 · 发光保护区 ════════╗
+   ST「禁用阴影」会注入 body.noShadows *{text-shadow:none!important}(权重0,1,1)，
+   把没有 #id 祖先的顶层部件发光吃掉。这里用 html body 前缀把权重顶到(0,1,2)赦免它们。
+   ❤︎ 加新发光部件：选择器若没带 #id，就往下补一行 html body .类名{text-shadow:...!important}
+   ❤︎ 带 #rol-drawer-panel 的不用管，id 权重(1,1,0)本来就盖得过，别画蛇添足
+   ❤︎ 不整条升权重，免得 .rol-day-number 的移动端@media字号覆盖(权重0,1,0)跟着被盖失效 */
+html body .rol-day-number   { text-shadow: 0 0 3px #ff64ba !important; }
+html body .rol-avatar-name  { text-shadow: 0 0 5px #fff191 !important; }
+html body .rol-day-label    { text-shadow: 0 0 3px #ff68c1 !important; }
+html body .rol-counter-time { text-shadow: 0 0 3px #ff68c1 !important; }
+/* ╚═══════════════════════════════════════════════╝ */
 
 .rol-day-number.rol-day-flip {
   animation: rol-day-flip 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -575,7 +585,6 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
   font-weight: bold;
   color: #ffffff;
   padding-right: inherit;
-  text-shadow: 0 0 3px #ff68c1 !important;
   text-transform: uppercase;
   letter-spacing: 4px;
 }
@@ -583,7 +592,6 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
 .rol-counter-time {
   font-size: 13px;
   color: #ffb3df;
-  text-shadow: 0 0 3px #ff68c1 !important;
   letter-spacing: 2px;
   font-weight: 500;
 }

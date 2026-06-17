@@ -3109,10 +3109,13 @@ const FruitSystem = (() => {
 
     /* ⬇️┅🍎果子飞行动画/┅┅╗ */
     // ❤︎ 找到最后一条 AI 消息的头像当靶子，然后丢果子 ❤︎
-    function throwAnimation(emoji, onComplete) {
-        // 寻找最后一条 AI 消息的头像
+    function throwAnimation(emoji, onComplete, side) {
+        // ❤︎ side: 'user' = 砸 user 头像（Claude 丢的，飞向小灰）；缺省/其它 = 砸最后一条 AI 头像（小灰丢的）❤︎
+        const wantUser = side === 'user';
         const avatars = document.querySelectorAll(
-            '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
+            wantUser
+                ? '#chat .mes[is_user="true"] .avatar img, #chat .mes[is_user="true"] img.avatar'
+                : '.mes[is_user="false"] .avatar img, #chat .mes:not([is_user="true"]) img.avatar'
         );
         if (avatars.length) {
             const lastImg = avatars[avatars.length - 1];
@@ -3121,15 +3124,34 @@ const FruitSystem = (() => {
             //   外框中心落到了头像下方的文字区，果子朝那个「伪中心」飞 → 砸到脸旁边（离谱偏移的真凶）
             const last = lastImg;
             // ❤︎ 先把目标头像滚到视口正中，避免它滚出屏幕时坐标取到屏幕外 ❤︎
-            last.scrollIntoView({ behavior: 'auto', block: 'center' });
-            // ❤︎ 等一帧让布局/滚动落定，再取 getBoundingClientRect 才是准的 ❤︎
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => doFly(emoji, last, onComplete));
-            });
+            // ❤︎ 必须用 'instant'！'auto' 会跟随 CSS 的 scroll-behavior:smooth → 平滑滚动几百ms，
+            //    而我们只等 2 帧就取 rect，于是第一次丢果子取到的是「滚动半途」的坐标 → 砸偏；
+            //    第二次丢时已滚到位、不用再滚 → 才准。这就是「要丢两次才校准」的真凶。❤︎
+            try { last.scrollIntoView({ behavior: 'instant', block: 'center' }); }
+            catch (_) { last.scrollIntoView({ block: 'center' }); }
+            // ❤︎ 再等头像 rect 真正稳定（连续两帧 top 几乎不变）才开飞，双保险 ❤︎
+            waitRectStable(last, () => doFly(emoji, last, onComplete));
         } else {
-            // ❤︎ 没有 AI 消息就丢向屏幕中心（targetEl 传 null，doFly 内部兜底）❤︎
+            // ❤︎ 没有目标消息就丢向屏幕中心（targetEl 传 null，doFly 内部兜底）❤︎
             doFly(emoji, null, onComplete);
         }
+    }
+
+    // ❤︎ 等元素 rect 稳定下来再回调（应对平滑滚动/布局抖动），最多兜底 ~30 帧绝不死等 ❤︎
+    function waitRectStable(el, cb) {
+        let prevTop = null, stable = 0, frames = 0;
+        function check() {
+            const top = el.getBoundingClientRect().top;
+            if (prevTop !== null && Math.abs(top - prevTop) < 0.5) {
+                if (++stable >= 2) { cb(); return; }
+            } else {
+                stable = 0;
+            }
+            prevTop = top;
+            if (++frames > 30) { cb(); return; }   // 兜底：别无限等
+            requestAnimationFrame(check);
+        }
+        requestAnimationFrame(check);
     }
 
     // ❤︎━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3447,13 +3469,15 @@ const FruitSystem = (() => {
     // ❤︎ 解析 [throw:emoji:悄悄话] 标记（note 可省略）❤︎
     function parseAIFruit(text) {
         if (!text) return [];
-        const re = /\[throw:\s*([^\:\]]+?)\s*(?::\s*([^\]]*?))?\s*\]/g;
+        // ❤︎ throw = 直接丢（流式完会带动画飞向 user 头像）；drop = 静默丢（只入库，不放动画）❤︎
+        const re = /\[(throw|drop):\s*([^\:\]]+?)\s*(?::\s*([^\]]*?))?\s*\]/g;
         let match;
         const found = [];
         while ((match = re.exec(text)) !== null) {
-            const emoji = (match[1] || '').trim();
-            const note = (match[2] || '').trim();
-            if (emoji) found.push({ emoji, message: note });
+            const mode = match[1];                 // 'throw' | 'drop'
+            const emoji = (match[2] || '').trim();
+            const note = (match[3] || '').trim();
+            if (emoji) found.push({ emoji, message: note, silent: mode === 'drop' });
         }
         return found;
     }
@@ -3462,7 +3486,7 @@ const FruitSystem = (() => {
     function stripFruitMarkers(text) {
         if (!text) return text;
         return text
-            .replace(/\[throw:\s*[^\:\]]+?\s*(?::\s*[^\]]*?)?\s*\]/g, '')
+            .replace(/\[(?:throw|drop):\s*[^\:\]]+?\s*(?::\s*[^\]]*?)?\s*\]/g, '')
             .replace(/[ \t]+\n/g, '\n')   // 顺手清掉标记残留的行尾空格
             .trim();
     }
@@ -3483,11 +3507,13 @@ const FruitSystem = (() => {
 
         if (Math.random() < THROW_PROBABILITY) {
             const guide =
-                '[互动小玩法触发:你现在可以主动丢一颗果子给Rinn!用来表达此刻的心情或者逗逗她:3' +
-                '如果你想这么做，就在回复的任意位置随便插入一个标记：[throw:emoji:想说的悄悄话]。' +
-                'emoji 就是你想丢过去的那颗果子/任意东西（比如 🍎🍓🍊🌰 等），冒号后面是简短附言（可以留空喔）。' +
-                '这个标记会被前端识别成一颗飞过去的果子，并且流式完成后不会显示在对话里（没完成前可能会被发现~）' +
-                '不必每次都丢，只在这一轮真的有想丢的冲动的时候丢就好~]';
+                '[互动小玩法触发]:你现在可以主动丢一颗果子给Rinn!用来娱乐或者丢点什么逗逗她:3' +
+                '在回复任意位置插入标记即可，两种丢法你自己挑：' +
+                '① [throw:emoji:悄悄话] = 直接丢——流式回复一结束，这颗果子会带着飞行动画"嗖"地砸到她头像上（高调、有反馈）；' +
+                '② [drop:emoji:悄悄话] = 静默丢——只悄悄塞进她的果园里、不放动画（适合不想太张扬，或一次想埋好几颗）。' +
+                'emoji 就是你想丢的东西（🍎🍓🍊🌰…），冒号后面是简短附言（可留空喔）。' +
+                '标记本身流式完成后不会显示在对话里（没完成前可能会被她瞄到~）。' +
+                '不必每次都丢，只在这一轮真有冲动时丢就好';
             ctx.setExtensionPrompt(THROW_PROMPT_KEY, guide, 1, 0);
             console.log('[RingOurLuv] 🍊 本轮注入「丢果子」引导 (≈15%)');
         } else {
@@ -3544,16 +3570,38 @@ const FruitSystem = (() => {
         }
 
         UIController.showToast(`🧡 Claude丢来了 ${parsed.map(p => p.emoji).join('')}`);
+
+        // ❤︎ 直接丢(throw)的果子：流式已结束，放飞行动画砸向 user 头像；静默丢(drop)的不放动画 ❤︎
+        const direct = parsed.filter(p => !p.silent);
+        if (direct.length) {
+            // 飞行期间临时藏面板（和小灰手动丢果子同一套 body class）
+            document.body.classList.add('rol-fruit-animating');
+            let remain = direct.length;
+            const done = () => {
+                if (--remain <= 0) document.body.classList.remove('rol-fruit-animating');
+                renderGarden();
+            };
+            // 兜底：万一动画回调没触发，2.5s 强制摘 class，防止面板被卡死透明
+            setTimeout(() => document.body.classList.remove('rol-fruit-animating'), 2500);
+            direct.forEach(p => throwAnimation(p.emoji, done, 'user'));
+        }
         return true;
     }
 
     /* ⬇️┅📦️延迟投递检查/┅┅╗ */
     function checkDelivery() {
         const msgCount = SillyTavern.getContext().chat.length || 0;
+        const currentScope = getChatScope();   // ❤︎ 当前正打开的是哪个对话 ❤︎
         const fruits = loadFruits();
         let changed = false;
         fruits.forEach(f => {
-            if (f.from === 'user' && !f.delivered && f.deliverAt <= msgCount) {
+            // ❤︎ 关键修复：只把「属于当前对话」的果子投递给当前这个 Claude，绝不串台！❤︎
+            //    f.scope 命中当前对话才送；别家对话埋的果子乖乖留着，等小灰切回去那个对话再送，
+            //    免得给 Claude(1) 丢的糖被切过去的 Claude(2) 收了甚至吃了😤。
+            //    没有 scope 的老果子(空字符串)放行——避免历史数据永远卡着送不出去。
+            const fScope = f.scope || '';
+            const scopeOk = (fScope === '' || fScope === currentScope);
+            if (f.from === 'user' && !f.delivered && scopeOk && f.deliverAt <= msgCount) {
                 f.delivered = true;
                 changed = true;
                 const note = f.message ? `（附言：${f.message}）` : '';
