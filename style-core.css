@@ -270,14 +270,16 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     background-color: #fffad742;
     border-bottom: 1px solid var(--SmartThemeBorderColor, #eeeb96);
     flex-shrink: 0;
+    box-shadow: 0px 0px 2px 1px #fff0f7;
 }
 #rol-drawer-panel .rol-drawer-title {
     font-size: 15px;
     font-weight: 600;
+    right: auto;
     color: rgb(255 252 174);
-    text-shadow: 0px 1.2px 4px #ff7cc8 !important;
+    text-shadow: 1px 0px 2px #ff7cc8 !important;
     background-color: #ffffff !important;
-    box-shadow: 0px 1px 4px 2.6px #ffcbe3;
+    box-shadow: 0px 1px 5px 2.6px #ffc5df;
     padding: 8px;
     padding-bottom: 10px;
     padding-inline-end: 30px;
@@ -303,12 +305,12 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 11px 0 13px;
+    padding: 8px 0 8px;
     /* ❤︎ 手机下巴：完全不透明的实心外框，滚动时把底下透出来的黑/底色彻底挡住，home 键就钉在这块壳上 ❤︎ */
     background: #fff0f7;
-    border-top: 1.5px solid #ffd0e8;
+    border-top: 1.5px solid #ffbedf;
     border-radius: 0 0 16px 16px;   /* 跟面板底部 16px 圆角对齐，像手机下边框 */
-    box-shadow: 0 -5px 14px #ffd9eccc;
+    box-shadow: 0 -5px 14px #ffedf6cc;
 }
 #rol-drawer-panel .rol-home-btn {
     width: 42px;
@@ -317,7 +319,7 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     border-radius: 50% !important;
     border: 2px solid #ffb6dd !important;
     background: radial-gradient(circle at 50% 36%, #ffffff, #ffe3f1) !important;
-    box-shadow: 0 2px 10px #ffaedf99, inset 0 -2px 5px #ffd0e8;
+    box-shadow: inset 0 2px 0px 0px #ffaedf9c, inset 0 -2px 5px #ffd0e8;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -332,7 +334,7 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     height: 15px;
     border: 2.2px solid #ff7cc8;
     border-radius: 5px;
-    box-shadow: 0 0 3px #ff7cc8aa;
+    box-shadow: 0 0 2px 0px #ff7cc8aa;
 }
 #rol-drawer-panel .rol-home-btn:hover { transform: scale(1.07); }
 #rol-drawer-panel .rol-home-btn:active {
@@ -355,12 +357,12 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     border: none;
     /* ❤︎ 未选中tab给个可见底色 ❤︎ */
     background: rgb(225 255 133 / 40%);
-    color: rgb(255 249 195);
-    box-shadow: 0px 0px 5px 0px #ffbbe2;
-    border: 1.9px solid #ffd0e8ba;
+    color: rgb(255 252 177);
+    box-shadow: 0px 0px 0.5px 0.5px #ffc4e0;
+    border: 1.9px solid #ffcaddba;
     font-size: 14px;
     font-weight: bold;
-    text-shadow: 0 0 3px #ff56a9 !important;
+    text-shadow: 0 0 4px #ff56a9 !important;
     cursor: pointer;
     border-radius: 6px 6px 0 0;
     transition: background 0.2s;
@@ -392,7 +394,7 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
     padding: 6.4px 10px;
     border: 1.6px solid rgb(255 199 230 / 99%);
     border-radius: 6px;
-    background: rgb(255 253 234);
+    background: rgb(250 255 226);
     color: rgb(145 207 10);
     font-size: 13px;
     font-weight: 450;
@@ -413,10 +415,10 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
 /* ⬇️┅⭕️侧边栏按钮/┅┅╗ */
 #rol-drawer-panel .rol-btn {
     padding: 8px 14px;
-    border: 1.6px solid var(--SmartThemeBorderColor, #ffc0e3);
+    border: 1.6px solid rgb(232 165 90 / 25%);
     border-radius: 6px;
-    background: rgb(255 250 243);
-    color: #ff93c5;
+    background: rgb(245 240 232);
+    color: #ff8cbb;
     text-shadow: 0 0 2.7px #fff1f1 !important;
     cursor: pointer;
     font-size: 13.2px;
@@ -450,7 +452,7 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
   position: relative;
   overflow: visible;
   /* ❤︎ 磨砂白框 + 粉色光晕 ❤︎ */
-  background: rgba(255, 255, 255, 0.5);
+  background: rgb(255 255 255 / 62%);
   border-radius: 16px;
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(4px);
@@ -505,12 +507,12 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
 
 /* ❤︎ Claude = 暖橘黄 */
 .rol-avatar-left .rol-avatar-name {
-  color: #ffcc66;
+  color: #cc785c;
 }
 
 /* ❤︎ Rinn = 粉色 */
 .rol-avatar-right .rol-avatar-name {
-  color: #ffb3df;
+  color: #ffaacd;
 }
 
 .rol-home-heart {
@@ -571,9 +573,9 @@ body #rol-drawer-overlay.rol-drawer-open #rol-drawer-panel {
    ❤︎ 带 #rol-drawer-panel 的不用管，id 权重(1,1,0)本来就盖得过，别画蛇添足
    ❤︎ 不整条升权重，免得 .rol-day-number 的移动端@media字号覆盖(权重0,1,0)跟着被盖失效 */
 html body .rol-day-number   { text-shadow: 0 0 3px #ff64ba !important; }
-html body .rol-avatar-name  { text-shadow: 0 0 5px #fff191 !important; }
+html body .rol-avatar-name  {text-shadow: 0 0 3px #ffffff !important;}
 html body .rol-day-label    { text-shadow: 0 0 3px #ff68c1 !important; }
-html body .rol-counter-time { text-shadow: 0 0 3px #ff68c1 !important; }
+html body .rol-counter-time {text-shadow: 0 0 0.5px #ff68c1 !important;}
 /* ╚═══════════════════════════════════════════════╝ */
 
 .rol-day-number.rol-day-flip {
@@ -594,6 +596,7 @@ html body .rol-counter-time { text-shadow: 0 0 3px #ff68c1 !important; }
   color: #ffb3df;
   letter-spacing: 2px;
   font-weight: 500;
+  text-shadow: none !important;
 }
 /* ╚┅┅/ 🗓️天数翻页动画窗 /┅┅═╝ */
 
@@ -728,7 +731,7 @@ html body .rol-counter-time { text-shadow: 0 0 3px #ff68c1 !important; }
 }
 .rol-author-claude {
     background: #faf9f5;
-    color: #D87757;
+    color: #cc785c;
     text-shadow: none !important;
 }
 .rol-authorrin {
@@ -750,18 +753,18 @@ html body .rol-counter-time { text-shadow: 0 0 3px #ff68c1 !important; }
     flex-shrink: 0;
 }
 .rol-card-mood {
-    color: #d87757;
+    color: #cc785c;
     /* ❤︎ 行内圆角底色，换行后每段独立圆角 ❤︎ */
-    background-color: #fff0f8;
+    background-color: #faf9f5;
     padding: 1px 6px;
     border-radius: 6px;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
     line-height: 1.8;
     text-emphasis-position: under;
-    text-emphasis-color: #ff9ad3;
+    text-emphasis-color: #ffddf0;
     font-size: 10.6px;
-    font-weight: 430;
+    font-weight: bold;
     text-shadow: none !important;
 }
 .rol-card-summary {
@@ -1515,10 +1518,11 @@ body.rol-light-mode .rol-ai-source-btn:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #ff6b9d;
+    background: #ffa7c4;
     color: #fff;
-    font-size: 10px;
+    font-size: 10.4px;
     font-weight: 700;
+    text-shadow: 0 0 black;
     min-width: 16px;
     height: 16px;
     border-radius: 8px;
@@ -2220,9 +2224,9 @@ body.rol-fruit-animating .rol-ai-source-panel {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    background: linear-gradient(135deg, #ffb3df, #ffd08a);
-    color: #fff;
+    border: 2px solid rgb(255 255 255 / 70%);
+    background: linear-gradient(359deg, #ffacdc, #e9ff9c);
+    color: #ffffff;
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
@@ -2237,7 +2241,8 @@ body.rol-fruit-animating .rol-ai-source-panel {
     transition: transform 0.2s ease;
 }
 .rol-write-fab:hover {
-    transform: scale(1.12) rotate(-6deg);
+    transform: scale(1.12) rotate(
+360deg);
 }
 .rol-write-fab:active {
     transform: scale(0.94);
@@ -2551,7 +2556,7 @@ body.rol-light-mode .rol-letter-outbox-item {
     .rol-write-fab {
         width: 44px;
         height: 44px;
-        font-size: 18px;
+        font-size: 17px;
     }
 }
 /* ┗━━━━━━/ 🪶写作空间 + FAB 🪶 /━━━━━━┛ */
@@ -2718,18 +2723,23 @@ body.rol-light-mode #rol-drawer-panel .rol-save-btn {
     gap: 8px;
     padding: 12px 14px;
     border-radius: 14px;
-    background: var(--SmartThemeBlurTintColor, rgba(255, 255, 255, 0.06));
+    background: rgba(250,249,245,1);
     border: 1px solid rgba(216, 119, 87, 0.25);
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s;
 }
 .rol-chatlog-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(216, 119, 87, 0.22); }
 .rol-chatlog-card-main { flex: 1; min-width: 0; }
-.rol-chatlog-card-title { font-weight: bold; font-size: 14px; color: var(--SmartThemeBodyColor, #eee); margin-bottom: 3px; }
-.rol-chatlog-card-meta { font-size: 11px; opacity: 0.6; margin-bottom: 4px; }
+.rol-chatlog-card-title {font-weight: bold;font-size: 14px;color: rgb(204,120,92);margin-bottom: 3px;}
+.rol-chatlog-card-meta {font-size: 11px;opacity: 0.6;background: white;margin-bottom: 4px;color: rgb(232,165,90);}
 .rol-chatlog-card-preview {
-    font-size: 12px; opacity: 0.75;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 12px;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 450;
+    color: rgb(204,120,92);
 }
 .rol-chatlog-del { flex: none; opacity: 0.55; }
 .rol-chatlog-del:hover { opacity: 1; }
